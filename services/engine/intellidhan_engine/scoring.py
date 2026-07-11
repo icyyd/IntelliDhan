@@ -1,11 +1,10 @@
 """Factor scoring + confidence (doc 03 §3-4).
 
-F1 trend alignment, F2 setup quality (strategy-owned), F3 level confluence,
-F4 momentum & volume are computed from real state. F5-F8 (volatility fit,
-options flow, macro, statistical POP) are NEUTRAL_STUB=60 until their data
-feeds land — every stub is named in the factor dict so the UI can label it,
-and the calibration version is stamped 'uncalibrated-v0': alerts run in
-SHADOW grading until real calibration tables exist (doc 08 §4 governance).
+Real factors: F1 trend alignment, F2 setup quality (strategy-owned), F3 level
+confluence, F4 momentum & volume, F5 volatility fit (target geometry vs ATR +
+auction context), F8 statistical POP (random-walk barrier baseline adjusted by
+trend). Stubs awaiting data feeds: F6 options flow, F7 macro/catalyst —
+named in the factor dict so the UI can label them.
 """
 
 from __future__ import annotations
@@ -13,6 +12,7 @@ from __future__ import annotations
 from intellidhan_analytics.trend import alignment_score
 from intellidhan_engine.state import SymbolState
 from intellidhan_engine.strategies import RawSignal
+from intellidhan_schemas import Timeframe
 from intellidhan_schemas.signals import Direction
 
 NEUTRAL_STUB = 60.0
@@ -41,15 +41,44 @@ def score_factors(state: SymbolState, sig: RawSignal) -> dict[str, float]:
             f4 += 15.0 if agrees else -15.0
         f4 = max(0.0, min(f4, 100.0))
 
+    # F5 — volatility fit (doc 03 §3): are the targets reachable within the
+    # session's realistic range, and does the auction context support movement?
+    f5 = NEUTRAL_STUB
+    daily = state.indicators(Timeframe.D1)
+    if daily is not None and daily.atr14 and sig.targets:
+        t2 = sig.targets[1] if len(sig.targets) > 1 else sig.targets[0]
+        target_atr = abs(t2 - sig.entry) / daily.atr14
+        # sweet spot: T2 within 0.3–1.0 daily ATR (reachable, non-trivial)
+        if target_atr <= 1.0:
+            f5 = 80.0 - max(0.0, (0.3 - target_atr)) * 100.0
+        else:
+            f5 = max(20.0, 80.0 - (target_atr - 1.0) * 40.0)
+        prof = state.profile_state
+        if prof is not None:
+            agrees = ((direction > 0 and prof.range_ext_up)
+                      or (direction < 0 and prof.range_ext_down))
+            f5 += 10.0 * prof.trend_day_probability * (1 if agrees else -1)
+        f5 = max(0.0, min(f5, 100.0))
+
+    # F8 — statistical POP baseline: random-walk odds of hitting T1 before the
+    # stop = risk / (risk + reward_T1), shifted by trend agreement (drift term).
+    f8 = NEUTRAL_STUB
+    risk = abs(sig.entry - sig.stop)
+    if risk > 0 and sig.targets:
+        reward1 = abs(sig.targets[0] - sig.entry)
+        pop_rw = risk / (risk + reward1)
+        drift = (f1 - 50.0) / 100.0 * 0.20  # ±0.10 max from alignment
+        f8 = max(0.0, min((pop_rw + drift) * 100.0, 100.0))
+
     return {
         "F1_trend": round(f1, 1),
         "F2_setup": sig.f2_quality,
         "F3_levels": round(f3, 1),
         "F4_momentum": round(f4, 1),
-        "F5_volatility": NEUTRAL_STUB,
+        "F5_volatility": round(f5, 1),
         "F6_flow": NEUTRAL_STUB,
         "F7_macro": NEUTRAL_STUB,
-        "F8_pop": NEUTRAL_STUB,
+        "F8_pop": round(f8, 1),
     }
 
 

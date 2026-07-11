@@ -68,6 +68,13 @@ class OrbBreakout:
         if not (long_break or short_break):
             return None
         direction = Direction.LONG if long_break else Direction.SHORT
+        # higher-TF agreement (RULE-T2): 1H trend must not oppose the break
+        h1 = state.trend_snap(Timeframe.H1)
+        if h1 is not None:
+            if direction == Direction.LONG and h1.score < 0:
+                return None
+            if direction == Direction.SHORT and h1.score > 0:
+                return None
         # VWAP must agree (RULE-T6)
         if vwap is not None:
             if direction == Direction.LONG and bar.close < vwap:
@@ -113,8 +120,11 @@ class Ema9TrendPullback:
         if snap.atr14 is None or snap.rsi14 is None:
             return None
         bar = state.last_bar
-        uptrend = t5.score >= 40 and snap.ema9 > snap.ema21
-        downtrend = t5.score <= -40 and snap.ema9 < snap.ema21
+        t15 = state.trend_snap(Timeframe.M15)
+        uptrend = (t5.score >= 40 and snap.ema9 > snap.ema21
+                   and (t15 is None or t15.score >= 0))
+        downtrend = (t5.score <= -40 and snap.ema9 < snap.ema21
+                     and (t15 is None or t15.score <= 0))
         if not (uptrend or downtrend):
             return None
         touched = bar.low <= snap.ema9 <= bar.high if uptrend else (
