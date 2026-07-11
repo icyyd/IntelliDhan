@@ -12,7 +12,6 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timedelta, timezone
 
-from intellidhan_analytics.profile import ProfileBuilder
 from intellidhan_delivery.briefing import build_briefing
 from intellidhan_delivery.format import format_alert
 from intellidhan_delivery.telegram import TelegramSender
@@ -38,8 +37,6 @@ class LiveLoop:
         self.executor = PaperExecutor()
         self.telegram = TelegramSender()
         self.alerts: list[Alert] = []
-        self.profiles = {s: ProfileBuilder(s) for s in self.symbols}
-        self.profile_states = {}
         self.last_briefing: dict | None = None
         self._briefed_on: str | None = None
         self.seen_bars: set[tuple[str, datetime]] = set()
@@ -68,8 +65,6 @@ class LiveLoop:
             if key in self.seen_bars:
                 continue
             self.seen_bars.add(key)
-            self.profile_states[bar.symbol] = self.profiles[bar.symbol].update(
-                bar, self.clock.session_id(bar.ts_close))
             self.executor.on_bar(bar)
             for setup in self.runner.on_bar_5m(bar):
                 alert = self.composer.compose(setup)
@@ -94,7 +89,7 @@ class LiveLoop:
                 or not self.clock.is_trading_day(local.date())):
             return
         self._briefed_on = day
-        briefing = build_briefing(self.runner.states, self.profile_states, now)
+        briefing = build_briefing(self.runner.states, self.profile_states(), now)
         self.last_briefing = briefing["web"]
         await self.telegram.send(briefing["telegram"])
 
@@ -110,6 +105,10 @@ class LiveLoop:
                     print(f"[live] ingest error: {exc}")
                 self.last_poll = now
             await asyncio.sleep(POLL_SECONDS)
+
+    def profile_states(self) -> dict:
+        return {sym: st.profile_state for sym, st in self.runner.states.items()
+                if st.profile_state is not None}
 
     # ----- gateway read API -----
 
@@ -129,7 +128,8 @@ class LiveLoop:
             "alerts": [a.model_dump(mode="json") for a in self.alerts[-50:]],
             "suppressed": [s.model_dump(mode="json") for s in self.runner.suppressed[-40:]],
             "performance": performance_report(self.executor.trades),
-            "profiles": {k: v.model_dump(mode="json") for k, v in self.profile_states.items()},
+            "profiles": {k: v.model_dump(mode="json")
+                         for k, v in self.profile_states().items()},
             "briefing": self.last_briefing,
             "last_poll": self.last_poll.isoformat() if self.last_poll else None,
         }

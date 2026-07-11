@@ -10,6 +10,7 @@ from datetime import datetime, time
 
 from intellidhan_analytics.indicators import IndicatorSnapshot
 from intellidhan_analytics.levels import LevelMap
+from intellidhan_analytics.profile import ProfileBuilder, ProfileState
 from intellidhan_analytics.rollup import TimeframeRoller
 from intellidhan_analytics.trend import TrendEngine, TrendSnapshot
 from intellidhan_ingestor.market_clock import ET, MarketClock
@@ -53,6 +54,8 @@ class SymbolState:
             tf: TrendEngine(symbol, tf) for tf in TREND_TFS
         }
         self.levels = LevelMap(Timeframe.D1)
+        self.profile = ProfileBuilder(symbol)
+        self.profile_state: ProfileState | None = None
         self.opening_range = OpeningRange()
         self.last_bar: Bar | None = None
         self.session_id: str | None = None
@@ -82,6 +85,7 @@ class SymbolState:
         if len(self.recent_5m) > 100:
             self.recent_5m.pop(0)
         self.opening_range.update(bar, session)
+        self.profile_state = self.profile.update(bar, session)
         self.trend[Timeframe.M5].update(bar, session)
         for rolled in self.roller.update(bar):
             if rolled.timeframe in self.trend:

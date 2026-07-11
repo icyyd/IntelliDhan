@@ -62,7 +62,8 @@ def test_full_fixture_run_emits_and_suppresses():
     assert len(runner.suppressed) > 0
     gates = {s.gate for s in runner.suppressed}
     assert gates <= {"warmup", "lockout", "extension", "reward_risk",
-                     "cooldown", "concurrency", "confidence", "risk_geometry"}
+                     "cooldown", "concurrency", "confidence", "risk_geometry",
+                     "one_timeframing", "profile_shape"}
     # sub-threshold setups carry their scores for calibration learning (doc 03 §1)
     conf_suppressed = [s for s in runner.suppressed if s.gate == "confidence"]
     assert all(s.composite is not None for s in conf_suppressed)

@@ -9,8 +9,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import time
 
+from intellidhan_analytics.profile import OneTimeframing, Shape
 from intellidhan_engine.state import SymbolState
 from intellidhan_engine.strategies import RawSignal
+from intellidhan_schemas.signals import Direction
 from intellidhan_schemas import Timeframe
 from intellidhan_schemas.signals import Module
 
@@ -56,6 +58,21 @@ def run_gates(
             return Verdict(False, "lockout", "no 0DTE entries before 9:35 ET")
         if t > ZDTE_NO_ENTRY_AFTER:
             return Verdict(False, "lockout", "no new 0DTE entries after 15:50 ET")
+
+    # Auction-state vetoes (doc 16 §2): structural, evaluated before geometry
+    prof = state.profile_state
+    if prof is not None and prof.period_count >= 3:
+        # never fade a one-timeframing auction
+        if (prof.one_timeframing == OneTimeframing.UP and sig.direction == Direction.SHORT):
+            return Verdict(False, "one_timeframing", "auction one-timeframing UP — no shorts")
+        if (prof.one_timeframing == OneTimeframing.DOWN and sig.direction == Direction.LONG):
+            return Verdict(False, "one_timeframing", "auction one-timeframing DOWN — no longs")
+        # p-shape = short-covering rally, old business: veto fresh momentum longs;
+        # b-shape mirrors for shorts (trend-trader trap, doc 16 §2.4)
+        if prof.shape == Shape.P_SHAPE and sig.direction == Direction.LONG:
+            return Verdict(False, "profile_shape", "p-shape (short covering) — momentum longs vetoed")
+        if prof.shape == Shape.B_SHAPE and sig.direction == Direction.SHORT:
+            return Verdict(False, "profile_shape", "b-shape (liquidation absorbed) — shorts vetoed")
 
     # RULE-M2 extension: momentum entries not > 2 ATR from the 21EMA
     extension = abs(sig.entry - snap.ema21) / snap.atr14
