@@ -13,7 +13,6 @@ from __future__ import annotations
 from intellidhan_analytics.trend import alignment_score
 from intellidhan_engine.state import SymbolState
 from intellidhan_engine.strategies import RawSignal
-from intellidhan_schemas import Timeframe
 from intellidhan_schemas.signals import Direction
 
 NEUTRAL_STUB = 60.0
