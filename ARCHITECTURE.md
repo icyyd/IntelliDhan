@@ -27,8 +27,22 @@ Build phases and exit criteria: [docs/14-roadmap.md](docs/14-roadmap.md).
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/pytest                    # unit tests (fast, offline)
-.venv/bin/pytest -m integration     # live Yahoo Finance smoke test
-docker compose -f deploy/docker-compose.yml up -d   # Redis + TimescaleDB (needs POSTGRES_PASSWORD in .env)
+.venv/bin/pytest -m integration     # Redis/TimescaleDB/Yahoo integration tests
+
+# Infra (Docker via Colima on this machine):
+colima start
+docker-compose -f deploy/docker-compose.yml --env-file .env up -d
+#   .env holds POSTGRES_PASSWORD (gitignored, generated locally — regenerate if missing:
+#   python3 -c "import secrets; print('POSTGRES_PASSWORD='+secrets.token_urlsafe(24))" > .env)
+
+# Gateway + dashboard (http://localhost:8321):
+.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321
+
+# Research loop:
+python -m intellidhan_learning.backtest --days 55 --shadow --fit-calibration  # harvest + fit
+python -m intellidhan_learning.backtest --days 55                             # gated evaluation
+
+# Optional live Telegram delivery: set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in the environment.
 ```
 
 **Phase 0 status: COMPLETE.** Implemented and verified end-to-end:
