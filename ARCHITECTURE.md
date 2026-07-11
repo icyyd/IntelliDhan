@@ -31,4 +31,9 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 docker compose -f deploy/docker-compose.yml up -d   # Redis + TimescaleDB (needs POSTGRES_PASSWORD in .env)
 ```
 
-Phase 0 status: schemas (`Bar`/`Quote`/`OptionQuote`), market clock (sessions, holidays, half-days, DST), `DataProvider` protocol + Yahoo provider, DQ sentinel, and the incremental indicator engine (EMA/RSI/MACD/ATR/session-VWAP/rel-volume) are implemented and golden-tested. Next: Redis stream wiring, TimescaleDB persistence, Robinhood MCP bridge, historical backfill job.
+**Phase 0 status: COMPLETE.** Implemented and verified end-to-end:
+- Schemas (`Bar`/`Quote`/`OptionQuote`), market clock (sessions/holidays/half-days/DST), `DataProvider` protocol + Yahoo provider, session-aware DQ sentinel, incremental indicator engine (EMA/RSI/MACD/ATR/session-VWAP/rel-volume) — golden-tested at 1e-9 vs independent references.
+- Event bus (Redis Streams + deterministic in-memory twin), TimescaleDB persistence (hypertables, idempotent upserts), backfill CLI (`python -m intellidhan_ingestor.backfill`), session recorder + replay harness.
+- **Exit criterion met:** the committed golden session (`fixtures/golden-sessions/qqq-complex-5m.jsonl`, 1,248 real 5m bars × 4 symbols) replays bus→engine→snapshots deterministically (sha256-asserted), with the identical digest over real Redis and in-memory transports, and persists to TimescaleDB idempotently.
+
+Next (Phase 1): MTF trend engine + level maps, factor framework, first Swing strategies, Robinhood MCP bridge, Alert Composer + Telegram bot.

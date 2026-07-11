@@ -15,6 +15,7 @@ handle warmup explicitly; emitting a half-warmed number would violate G7.
 from __future__ import annotations
 
 from collections import deque
+from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -176,7 +177,7 @@ class IndicatorSnapshot(BaseModel):
 
     symbol: str
     timeframe: Timeframe
-    ts_close: object  # datetime; kept loose here, validated by schema package in Phase 1
+    ts_close: datetime
     close: float
     ema9: float | None
     ema21: float | None

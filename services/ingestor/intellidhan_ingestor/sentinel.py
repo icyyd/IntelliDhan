@@ -6,9 +6,12 @@ from datetime import datetime, timedelta
 
 from pydantic import BaseModel
 
+from intellidhan_ingestor.market_clock import MarketClock
 from intellidhan_schemas import Bar, DataQuality, Quote
 
 STALE_QUOTE_AFTER = timedelta(seconds=30)
+
+_clock = MarketClock()
 
 
 class QualityReport(BaseModel):
@@ -22,11 +25,12 @@ def check_bars(symbol: str, bars: list[Bar], *, expected_ordered: bool = True) -
     for prev, cur in zip(bars, bars[1:]):
         if expected_ordered and cur.ts_close <= prev.ts_close:
             issues.append(f"out-of-order bar at {cur.ts_close.isoformat()}")
-        elif cur.timeframe == prev.timeframe:
+        elif cur.timeframe == prev.timeframe and cur.timeframe.seconds <= 900:
+            # Intra-session gap check only: overnight/weekend session breaks are
+            # legitimate, so consecutive bars in *different* sessions never gap.
+            same_session = _clock.session_id(prev.ts_close) == _clock.session_id(cur.ts_close)
             gap = (cur.ts_close - prev.ts_close).total_seconds()
-            # Gaps larger than 3 intervals inside a series are suspicious even across
-            # session breaks for intraday TFs shorter than 1H; daily+ TFs skip this check.
-            if cur.timeframe.seconds <= 900 and gap > 3 * cur.timeframe.seconds:
+            if same_session and gap > 3 * cur.timeframe.seconds:
                 issues.append(
                     f"gap of {int(gap)}s before {cur.ts_close.isoformat()} "
                     f"(tf={cur.timeframe.value})"
