@@ -151,6 +151,42 @@ class ATR:
         return self._value
 
 
+class ADX:
+    """Wilder ADX/DMI. Emits (+DI, -DI, ADX); ADX needs ~2n bars to warm."""
+
+    def __init__(self, n: int = 14) -> None:
+        self.n = n
+        self._tr = _WilderSmoother(n)
+        self._plus_dm = _WilderSmoother(n)
+        self._minus_dm = _WilderSmoother(n)
+        self._adx = _WilderSmoother(n)
+        self._prev_high: float | None = None
+        self._prev_low: float | None = None
+        self._prev_close: float | None = None
+        self.di_plus: float | None = None
+        self.di_minus: float | None = None
+        self.value: float | None = None
+
+    def update(self, high: float, low: float, close: float) -> float | None:
+        if self._prev_high is not None:
+            up_move = high - self._prev_high
+            down_move = self._prev_low - low
+            plus_dm = up_move if (up_move > down_move and up_move > 0) else 0.0
+            minus_dm = down_move if (down_move > up_move and down_move > 0) else 0.0
+            tr = max(high - low, abs(high - self._prev_close), abs(low - self._prev_close))
+            atr = self._tr.update(tr)
+            p = self._plus_dm.update(plus_dm)
+            m = self._minus_dm.update(minus_dm)
+            if atr is not None and atr > 0 and p is not None and m is not None:
+                self.di_plus = 100.0 * p / atr
+                self.di_minus = 100.0 * m / atr
+                denom = self.di_plus + self.di_minus
+                dx = 0.0 if denom == 0 else 100.0 * abs(self.di_plus - self.di_minus) / denom
+                self.value = self._adx.update(dx)
+        self._prev_high, self._prev_low, self._prev_close = high, low, close
+        return self.value
+
+
 class SessionVWAP:
     """Intraday fair value (RULE-T6); resets when session_id changes."""
 
@@ -188,6 +224,9 @@ class IndicatorSnapshot(BaseModel):
     macd_signal: float | None
     macd_histogram: float | None
     atr14: float | None
+    adx14: float | None
+    di_plus: float | None
+    di_minus: float | None
     vwap: float | None
     rel_volume: float | None
 
@@ -202,6 +241,7 @@ class IndicatorEngine:
         self.rsi14 = RSI(14)
         self.macd = MACD()
         self.atr14 = ATR(14)
+        self.adx14 = ADX(14)
         self.vwap = SessionVWAP()
         self._vol_sma20 = SMA(20)
 
@@ -226,6 +266,9 @@ class IndicatorEngine:
             macd_signal=macd_sig,
             macd_histogram=macd_hist,
             atr14=self.atr14.update(bar.high, bar.low, c),
+            adx14=self.adx14.update(bar.high, bar.low, c),
+            di_plus=self.adx14.di_plus,
+            di_minus=self.adx14.di_minus,
             vwap=self.vwap.update(bar.high, bar.low, c, bar.volume, session_id),
             rel_volume=(bar.volume / prior_avg_vol if prior_avg_vol else None),
         )
