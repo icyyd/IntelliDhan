@@ -36,6 +36,7 @@ class PaperTrade(BaseModel):
     strategy: str
     direction: Direction
     confidence: float
+    composite: float | None = None
     entry: float
     initial_stop: float
     targets: list[float]
@@ -53,7 +54,7 @@ class PaperTrade(BaseModel):
         return cls(
             alert_id=alert.alert_id, symbol=alert.symbol, module=alert.module,
             strategy=alert.strategy, direction=setup.direction,
-            confidence=alert.confidence, entry=setup.entry_underlying,
+            confidence=alert.confidence, composite=setup.composite, entry=setup.entry_underlying,
             initial_stop=setup.stop_underlying, targets=setup.targets_underlying,
             valid_until=alert.valid_until,
         )

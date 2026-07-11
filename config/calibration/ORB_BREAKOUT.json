@@ -1,0 +1,30 @@
+{
+  "strategy": "ORB_BREAKOUT",
+  "buckets": {
+    "40-55": {
+      "n": 39,
+      "wr": 0.0488,
+      "sufficient": true
+    },
+    "55-60": {
+      "n": 20,
+      "wr": 0.0909,
+      "sufficient": true
+    },
+    "60-65": {
+      "n": 9,
+      "wr": 0.1818,
+      "sufficient": false
+    },
+    "65-70": {
+      "n": 2,
+      "wr": 0.75,
+      "sufficient": false
+    }
+  },
+  "meta": {
+    "fitted_from": "shadow backtest 55d QQQ+SPY+SMH+TQQQ",
+    "n_samples": 70,
+    "analytics_version": "v1"
+  }
+}

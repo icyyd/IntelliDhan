@@ -5,12 +5,8 @@ Used identically by live ingestion, replay, and backtests (doc 01 §7).
 
 from __future__ import annotations
 
-from intellidhan_engine.scoring import (
-    CALIBRATION_VERSION,
-    calibrated_confidence,
-    composite,
-    score_factors,
-)
+from intellidhan_engine.calibration import CalibrationMap
+from intellidhan_engine.scoring import composite, score_factors
 from intellidhan_engine.state import SymbolState
 from intellidhan_engine.strategies import REGISTRY, RawSignal
 from intellidhan_engine.veto import EngineControls, Verdict, reward_risk, run_gates
@@ -19,10 +15,13 @@ from intellidhan_schemas.signals import Setup, SuppressedSetup
 
 
 class EngineRunner:
-    def __init__(self, symbols: list[str], strategies=None) -> None:
+    def __init__(self, symbols: list[str], strategies=None, shadow: bool = False) -> None:
         self.states = {s: SymbolState(s) for s in symbols}
         self.strategies = strategies if strategies is not None else REGISTRY
         self.controls = EngineControls()
+        self.shadow = shadow          # SHADOW mode (doc 08 §4): bypass ONLY the
+                                      # confidence gate to harvest calibration samples
+        self.calibration = {st.key: CalibrationMap.load(st.key) for st in self.strategies}
         self.setups: list[Setup] = []
         self.suppressed: list[SuppressedSetup] = []
         self._seq = 0
@@ -55,8 +54,10 @@ class EngineRunner:
                     f"{sig.strategy.lower()}_{state.symbol.lower()}_{self._seq}")
         factors = score_factors(state, sig)
         comp = composite(factors)
-        conf = calibrated_confidence(comp)
-        verdict: Verdict = run_gates(state, sig, conf, self.controls)
+        cal = self.calibration[sig.strategy]
+        conf = cal.confidence(comp)
+        gate_conf = 1.0 if self.shadow else conf
+        verdict: Verdict = run_gates(state, sig, gate_conf, self.controls)
         if not verdict.passed:
             self.suppressed.append(
                 SuppressedSetup(
@@ -75,6 +76,9 @@ class EngineRunner:
             stop_underlying=round(sig.stop, 4),
             targets_underlying=[round(t, 4) for t in sig.targets],
             reward_risk=reward_risk(sig),
-            explain=sig.explain + f" [calibration: {CALIBRATION_VERSION} — SHADOW grading]",
+            explain=sig.explain + (
+                " [SHADOW mode — calibration harvesting]" if self.shadow
+                else (f" [calibrated: {len(cal.buckets)} buckets]" if cal.buckets
+                      else " [uncalibrated-v0 — conservative map]")),
             invalidation=sig.invalidation,
         )

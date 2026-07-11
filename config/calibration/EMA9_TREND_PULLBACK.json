@@ -1,0 +1,25 @@
+{
+  "strategy": "EMA9_TREND_PULLBACK",
+  "buckets": {
+    "40-55": {
+      "n": 85,
+      "wr": 0.4713,
+      "sufficient": true
+    },
+    "55-65": {
+      "n": 138,
+      "wr": 0.4857,
+      "sufficient": true
+    },
+    "65-75": {
+      "n": 30,
+      "wr": 0.5938,
+      "sufficient": true
+    }
+  },
+  "meta": {
+    "fitted_from": "shadow backtest 55d QQQ+SPY+SMH+TQQQ",
+    "n_samples": 253,
+    "analytics_version": "v1"
+  }
+}

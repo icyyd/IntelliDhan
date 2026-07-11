@@ -27,6 +27,7 @@ intellidhan_ingestor = "services/ingestor/intellidhan_ingestor"
 intellidhan_analytics = "services/analytics/intellidhan_analytics"
 intellidhan_engine = "services/engine/intellidhan_engine"
 intellidhan_learning = "services/learning/intellidhan_learning"
+intellidhan_delivery = "services/delivery/intellidhan_delivery"
 
 [tool.setuptools]
 packages = [
@@ -36,6 +37,7 @@ packages = [
     "intellidhan_analytics",
     "intellidhan_engine",
     "intellidhan_learning",
+    "intellidhan_delivery",
 ]
 
 [tool.pytest.ini_options]
