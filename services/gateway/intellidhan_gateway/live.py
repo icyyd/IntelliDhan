@@ -12,6 +12,8 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timedelta, timezone
 
+from intellidhan_analytics.profile import ProfileBuilder
+from intellidhan_delivery.briefing import build_briefing
 from intellidhan_delivery.format import format_alert
 from intellidhan_delivery.telegram import TelegramSender
 from intellidhan_engine.composer import Budgets, Composer
@@ -36,6 +38,10 @@ class LiveLoop:
         self.executor = PaperExecutor()
         self.telegram = TelegramSender()
         self.alerts: list[Alert] = []
+        self.profiles = {s: ProfileBuilder(s) for s in self.symbols}
+        self.profile_states = {}
+        self.last_briefing: dict | None = None
+        self._briefed_on: str | None = None
         self.seen_bars: set[tuple[str, datetime]] = set()
         self.started_at: datetime | None = None
         self.last_poll: datetime | None = None
@@ -62,6 +68,8 @@ class LiveLoop:
             if key in self.seen_bars:
                 continue
             self.seen_bars.add(key)
+            self.profile_states[bar.symbol] = self.profiles[bar.symbol].update(
+                bar, self.clock.session_id(bar.ts_close))
             self.executor.on_bar(bar)
             for setup in self.runner.on_bar_5m(bar):
                 alert = self.composer.compose(setup)
@@ -76,10 +84,25 @@ class LiveLoop:
         for q in list(self.ws_subscribers):
             q.put_nowait({"type": "alert", "data": alert.model_dump(mode="json")})
 
+    async def maybe_brief(self, now: datetime) -> None:
+        """8:30 ET daily briefing (doc 12); once per trading day."""
+        from intellidhan_ingestor.market_clock import ET
+        local = now.astimezone(ET)
+        day = local.date().isoformat()
+        if (self._briefed_on == day or local.hour < 8
+                or (local.hour == 8 and local.minute < 30)
+                or not self.clock.is_trading_day(local.date())):
+            return
+        self._briefed_on = day
+        briefing = build_briefing(self.runner.states, self.profile_states, now)
+        self.last_briefing = briefing["web"]
+        await self.telegram.send(briefing["telegram"])
+
     async def run_forever(self) -> None:
         await self.boot()
         while True:
             now = datetime.now(timezone.utc)
+            await self.maybe_brief(now)
             if self.clock.session_state(now) == SessionState.RTH:
                 try:
                     await self._ingest_recent(days=1)
@@ -106,5 +129,7 @@ class LiveLoop:
             "alerts": [a.model_dump(mode="json") for a in self.alerts[-50:]],
             "suppressed": [s.model_dump(mode="json") for s in self.runner.suppressed[-40:]],
             "performance": performance_report(self.executor.trades),
+            "profiles": {k: v.model_dump(mode="json") for k, v in self.profile_states.items()},
+            "briefing": self.last_briefing,
             "last_poll": self.last_poll.isoformat() if self.last_poll else None,
         }

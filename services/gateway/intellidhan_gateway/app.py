@@ -48,6 +48,11 @@ async def calibration():
     return out
 
 
+@app.get("/api/briefing")
+async def briefing():
+    return loop.last_briefing or {"status": "not generated yet (8:30 ET on trading days)"}
+
+
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
     await websocket.accept()
