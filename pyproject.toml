@@ -15,6 +15,7 @@ dependencies = [
     "redis>=5.0",
     "httpx>=0.27",
     "psycopg[binary]>=3.1",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -24,6 +25,8 @@ dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4"]
 intellidhan_schemas = "shared-schemas/intellidhan_schemas"
 intellidhan_ingestor = "services/ingestor/intellidhan_ingestor"
 intellidhan_analytics = "services/analytics/intellidhan_analytics"
+intellidhan_engine = "services/engine/intellidhan_engine"
+intellidhan_learning = "services/learning/intellidhan_learning"
 
 [tool.setuptools]
 packages = [
@@ -31,6 +34,8 @@ packages = [
     "intellidhan_ingestor",
     "intellidhan_ingestor.providers",
     "intellidhan_analytics",
+    "intellidhan_engine",
+    "intellidhan_learning",
 ]
 
 [tool.pytest.ini_options]
