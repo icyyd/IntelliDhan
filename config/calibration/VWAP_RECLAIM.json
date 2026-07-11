@@ -1,0 +1,20 @@
+{
+  "strategy": "VWAP_RECLAIM",
+  "buckets": {
+    "45-50": {
+      "n": 2,
+      "wr": 0.5,
+      "sufficient": false
+    },
+    "50-60": {
+      "n": 4,
+      "wr": 0.5,
+      "sufficient": false
+    }
+  },
+  "meta": {
+    "fitted_from": "shadow backtest 55d QQQ+SPY+SMH+TQQQ",
+    "n_samples": 6,
+    "analytics_version": "v1"
+  }
+}

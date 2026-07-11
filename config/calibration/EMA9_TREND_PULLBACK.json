@@ -2,13 +2,13 @@
   "strategy": "EMA9_TREND_PULLBACK",
   "buckets": {
     "40-65": {
-      "n": 201,
-      "wr": 0.4975,
+      "n": 200,
+      "wr": 0.5,
       "sufficient": true
     },
     "65-75": {
-      "n": 25,
-      "wr": 0.5926,
+      "n": 26,
+      "wr": 0.5714,
       "sufficient": true
     }
   },

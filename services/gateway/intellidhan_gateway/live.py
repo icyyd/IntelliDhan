@@ -46,6 +46,10 @@ class LiveLoop:
 
     async def boot(self) -> None:
         end = datetime.now(timezone.utc)
+        from intellidhan_engine.macro import build_macro_series
+        vix = await self.provider.get_bars("VIX", Timeframe.D1,
+                                           end - timedelta(days=1200), end)
+        self.runner.set_macro_series(build_macro_series(vix))
         for sym in self.symbols:
             daily = await self.provider.get_bars(
                 sym, Timeframe.D1, end - timedelta(days=730), end - timedelta(days=1))

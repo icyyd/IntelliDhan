@@ -6,6 +6,7 @@ Used identically by live ingestion, replay, and backtests (doc 01 §7).
 from __future__ import annotations
 
 from intellidhan_engine.calibration import CalibrationMap
+from intellidhan_engine.macro import MacroContext
 from intellidhan_engine.scoring import composite, score_factors
 from intellidhan_engine.state import SymbolState
 from intellidhan_engine.strategies import REGISTRY, RawSignal
@@ -22,12 +23,16 @@ class EngineRunner:
         self.shadow = shadow          # SHADOW mode (doc 08 §4): bypass ONLY the
                                       # confidence gate to harvest calibration samples
         self.calibration = {st.key: CalibrationMap.load(st.key) for st in self.strategies}
+        self.macro_by_day: dict[str, MacroContext] = {}
         self.setups: list[Setup] = []
         self.suppressed: list[SuppressedSetup] = []
         self._seq = 0
 
     def seed_daily(self, symbol: str, daily_bars: list[Bar]) -> None:
         self.states[symbol].seed_daily(daily_bars)
+
+    def set_macro_series(self, macro_by_day: dict[str, MacroContext]) -> None:
+        self.macro_by_day = macro_by_day
 
     def on_bar_5m(self, bar: Bar) -> list[Setup]:
         state = self.states.get(bar.symbol)
@@ -52,7 +57,8 @@ class EngineRunner:
         self._seq += 1
         setup_id = (f"stp_{state.ts().strftime('%Y%m%d_%H%M%S')}_"
                     f"{sig.strategy.lower()}_{state.symbol.lower()}_{self._seq}")
-        factors = score_factors(state, sig)
+        macro = self.macro_by_day.get(state.session_id or "")
+        factors = score_factors(state, sig, macro)
         comp = composite(factors)
         cal = self.calibration[sig.strategy]
         conf = cal.confidence(comp)

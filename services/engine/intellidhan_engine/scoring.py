@@ -3,13 +3,14 @@
 Real factors: F1 trend alignment, F2 setup quality (strategy-owned), F3 level
 confluence, F4 momentum & volume, F5 volatility fit (target geometry vs ATR +
 auction context), F8 statistical POP (random-walk barrier baseline adjusted by
-trend). Stubs awaiting data feeds: F6 options flow, F7 macro/catalyst —
-named in the factor dict so the UI can label them.
+trend). F7 macro = VIX-regime agreement (macro.py). Remaining stub awaiting
+data feeds: F6 options flow — named in the factor dict so the UI can label it.
 """
 
 from __future__ import annotations
 
 from intellidhan_analytics.trend import alignment_score
+from intellidhan_engine.macro import MacroContext, f7_score
 from intellidhan_engine.state import SymbolState
 from intellidhan_engine.strategies import RawSignal
 from intellidhan_schemas import Timeframe
@@ -24,7 +25,8 @@ WEIGHTS = {  # doc 03 §3 defaults
 }
 
 
-def score_factors(state: SymbolState, sig: RawSignal) -> dict[str, float]:
+def score_factors(state: SymbolState, sig: RawSignal,
+                  macro: MacroContext | None = None) -> dict[str, float]:
     direction = 1 if sig.direction == Direction.LONG else -1
     matrix = state.mtf_matrix()
     f1 = alignment_score(matrix, sig.module.value, direction)
@@ -77,7 +79,7 @@ def score_factors(state: SymbolState, sig: RawSignal) -> dict[str, float]:
         "F4_momentum": round(f4, 1),
         "F5_volatility": round(f5, 1),
         "F6_flow": NEUTRAL_STUB,
-        "F7_macro": NEUTRAL_STUB,
+        "F7_macro": round(f7_score(macro, direction), 1),
         "F8_pop": round(f8, 1),
     }
 

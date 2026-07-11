@@ -34,6 +34,10 @@ async def run_backtest(symbols: list[str], days: int, shadow: bool = False,
     composer = Composer(Budgets(), option_selector=None)
     executor = PaperExecutor()
 
+    vix_daily = await provider.get_bars("VIX", Timeframe.D1, end - timedelta(days=1200), end)
+    from intellidhan_engine.macro import build_macro_series
+    runner.set_macro_series(build_macro_series(vix_daily))
+
     all_5m = []
     for sym in symbols:
         daily = await provider.get_bars(sym, Timeframe.D1, end - timedelta(days=730), end)

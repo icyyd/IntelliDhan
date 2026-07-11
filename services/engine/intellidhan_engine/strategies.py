@@ -85,11 +85,13 @@ class OrbBreakout:
         if range_size <= 0:
             return None
         if direction == Direction.LONG:
-            entry, stop = bar.close, orb.mid
-            targets = [orb.high + range_size * m for m in (0.75, 1.25, 2.0)]
+            entry = bar.close
+            stop = orb.high - range_size * 0.35   # failed break = back inside range
+            targets = [orb.high + range_size * m for m in (0.5, 1.0, 1.75)]
         else:
-            entry, stop = bar.close, orb.mid
-            targets = [orb.low - range_size * m for m in (0.75, 1.25, 2.0)]
+            entry = bar.close
+            stop = orb.low + range_size * 0.35
+            targets = [orb.low - range_size * m for m in (0.5, 1.0, 1.75)]
         # F2: confirmation is structural; volume grades the quality (RULE-T9)
         f2 = 55.0 + min(rel_vol, 3.0) * 15.0
         return RawSignal(
@@ -100,8 +102,7 @@ class OrbBreakout:
                      f"{orb.high if direction == Direction.LONG else orb.low:.2f} with 2-candle "
                      f"confirmation, {rel_vol:.1f}x relative volume, "
                      f"{'above' if direction == Direction.LONG else 'below'} VWAP."),
-            invalidation=(f"2 consecutive 5m closes back {'below' if direction == Direction.LONG else 'above'} "
-                          f"ORB mid ({orb.mid:.2f}) — momentum failure."),
+            invalidation=f"Price back inside the range beyond {stop:.2f} — failed breakout.",
         )
 
 
@@ -155,6 +156,61 @@ class Ema9TrendPullback:
         )
 
 
+class VwapReclaim:
+    """Loss and reclaim of VWAP with 2-candle confirmation (RULE-T6, doc 04)."""
+
+    key = "VWAP_RECLAIM"
+    module = Module.ZDTE
+    trigger_tf = Timeframe.M5
+
+    def evaluate(self, state: SymbolState) -> RawSignal | None:
+        snap = state.indicators(Timeframe.M5)
+        if snap is None or snap.vwap is None or snap.atr14 is None:
+            return None
+        recent = state.recent_5m
+        if len(recent) < 8 or state.bars_in_session < 8:
+            return None
+        vwap = snap.vwap
+        below_before = sum(1 for b in recent[-8:-2] if b.close < vwap)
+        above_before = sum(1 for b in recent[-8:-2] if b.close > vwap)
+        two_above = recent[-2].close > vwap and recent[-1].close > vwap
+        two_below = recent[-2].close < vwap and recent[-1].close < vwap
+        # only the bar completing the confirmation fires (dedupe like ORB)
+        three_above = len(recent) >= 3 and recent[-3].close > vwap and two_above
+        three_below = len(recent) >= 3 and recent[-3].close < vwap and two_below
+        long_reclaim = below_before >= 4 and two_above and not three_above
+        short_reclaim = above_before >= 4 and two_below and not three_below
+        if not (long_reclaim or short_reclaim):
+            return None
+        direction = Direction.LONG if long_reclaim else Direction.SHORT
+        # 15m trend must not oppose (RULE-T2)
+        t15 = state.trend_snap(Timeframe.M15)
+        if t15 is not None:
+            if direction == Direction.LONG and t15.score < -20:
+                return None
+            if direction == Direction.SHORT and t15.score > 20:
+                return None
+        entry = recent[-1].close
+        if direction == Direction.LONG:
+            stop = min(b.low for b in recent[-4:]) - 0.15 * snap.atr14
+            targets = [entry + snap.atr14 * m for m in (1.0, 1.8, 3.0)]
+        else:
+            stop = max(b.high for b in recent[-4:]) + 0.15 * snap.atr14
+            targets = [entry - snap.atr14 * m for m in (1.0, 1.8, 3.0)]
+        rel_vol = snap.rel_volume or 0.0
+        f2 = 50.0 + min(rel_vol, 2.5) * 14.0 + (8.0 if abs(entry - vwap) < 0.5 * snap.atr14 else 0.0)
+        side = "reclaim above" if direction == Direction.LONG else "loss below"
+        return RawSignal(
+            strategy=self.key, module=self.module, direction=direction,
+            trigger_tf=self.trigger_tf, entry=entry, stop=stop, targets=targets,
+            f2_quality=round(min(f2, 100.0), 1),
+            explain=(f"VWAP {side} {vwap:.2f} after sustained trade on the other side, "
+                     f"2-candle confirmation, {rel_vol:.1f}x volume — intraday fair-value flip."),
+            invalidation=("2 consecutive 5m closes back on the far side of VWAP "
+                          "— the flip failed."),
+        )
+
+
 class DailyBreakout:
     """Daily base breakout with volume + 2-daily-close confirmation (doc 05)."""
 
@@ -191,4 +247,4 @@ class DailyBreakout:
         )
 
 
-REGISTRY = [OrbBreakout(), Ema9TrendPullback(), DailyBreakout()]
+REGISTRY = [OrbBreakout(), Ema9TrendPullback(), VwapReclaim(), DailyBreakout()]
