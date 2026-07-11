@@ -1,0 +1,13 @@
+# IntelliDhan universe config (doc 02 §6) — hot-reloadable, schema-validated
+# Placeholder: populated in Phase 0/1
+modules:
+  0dte:
+    indexes: [SPX, NDX]
+    etfs: [SPY, QQQ, SMH]
+    leveraged: [TQQQ, SQQQ, SOXL, SOXS, SPXL, SPXS, UPRO]
+  swing:
+    watchlist: [AAPL, NVDA, MSFT, AMZN, META, GOOGL, TSLA, AMD, AVGO, NFLX, BABA]
+  leaps:
+    collar_underlyings: [TQQQ]
+  hodl:
+    screen_universe: [SP500, NDX100]

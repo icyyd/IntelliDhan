@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+*.egg-info/
+
+# Node / web
+node_modules/
+web/dist/
+.vite/
+
+# Env & secrets — never commit credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Data & runtime artifacts
+data/
+*.sqlite
+recordings/
+chart-snapshots/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
