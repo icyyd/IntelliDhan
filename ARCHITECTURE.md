@@ -20,4 +20,15 @@ intellidhan/
 └── deploy/                  # docker-compose, Caddy, Prometheus/Grafana, backup jobs
 ```
 
-Build phases and exit criteria: [docs/14-roadmap.md](docs/14-roadmap.md). Phase 0 starts with `shared-schemas`, `services/ingestor`, and `deploy`.
+Build phases and exit criteria: [docs/14-roadmap.md](docs/14-roadmap.md).
+
+## Development quickstart
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/pytest                    # unit tests (fast, offline)
+.venv/bin/pytest -m integration     # live Yahoo Finance smoke test
+docker compose -f deploy/docker-compose.yml up -d   # Redis + TimescaleDB (needs POSTGRES_PASSWORD in .env)
+```
+
+Phase 0 status: schemas (`Bar`/`Quote`/`OptionQuote`), market clock (sessions, holidays, half-days, DST), `DataProvider` protocol + Yahoo provider, DQ sentinel, and the incremental indicator engine (EMA/RSI/MACD/ATR/session-VWAP/rel-volume) are implemented and golden-tested. Next: Redis stream wiring, TimescaleDB persistence, Robinhood MCP bridge, historical backfill job.
