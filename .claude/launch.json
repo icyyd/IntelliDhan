@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "intellidhan-gateway",
+      "runtimeExecutable": ".venv/bin/uvicorn",
+      "runtimeArgs": ["intellidhan_gateway.app:app", "--port", "8321"],
+      "port": 8321
+    }
+  ]
+}

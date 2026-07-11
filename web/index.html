@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IntelliDhan — Command Center</title>
+<style>
+  :root{
+    --bg:#0B0E14; --panel:#12161F; --border:#1E2430; --gold:#D4A537;
+    --up:#22C55E; --down:#EF4444; --neutral:#94A3B8; --text:#E6EAF2; --dim:#8B93A5;
+    --amber:#F59E0B; --cyan:#22D3EE; --violet:#A78BFA; --green:#34D399;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,sans-serif;padding:0 0 40px}
+  .num{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  header{display:flex;align-items:center;gap:16px;padding:14px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5}
+  header h1{font-size:18px;letter-spacing:.06em}
+  header h1 b{color:var(--gold)}
+  #session{margin-left:auto;padding:3px 12px;border-radius:99px;border:1px solid var(--border);color:var(--dim);font-size:12px}
+  #session.RTH{color:var(--up);border-color:var(--up)}
+  main{max-width:1200px;margin:24px auto;padding:0 24px;display:grid;grid-template-columns:2fr 1fr;gap:20px}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:12px}
+  .sym{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .sym:last-child{border-bottom:none}
+  .sym .tk{width:64px;font-weight:700}
+  .sym .px{width:90px;color:var(--dim)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{padding:2px 8px;border-radius:6px;font-size:11px;border:1px solid var(--border);color:var(--neutral)}
+  .chip.STRONG_UP{color:var(--up);border-color:var(--up);font-weight:700}
+  .chip.UP{color:var(--up)}
+  .chip.DOWN{color:var(--down)}
+  .chip.STRONG_DOWN{color:var(--down);border-color:var(--down);font-weight:700}
+  .alert-card{border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:10px;background:#0F1320}
+  .alert-card .head{display:flex;gap:8px;align-items:baseline}
+  .badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700}
+  .badge.BTO,.badge.EQUITY_BUY{background:rgba(34,197,94,.15);color:var(--up)}
+  .badge.STO,.badge.EQUITY_SELL{background:rgba(167,139,250,.2);color:var(--violet)}
+  .conf{margin-left:auto;color:var(--gold);font-weight:700}
+  .quiet{color:var(--dim);font-size:12px;padding:6px 0;border-bottom:1px dashed var(--border)}
+  .quiet:last-child{border-bottom:none}
+  .quiet .gate{color:var(--amber);font-weight:600}
+  .stat-row{display:flex;gap:18px;flex-wrap:wrap}
+  .stat{min-width:110px}
+  .stat .v{font-size:22px;font-weight:700}
+  .stat .k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+  .empty{color:var(--dim);text-align:center;padding:26px 0}
+  .empty b{color:var(--gold);display:block;margin-bottom:6px}
+  footer{max-width:1200px;margin:10px auto;padding:0 24px;color:var(--dim);font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <h1><b>Intelli</b>Dhan</h1>
+  <span id="session">—</span>
+</header>
+<main>
+  <section>
+    <div class="panel" style="margin-bottom:20px">
+      <h2>Multi-Timeframe Trend Matrix</h2>
+      <div id="matrix"></div>
+    </div>
+    <div class="panel">
+      <h2>Live Alerts</h2>
+      <div id="alerts"><div class="empty"><b>No edge right now.</b>
+        The engine evaluates continuously — nothing has cleared the calibrated
+        confidence gate. Silence is a feature. (RULE-M3)</div></div>
+    </div>
+  </section>
+  <aside>
+    <div class="panel" style="margin-bottom:20px">
+      <h2>Paper Performance</h2>
+      <div class="stat-row" id="perf"></div>
+    </div>
+    <div class="panel">
+      <h2>Why We're Quiet — Suppression Tape</h2>
+      <div id="quiet"></div>
+    </div>
+  </aside>
+</main>
+<footer>⚠️ Educational tool — not financial advice. Options involve substantial risk of loss.
+Probabilities are model estimates, not guarantees. Confidence shows realized-calibration status inline.</footer>
+<script>
+const arrows = {STRONG_UP:"▲▲",UP:"▲",NEUTRAL:"►",DOWN:"▼",STRONG_DOWN:"▼▼"};
+const tfOrder = ["M","W","D","4H","1H","15m","5m"];
+async function refresh(){
+  const r = await fetch("/api/state"); const s = await r.json();
+  const sess = document.getElementById("session");
+  sess.textContent = "session: " + s.session; sess.className = s.session;
+  document.getElementById("matrix").innerHTML = Object.entries(s.symbols).map(([sym,d])=>{
+    const chips = tfOrder.filter(tf=>d.matrix[tf]).map(tf=>
+      `<span class="chip ${d.matrix[tf]}">${tf} ${arrows[d.matrix[tf]]||"?"}</span>`).join("");
+    const px = d.last ? d.last.toFixed(2) : "—";
+    return `<div class="sym"><span class="tk">${sym}</span><span class="px num">${px}</span><span class="chips">${chips}</span></div>`;
+  }).join("");
+  if (s.alerts.length){
+    document.getElementById("alerts").innerHTML = s.alerts.slice().reverse().map(a=>`
+      <div class="alert-card">
+        <div class="head"><b>${a.symbol}</b>
+          <span class="badge ${a.action}">${a.action}</span>
+          <span>${a.strategy.replaceAll("_"," ")}</span>
+          <span class="conf num">${Math.round(a.confidence*100)}%</span></div>
+        <div class="num" style="margin-top:6px;color:var(--dim)">
+          entry ${a.entry_limit} · stop ${a.stop_underlying} · R:R ${a.reward_risk} · risk $${a.dollar_risk}</div>
+        <div style="margin-top:6px;font-size:12px">${a.thesis}</div>
+      </div>`).join("");
+  }
+  document.getElementById("quiet").innerHTML = (s.suppressed||[]).slice().reverse().slice(0,14).map(x=>
+    `<div class="quiet"><span class="gate">${x.gate}</span> ${x.symbol} ${x.strategy.replaceAll("_"," ")}
+     ${x.composite?`<span class="num">c${x.composite.toFixed(0)}</span>`:""} — ${x.detail}</div>`).join("")
+    || '<div class="empty">Nothing evaluated yet.</div>';
+  const p = s.performance||{};
+  document.getElementById("perf").innerHTML = p.decided ? `
+    <div class="stat"><div class="v num">${p.decided}</div><div class="k">decided</div></div>
+    <div class="stat"><div class="v num">${(p.win_rate*100).toFixed(0)}%</div><div class="k">win rate</div></div>
+    <div class="stat"><div class="v num">${p.avg_r>0?"+":""}${p.avg_r}</div><div class="k">avg R</div></div>
+    <div class="stat"><div class="v num">${p.profit_factor??"—"}</div><div class="k">profit factor</div></div>`
+    : '<div class="empty">No settled paper trades yet.</div>';
+}
+refresh(); setInterval(refresh, 15000);
+try{ new WebSocket(`ws://${location.host}/ws`).onmessage = () => refresh(); }catch(e){}
+</script>
+</body>
+</html>
