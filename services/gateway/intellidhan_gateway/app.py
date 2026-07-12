@@ -10,7 +10,7 @@ import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 
 from intellidhan_gateway.live import LiveLoop
@@ -51,6 +51,22 @@ async def calibration():
 @app.get("/api/briefing")
 async def briefing():
     return loop.last_briefing or {"status": "not generated yet (8:30 ET on trading days)"}
+
+
+@app.get("/api/budgets")
+async def get_budgets():
+    return loop.composer.budgets.as_dict()
+
+
+@app.put("/api/budgets")
+async def put_budgets(new_budgets: dict = Body(...)):
+    """Persist edited budgets to config/budgets.yaml; sizing picks them up on
+    the very next alert — no restart (doc 09 §3, hot-reload)."""
+    try:
+        loop.composer.budgets.update(new_budgets)
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return loop.composer.budgets.as_dict()
 
 
 @app.websocket("/ws")

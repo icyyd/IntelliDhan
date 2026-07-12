@@ -1,10 +1,7 @@
-# Capital budgets per module (doc 09 §3). PLACEHOLDER DEFAULTS — the user has
-# not yet confirmed real numbers (open question #1, docs/14-roadmap.md).
-# All sizing derives from these; edit and hot-reload.
 budgets:
   0DTE:
-    daily_capital: 4000        # doc 09 example
-    risk_cap_pct: 0.25         # RULE-B1: max risk per alert
+    daily_capital: 4000
+    risk_cap_pct: 0.25
     max_alerts_per_day: 5
   SWING:
     daily_capital: 12000
@@ -14,4 +11,4 @@ budgets:
     risk_cap_pct: 0.15
   HODL:
     standing_capital: 50000
-    risk_cap_pct: 0.10
+    risk_cap_pct: 0.1

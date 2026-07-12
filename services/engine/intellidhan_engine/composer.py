@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 from datetime import timedelta
+from pathlib import Path
 from typing import Protocol
 
 import yaml
@@ -39,16 +40,50 @@ class OptionSelector(Protocol):
 
 
 class Budgets:
+    """Hot-reloads config/budgets.yaml on mtime change — edits from the web
+    settings panel (or by hand) apply to the next alert with no restart."""
+
     def __init__(self, path: str = "config/budgets.yaml") -> None:
-        raw = yaml.safe_load(open(path))["budgets"]
-        self._b = raw
+        self.path = Path(path)
+        self._mtime: float | None = None
+        self._b: dict = {}
+        self._load()
+
+    def _load(self) -> None:
+        mtime = self.path.stat().st_mtime
+        if mtime != self._mtime:
+            self._b = yaml.safe_load(self.path.read_text())["budgets"]
+            self._mtime = mtime
 
     def capital(self, module: Module) -> float:
+        self._load()
         b = self._b[module.value]
         return float(b.get("daily_capital") or b.get("standing_capital"))
 
     def risk_cap(self, module: Module) -> float:
+        self._load()
         return float(self._b[module.value]["risk_cap_pct"])
+
+    def as_dict(self) -> dict:
+        self._load()
+        return self._b
+
+    def update(self, new_budgets: dict) -> None:
+        """Validate + persist a full budgets dict, then reload (used by the
+        gateway's settings endpoint)."""
+        for module_key, cfg in new_budgets.items():
+            if module_key not in {m.value for m in Module}:
+                raise ValueError(f"unknown module {module_key!r}")
+            cap_key = "daily_capital" if "daily_capital" in cfg else "standing_capital"
+            capital = float(cfg[cap_key])
+            risk_cap = float(cfg["risk_cap_pct"])
+            if capital <= 0:
+                raise ValueError(f"{module_key}: capital must be positive")
+            if not (0 < risk_cap <= 1):
+                raise ValueError(f"{module_key}: risk_cap_pct must be in (0, 1]")
+        self.path.write_text(yaml.safe_dump({"budgets": new_budgets}, sort_keys=False))
+        self._mtime = None
+        self._load()
 
 
 class Composer:
