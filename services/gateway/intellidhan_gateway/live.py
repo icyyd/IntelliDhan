@@ -14,10 +14,21 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from intellidhan_delivery.briefing import build_briefing
+from intellidhan_delivery.format import format_alert
+from intellidhan_delivery.telegram import TelegramSender
+from intellidhan_engine.composer import Budgets, Composer
+from intellidhan_engine.runner import EngineRunner
+from intellidhan_ingestor.market_clock import MarketClock
+from intellidhan_ingestor.providers import YahooProvider
+from intellidhan_learning.paper import PaperExecutor, PaperTrade, performance_report
+from intellidhan_schemas import SessionState, Timeframe
+from intellidhan_schemas.signals import Alert
 
 def _load_dotenv() -> None:
     """Load repo .env into the environment (existing vars win) so Telegram
-    credentials and DB passwords work without shell exports."""
+    credentials and DB passwords work without shell exports. Runs at module
+    import — before any LiveLoop/TelegramSender is constructed."""
     env = Path(__file__).resolve().parents[3] / ".env"
     if not env.exists():
         return
@@ -29,17 +40,6 @@ def _load_dotenv() -> None:
 
 
 _load_dotenv()
-
-from intellidhan_delivery.briefing import build_briefing
-from intellidhan_delivery.format import format_alert
-from intellidhan_delivery.telegram import TelegramSender
-from intellidhan_engine.composer import Budgets, Composer
-from intellidhan_engine.runner import EngineRunner
-from intellidhan_ingestor.market_clock import MarketClock
-from intellidhan_ingestor.providers import YahooProvider
-from intellidhan_learning.paper import PaperExecutor, PaperTrade, performance_report
-from intellidhan_schemas import SessionState, Timeframe
-from intellidhan_schemas.signals import Alert
 
 UNIVERSE = ["QQQ", "SPY", "SMH", "TQQQ", "AAPL", "NVDA", "MSFT", "AMZN",
             "META", "GOOGL", "AMD", "TSLA"]
