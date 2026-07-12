@@ -23,7 +23,8 @@ from intellidhan_learning.paper import PaperExecutor, PaperTrade, performance_re
 from intellidhan_schemas import SessionState, Timeframe
 from intellidhan_schemas.signals import Alert
 
-UNIVERSE = ["QQQ", "SPY", "SMH", "TQQQ"]
+UNIVERSE = ["QQQ", "SPY", "SMH", "TQQQ", "AAPL", "NVDA", "MSFT", "AMZN",
+            "META", "GOOGL", "AMD", "TSLA"]
 POLL_SECONDS = 60
 
 

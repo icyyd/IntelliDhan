@@ -206,6 +206,8 @@ class ProfileBuilder:
         upper = sum(v for p, v in self._vol.items() if p >= self._day_hi - third)
         lower = sum(v for p, v in self._vol.items() if p <= self._day_lo + third)
         total = sum(self._vol.values())
+        if total <= 0:  # zero-volume bars (thin pre-open prints) — no shape read
+            return Shape.BALANCED
         # elongation: range vs widest TPO row
         max_tpo = max(len(s) for s in self._tpo.values())
         n_periods = max(len(self._period_hl), 1)

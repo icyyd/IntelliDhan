@@ -69,17 +69,22 @@ class PaperExecutor:
 
     def __init__(self) -> None:
         self.trades: list[PaperTrade] = []
+        self._active: dict[str, list[PaperTrade]] = {}
 
     def track(self, trade: PaperTrade) -> None:
         self.trades.append(trade)
+        self._active.setdefault(trade.symbol, []).append(trade)
 
     def on_bar(self, bar: Bar) -> list[PaperTrade]:
+        active = self._active.get(bar.symbol)
+        if not active:
+            return []
         settled: list[PaperTrade] = []
-        for t in self.trades:
-            if t.symbol != bar.symbol or t.outcome not in (Outcome.PENDING, Outcome.OPEN):
-                continue
+        for t in active:
             if self._advance(t, bar):
                 settled.append(t)
+        if settled:
+            self._active[bar.symbol] = [t for t in active if t not in settled]
         return settled
 
     def _advance(self, t: PaperTrade, bar: Bar) -> bool:

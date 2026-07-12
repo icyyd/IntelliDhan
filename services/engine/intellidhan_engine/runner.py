@@ -39,11 +39,15 @@ class EngineRunner:
         if state is None:
             return []
         prev_daily = state.trend[Timeframe.D1].last_indicators
+        prev_h1 = state.trend[Timeframe.H1].last_indicators
         state.on_bar_5m(bar)
         emitted: list[Setup] = []
         daily_closed = state.trend[Timeframe.D1].last_indicators is not prev_daily
+        h1_closed = state.trend[Timeframe.H1].last_indicators is not prev_h1
         for strat in self.strategies:
             if strat.trigger_tf == Timeframe.D1 and not daily_closed:
+                continue
+            if strat.trigger_tf == Timeframe.H1 and not h1_closed:
                 continue
             sig = strat.evaluate(state)
             if sig is not None:

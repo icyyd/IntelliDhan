@@ -1,0 +1,28 @@
+{
+  "strategy": "PULLBACK_CONTINUATION",
+  "buckets": {
+    "0-100": {
+      "n": 220,
+      "wr": 0.765,
+      "sufficient": true
+    }
+  },
+  "meta": {
+    "fitted_from": "research_swing SW15 held-out splits (val n=115 wr .765 + test n=105 wr .781); train excluded to avoid selection optimism",
+    "params": {
+      "t_mults": [
+        0.8,
+        1.6,
+        2.8
+      ],
+      "d_trend_min": 45,
+      "rsi_min": 52,
+      "stop_atr": 1.0
+    },
+    "universe": "12 liquid large caps/ETFs, 2y 1H bars",
+    "win_definition": "TP1 before initial stop (doc 03 \u00a74)",
+    "expectancy": "avg_r +0.041 val / +0.044 test, PF 1.18/1.20",
+    "caveats": "single flat bucket (composite-conditional resolution pending live samples); 1H-bar fill granularity; long-only; period includes mostly bull regimes",
+    "analytics_version": "v1"
+  }
+}

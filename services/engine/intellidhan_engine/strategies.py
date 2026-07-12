@@ -27,6 +27,8 @@ class RawSignal:
     explain: str
     invalidation: str
     counter_trend: bool = False
+    pop_based: bool = False       # doc 08 rr_metric POP_BASED: gate on calibrated
+                                  # probability instead of the 2:1 R:R rule
 
 
 def _two_closes_beyond(state: SymbolState, level: float, above: bool) -> bool:
@@ -107,11 +109,26 @@ class OrbBreakout:
 
 
 class Ema9TrendPullback:
-    """Trend continuation at the 9/21 EMA in an established intraday trend (doc 04)."""
+    """Trend continuation at the 9/21 EMA in an established intraday trend (doc 04).
 
-    key = "EMA9_TREND_PULLBACK"
+    Parameterized for the tuning harness; defaults are the production config.
+    """
+
     module = Module.ZDTE
     trigger_tf = Timeframe.M5
+
+    def __init__(self, key: str = "EMA9_TREND_PULLBACK", *, t_mults=(1.0, 1.8, 3.0),
+                 trend_min: float = 40.0, rsi_long: float = 55.0, rsi_short: float = 45.0,
+                 min_relvol: float = 0.0, min_trend_day_prob: float = 0.0,
+                 require_h1: bool = False) -> None:
+        self.key = key
+        self.t_mults = t_mults
+        self.trend_min = trend_min
+        self.rsi_long = rsi_long
+        self.rsi_short = rsi_short
+        self.min_relvol = min_relvol
+        self.min_trend_day_prob = min_trend_day_prob
+        self.require_h1 = require_h1
 
     def evaluate(self, state: SymbolState) -> RawSignal | None:
         snap = state.indicators(Timeframe.M5)
@@ -121,11 +138,20 @@ class Ema9TrendPullback:
         if snap.atr14 is None or snap.rsi14 is None:
             return None
         bar = state.last_bar
+        if self.min_relvol and (snap.rel_volume or 0.0) < self.min_relvol:
+            return None
+        if self.min_trend_day_prob:
+            prof = state.profile_state
+            if prof is None or prof.trend_day_probability < self.min_trend_day_prob:
+                return None
         t15 = state.trend_snap(Timeframe.M15)
-        uptrend = (t5.score >= 40 and snap.ema9 > snap.ema21
-                   and (t15 is None or t15.score >= 0))
-        downtrend = (t5.score <= -40 and snap.ema9 < snap.ema21
-                     and (t15 is None or t15.score <= 0))
+        h1 = state.trend_snap(Timeframe.H1)
+        uptrend = (t5.score >= self.trend_min and snap.ema9 > snap.ema21
+                   and (t15 is None or t15.score >= 0)
+                   and (not self.require_h1 or (h1 is not None and h1.score >= 20)))
+        downtrend = (t5.score <= -self.trend_min and snap.ema9 < snap.ema21
+                     and (t15 is None or t15.score <= 0)
+                     and (not self.require_h1 or (h1 is not None and h1.score <= -20)))
         if not (uptrend or downtrend):
             return None
         touched = bar.low <= snap.ema9 <= bar.high if uptrend else (
@@ -133,17 +159,17 @@ class Ema9TrendPullback:
         if not touched:
             return None
         if uptrend:
-            if not (snap.rsi14 >= 55 and bar.close > snap.ema9):  # holding strength + reclaim
+            if not (snap.rsi14 >= self.rsi_long and bar.close > snap.ema9):
                 return None
             direction, entry = Direction.LONG, bar.close
             stop = snap.ema21 - 0.25 * snap.atr14
-            targets = [entry + snap.atr14 * m for m in (1.0, 1.8, 3.0)]
+            targets = [entry + snap.atr14 * m for m in self.t_mults]
         else:
-            if not (snap.rsi14 <= 45 and bar.close < snap.ema9):
+            if not (snap.rsi14 <= self.rsi_short and bar.close < snap.ema9):
                 return None
             direction, entry = Direction.SHORT, bar.close
             stop = snap.ema21 + 0.25 * snap.atr14
-            targets = [entry - snap.atr14 * m for m in (1.0, 1.8, 3.0)]
+            targets = [entry - snap.atr14 * m for m in self.t_mults]
         f2 = 50.0 + abs(t5.score) * 0.4  # stronger established trend = better pullback
         return RawSignal(
             strategy=self.key, module=self.module, direction=direction,
@@ -211,6 +237,55 @@ class VwapReclaim:
         )
 
 
+class PullbackContinuation:
+    """Doc 05 PULLBACK_CONTINUATION — daily uptrend, 1H pullback into the
+    21/50 EMA zone, RSI holding, close reclaims the 9EMA. Long-only.
+
+    Parameters are config SW15 from research_swing (2y, 12 symbols):
+    train 75.7% / val 76.5% / test 78.1% TP1-win rate, PF 1.15-1.20 —
+    the platform's first strategy with held-out evidence >= the 75% bar.
+    High-POP / modest-R class: pop_based (doc 08 rr_metric).
+    """
+
+    key = "PULLBACK_CONTINUATION"
+    module = Module.SWING
+    trigger_tf = Timeframe.H1
+    T_MULTS = (0.8, 1.6, 2.8)
+    D_TREND_MIN = 45.0
+    RSI_MIN = 52.0
+    STOP_ATR = 1.0
+
+    def evaluate(self, state: SymbolState) -> RawSignal | None:
+        ind = state.indicators(Timeframe.H1)
+        d_snap = state.trend_snap(Timeframe.D1)
+        if (ind is None or d_snap is None or ind.ema9 is None or ind.ema21 is None
+                or ind.ema50 is None or ind.atr14 is None or ind.rsi14 is None):
+            return None
+        if d_snap.score < self.D_TREND_MIN or ind.ema21 <= ind.ema50:
+            return None
+        bar = state.last_bar
+        zone_lo, zone_hi = ind.ema50, ind.ema21
+        touched = bar.low <= zone_hi and bar.low >= zone_lo - 0.5 * ind.atr14
+        if not (touched and ind.rsi14 >= self.RSI_MIN and bar.close > ind.ema9):
+            return None
+        entry = bar.close
+        stop = ind.ema50 - self.STOP_ATR * ind.atr14
+        if entry <= stop:
+            return None
+        targets = [entry + m * ind.atr14 for m in self.T_MULTS]
+        return RawSignal(
+            strategy=self.key, module=self.module, direction=Direction.LONG,
+            trigger_tf=self.trigger_tf, entry=entry, stop=stop, targets=targets,
+            f2_quality=round(min(50.0 + d_snap.score * 0.5, 100.0), 1),
+            pop_based=True,
+            explain=(f"1H pullback into the 21/50 EMA zone within a daily uptrend "
+                     f"(D score {d_snap.score:+.0f}), RSI {ind.rsi14:.0f} holding, "
+                     f"close reclaimed the 9EMA. High-probability continuation class."),
+            invalidation=(f"1H close below {stop:.2f} (EMA50 − {self.STOP_ATR}×ATR) "
+                          f"— pullback became a breakdown."),
+        )
+
+
 class DailyBreakout:
     """Daily base breakout with volume + 2-daily-close confirmation (doc 05)."""
 
@@ -247,4 +322,5 @@ class DailyBreakout:
         )
 
 
-REGISTRY = [OrbBreakout(), Ema9TrendPullback(), VwapReclaim(), DailyBreakout()]
+REGISTRY = [OrbBreakout(), Ema9TrendPullback(), VwapReclaim(), PullbackContinuation(),
+            DailyBreakout()]

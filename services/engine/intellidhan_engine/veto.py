@@ -79,15 +79,18 @@ def run_gates(
     if extension > 2.0:
         return Verdict(False, "extension", f"entry {extension:.1f} ATR from 21EMA (max 2.0)")
 
-    # R:R ≥ 2:1 to first meaningful target (directional, doc 03 §3)
+    # R:R ≥ 2:1 to first meaningful target (directional, doc 03 §3).
+    # pop_based classes (doc 08 rr_metric POP_BASED) gate on calibrated
+    # probability instead — the confidence gate below carries the burden.
     risk = abs(sig.entry - sig.stop)
     if risk <= 0:
         return Verdict(False, "risk_geometry", "entry equals stop")
-    reward = abs(sig.targets[1] - sig.entry) if len(sig.targets) > 1 else abs(
-        sig.targets[0] - sig.entry)
-    rr = reward / risk
-    if rr < MIN_RR:
-        return Verdict(False, "reward_risk", f"R:R {rr:.2f} < {MIN_RR}")
+    if not sig.pop_based:
+        reward = abs(sig.targets[1] - sig.entry) if len(sig.targets) > 1 else abs(
+            sig.targets[0] - sig.entry)
+        rr = reward / risk
+        if rr < MIN_RR:
+            return Verdict(False, "reward_risk", f"R:R {rr:.2f} < {MIN_RR}")
 
     # Cooldown (discipline layer, doc 00 §4)
     until = controls.cooldown_until.get(sig.module)

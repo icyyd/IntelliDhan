@@ -74,3 +74,38 @@ def test_concurrency_caps_match_rule_a1():
     assert MODULE_CONCURRENCY[Module.SWING] == 5
     assert MODULE_CONCURRENCY[Module.LEAPS] == 6
     assert MODULE_CONCURRENCY[Module.HODL] == 10
+
+
+def test_pop_based_signal_skips_rr_gate():
+    from pathlib import Path
+
+    from intellidhan_engine.strategies import RawSignal
+    from intellidhan_engine.veto import EngineControls, run_gates
+    from intellidhan_ingestor.backfill import read_recording
+    from intellidhan_schemas.signals import Direction as Dir
+
+    state = SymbolState("QQQ")
+    fixture = Path(__file__).parent.parent / "fixtures/golden-sessions/qqq-complex-5m.jsonl"
+    for b in read_recording(fixture):
+        if b.symbol == "QQQ":
+            state.on_bar_5m(b)
+    snap = state.indicators(Timeframe.M5)
+    entry = snap.ema21  # zero extension
+    lowrr = dict(module=Module.SWING, direction=Dir.LONG, trigger_tf=Timeframe.M5,
+                 entry=entry, stop=entry - 1.0,
+                 targets=[entry + 0.8, entry + 1.6, entry + 2.8],  # RR to T2 = 1.6 < 2
+                 f2_quality=70.0, explain="x", invalidation="y")
+    hi_conf = 0.80
+    normal = run_gates(state, RawSignal(strategy="X", **lowrr), hi_conf, EngineControls())
+    assert not normal.passed and normal.gate == "reward_risk"
+    popb = run_gates(state, RawSignal(strategy="X", pop_based=True, **lowrr),
+                     hi_conf, EngineControls())
+    assert popb.gate != "reward_risk"
+
+
+def test_pullback_continuation_calibration_loads():
+    from intellidhan_engine.calibration import CalibrationMap
+
+    cal = CalibrationMap.load("PULLBACK_CONTINUATION")
+    assert cal.buckets, "held-out calibration table must exist"
+    assert cal.confidence(60.0) == 0.765  # claimed = validation WR, not train
