@@ -113,7 +113,7 @@ class SwingSim:
             if self.open_trade.advance(bar):
                 self.trades.append(self.open_trade)
                 self.open_trade = None
-        snap = self.h1.update(bar, self.clock.session_id(bar.ts_close))
+        self.h1.update(bar, self.clock.session_id(bar.ts_close))
         ind = self.h1.last_indicators
         d_snap = self.d1.snapshot
         if (self.open_trade is not None or ind is None or d_snap is None
