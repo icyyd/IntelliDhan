@@ -156,12 +156,28 @@ class LiveLoop:
     def snapshot(self) -> dict:
         matrices = {}
         for sym, state in self.runner.states.items():
+            indicator_snapshots = {}
+            for tf in (Timeframe.M5, Timeframe.M15, Timeframe.H1):
+                indicators = state.indicators(tf)
+                if indicators is not None:
+                    indicator_snapshots[tf.value] = indicators.model_dump(mode="json")
             matrices[sym] = {
                 "matrix": state.mtf_states(),
                 "scores": {tf.value: s for tf, s in state.mtf_matrix().items()},
                 "last": state.last_bar.close if state.last_bar else None,
                 "orb": {"high": state.opening_range.high, "low": state.opening_range.low,
                         "complete": state.opening_range.complete},
+                # Bounded, display-only context for the chart-first signal workspace.
+                # Keeping this in the existing snapshot avoids a second polling stream.
+                "bars": [{
+                    "ts_close": bar.ts_close.isoformat(),
+                    "open": bar.open,
+                    "high": bar.high,
+                    "low": bar.low,
+                    "close": bar.close,
+                    "volume": bar.volume,
+                } for bar in state.recent_5m[-72:]],
+                "indicators": indicator_snapshots,
             }
         return {
             "session": self.clock.session_state(datetime.now(timezone.utc)).value,

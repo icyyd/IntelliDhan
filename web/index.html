@@ -117,10 +117,41 @@ svg.icon{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2
 .panel-head h2{font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--gold); font-weight:700; margin:0}
 .panel-head .count{margin-left:auto; color:var(--text-faint); font-size:11px}
 
+/* Chart-first signal workspace — selected signal drives every detail below. */
+.context-panel{padding:0; overflow:hidden}
+.context-head{display:flex; align-items:flex-start; gap:16px; padding:15px 16px; border-bottom:1px solid var(--border)}
+.context-symbol{font-size:22px; line-height:1.15; font-weight:750; letter-spacing:-.02em}
+.context-price{font:15px var(--mono); color:var(--text-dim); margin-left:7px}
+.context-kicker{font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--gold); font-weight:700; margin-bottom:4px}
+.context-meta{margin-left:auto; display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end}
+.context-stage{position:relative; min-height:330px; background:#0B101A}
+.context-chart{display:block; width:100%; height:auto; min-height:330px}
+.chart-empty{position:absolute; inset:0; display:grid; place-items:center; color:var(--text-faint); font-size:12px; pointer-events:none}
+.chart-legend{display:flex; gap:13px; flex-wrap:wrap; padding:8px 16px; border-top:1px solid var(--border-soft); color:var(--text-faint); font-size:10.5px}
+.legend-key{display:inline-flex; align-items:center; gap:5px}
+.legend-line{width:14px; height:2px; border-radius:2px; background:currentColor}
+.context-banner{display:flex; align-items:flex-start; gap:8px; padding:9px 16px; border-bottom:1px solid var(--border); color:var(--text-dim); font-size:11.5px}
+.context-banner.blocked{background:rgba(248,113,113,.075); color:#FCA5A5}
+.context-banner.ready{background:rgba(45,212,191,.065); color:#99F6E4}
+.context-banner.neutral{background:rgba(94,200,242,.045)}
+.context-banner svg{width:14px; height:14px; flex:none; margin-top:1px}
+.decision-grid{display:grid; grid-template-columns:1.15fr 1fr 1fr; border-top:1px solid var(--border)}
+.decision-cell{padding:14px 16px; min-width:0; border-right:1px solid var(--border)}
+.decision-cell:last-child{border-right:none}
+.decision-label{font-size:9.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-faint); font-weight:700; margin-bottom:6px}
+.decision-value{font-size:12px; color:var(--text-dim); line-height:1.55}
+.decision-value strong{color:var(--text); font-weight:650}
+.plan-levels{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px 12px}
+.plan-levels span{display:flex; justify-content:space-between; gap:8px}
+.plan-levels b{font:600 11.5px var(--mono); color:var(--text)}
+.market-panel .panel-head{margin-bottom:6px}
+.market-panel #matrix{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:20px}
+
 /* Market state / trend matrix */
-.sym-row{display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--border-soft)}
+.sym-row{display:flex; align-items:center; gap:12px; width:100%; padding:9px 4px; border:0; border-bottom:1px solid var(--border-soft); background:none; color:var(--text); text-align:left; cursor:pointer}
 .sym-row:last-child{border-bottom:none}
-.sym-row.hl{border-radius:6px; box-shadow:0 0 0 1px var(--cyan) inset}
+.sym-row:hover{background:rgba(94,200,242,.035)}
+.sym-row.hl{border-radius:6px; box-shadow:0 0 0 1px var(--cyan) inset; background:rgba(94,200,242,.055)}
 .sym-row .tk{width:58px; font-weight:700; flex:none}
 .sym-row .px{width:88px; color:var(--text-dim); flex:none}
 .tf-chips{display:flex; gap:5px; flex-wrap:wrap}
@@ -163,8 +194,11 @@ svg.icon{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2
 /* Alert card (doc 18 §7.6) */
 .alert-card{
   border:1px solid var(--border); border-radius:var(--radius-card); padding:12px; margin-bottom:10px;
-  background:var(--panel); border-left:3px solid var(--gold);
+  background:var(--panel); border-left:3px solid var(--gold); cursor:pointer;
 }
+.alert-card:hover{border-color:#36415d}
+.alert-card.selected{border-color:var(--cyan); box-shadow:0 0 0 1px rgba(94,200,242,.18); background:#111927}
+.alert-card.blocked{border-left-color:var(--red)}
 .ac-top{display:flex; align-items:center; gap:8px; margin-bottom:8px}
 .ac-status{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); font-weight:700}
 .ac-age{color:var(--text-faint); font-size:11px}
@@ -293,6 +327,13 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   .shell{grid-template-columns:1fr}
   .tape{display:none}
 }
+@media (max-width:760px){
+  .decision-grid{grid-template-columns:1fr}
+  .decision-cell{border-right:none; border-bottom:1px solid var(--border)}
+  .decision-cell:last-child{border-bottom:none}
+  .market-panel #matrix{grid-template-columns:1fr}
+  .context-head{align-items:flex-start}
+}
 @media (max-width:520px){
   .ac-grid{grid-template-columns:1fr}
   .evidence-metrics{grid-template-columns:repeat(2,1fr)}
@@ -304,6 +345,9 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   .cmdk-btn{padding:6px; gap:0; flex:none}
   .cmdk-btn kbd,.cmdk-btn-label{display:none}
   .chip{padding:4px 7px; font-size:10px; max-width:78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:none}
+  .context-head{display:block}
+  .context-meta{justify-content:flex-start; margin-top:9px}
+  .context-stage,.context-chart{min-height:260px}
 }
 </style>
 </head>
@@ -350,10 +394,26 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   </nav>
 
   <main class="workspace" id="main">
-    <section class="panel">
-      <div class="panel-head"><h2>Market State — Multi-Timeframe Trend</h2><span class="count" id="symCount"></span></div>
+    <section class="panel context-panel" aria-labelledby="contextTitle">
+      <div class="context-head">
+        <div>
+          <div class="context-kicker" id="contextTitle">Signal workspace</div>
+          <div><span class="context-symbol" id="contextSymbol">—</span><span class="context-price" id="contextPrice">—</span></div>
+        </div>
+        <div class="context-meta" id="contextMeta"></div>
+      </div>
+      <div class="context-banner neutral" id="contextBanner" role="status"></div>
+      <div class="context-stage">
+        <svg class="context-chart" id="marketChart" viewBox="0 0 920 330" preserveAspectRatio="none" role="img" aria-label="Five-minute price chart with signal levels"></svg>
+        <div class="chart-empty" id="chartEmpty" hidden></div>
+      </div>
+      <div class="chart-legend" id="chartLegend"></div>
+      <div class="decision-grid" id="decisionGrid"></div>
+    </section>
+
+    <section class="panel market-panel">
+      <div class="panel-head"><h2>Market scan · multi-timeframe state</h2><span class="count" id="symCount"></span></div>
       <div id="matrix"></div>
-      <div class="chart-note">Chart integration (candles, EMA zones, trigger annotations — doc 18 §7.8) is planned but not yet built. This trend matrix is the live, data-backed market-state view for now.</div>
     </section>
 
     <section class="panel" id="briefPanel" hidden>
@@ -372,7 +432,7 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   <aside class="decision-rail" aria-label="Decision queue">
     <div class="panel" style="padding:0; border:none; background:none">
       <div class="queue-tabs" role="tablist">
-        <button class="qtab active" id="qtabTracking" role="tab" aria-selected="true">Tracking <span id="qCountTracking">(0)</span></button>
+        <button class="qtab active" id="qtabTracking" role="tab" aria-selected="true">Signals <span id="qCountTracking">(0)</span></button>
         <button class="qtab" id="qtabSuppressed" role="tab" aria-selected="false">Suppressed <span id="qCountSuppressed">(0)</span></button>
       </div>
       <div id="queueTracking" aria-live="polite"></div>
@@ -399,7 +459,7 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   </div>
 </footer>
 
-<footer class="disclaimer">⚠️ Educational tool — not financial advice. Options and equities involve substantial risk of loss. Probabilities are historical estimates with wide uncertainty on small samples, not guarantees of future performance.</footer>
+<footer class="disclaimer">Educational tool — not financial advice. Options and equities involve substantial risk of loss. Probabilities are historical estimates with wide uncertainty on small samples, not guarantees of future performance.</footer>
 
 <!-- Command palette -->
 <div class="cmdk-overlay" id="cmdkOverlay" role="dialog" aria-modal="true" aria-label="Command palette">
@@ -429,6 +489,48 @@ const ICON = {STRONG_UP:"i-up",UP:"i-up",NEUTRAL:"i-minus",DOWN:"i-down",STRONG_
 const tfOrder = ["M","W","D","4H","1H","15m","5m"];
 let lastState = null, calibration = {}, briefing = null;
 let symbolOrder = [];
+let selectedSymbol = null, selectedAlertId = null;
+
+function esc(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+function fmtPx(value){ return Number.isFinite(Number(value)) ? Number(value).toFixed(2) : "—"; }
+function activeAlerts(s){
+  return (s.alerts||[]).filter(a=>a.status!=="EXPIRED" && a.status!=="CANCELLED" &&
+    (!a.valid_until || new Date(a.valid_until).getTime()>Date.now()));
+}
+function selectedAlert(s){
+  return activeAlerts(s).find(a=>a.alert_id===selectedAlertId) || null;
+}
+function ensureSelection(s){
+  const active = activeAlerts(s);
+  if(selectedAlertId && !active.some(a=>a.alert_id===selectedAlertId)) selectedAlertId = null;
+  if(!selectedSymbol){
+    const latest=active.at(-1);
+    selectedSymbol = latest?.symbol || Object.keys(s.symbols)[0] || null;
+    selectedAlertId = latest?.alert_id || null;
+  }
+  if(!s.symbols[selectedSymbol]) selectedSymbol = Object.keys(s.symbols)[0] || null;
+}
+function selectSymbol(symbol){
+  if(!lastState?.symbols?.[symbol]) return;
+  selectedSymbol = symbol;
+  selectedAlertId = null;
+  renderContext(lastState);
+  renderMatrix(lastState);
+  renderTracking(lastState);
+  document.getElementById("main").scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+}
+function selectAlert(alertId){
+  const alert = activeAlerts(lastState||{}).find(a=>a.alert_id===alertId);
+  if(!alert) return;
+  selectedAlertId = alertId;
+  selectedSymbol = alert.symbol;
+  renderContext(lastState);
+  renderMatrix(lastState);
+  renderTracking(lastState);
+  document.getElementById("main").scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+}
 
 function fmtAge(iso){
   if(!iso) return "";
@@ -463,7 +565,11 @@ async function refresh(){
   }
 }
 async function refreshCalibration(){
-  try{ calibration = await fetchJSON("/api/calibration"); renderEvidencePanel(); }catch(e){}
+  try{
+    calibration = await fetchJSON("/api/calibration");
+    renderEvidencePanel();
+    if(lastState){ renderContext(lastState); renderTracking(lastState); }
+  }catch(e){}
 }
 async function refreshBriefing(){
   try{
@@ -486,6 +592,7 @@ function setHealth(mode){
 function renderAll(){
   const s = lastState;
   symbolOrder = Object.keys(s.symbols);
+  ensureSelection(s);
   document.getElementById("symCount").textContent = symbolOrder.length + " symbols";
 
   const sess = document.getElementById("session");
@@ -509,6 +616,7 @@ function renderAll(){
   }).join("");
 
   renderMatrix(s);
+  renderContext(s);
   renderDrawer(s);
   renderTracking(s);
   renderSuppressedTab(s);
@@ -523,14 +631,155 @@ function tfBadge(state){
   return `<span class="tf-chip ${cls}"><svg class="icon"><use href="#${ICON[state]||'i-minus'}"/></svg>${state.replace('STRONG_','')}</span>`;
 }
 
+function chartLevel(label, value, color, dash=""){
+  return {label, value:Number(value), color, dash};
+}
+
+function renderMarketChart(symbolState, alert){
+  const svg = document.getElementById("marketChart");
+  const empty = document.getElementById("chartEmpty");
+  const compact=matchMedia("(max-width:520px)").matches;
+  const medium=!compact && matchMedia("(max-width:900px)").matches;
+  const bars = (symbolState?.bars||[]).slice(-(compact?36:60)).filter(b=>
+    [b.open,b.high,b.low,b.close].every(v=>Number.isFinite(Number(v))));
+  if(!bars.length){
+    svg.innerHTML = "";
+    empty.hidden = false;
+    empty.textContent = "Price context will appear after the first 5-minute bars are ingested.";
+    return;
+  }
+  empty.hidden = true;
+  const W=compact?360:medium?720:920, H=330, left=12, right=compact?48:66, top=16, bottom=28;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  const indicators = symbolState.indicators?.["5m"] || {};
+  const levels = [];
+  if(alert){
+    levels.push(chartLevel("STOP",alert.stop_underlying,"#F87171","5 4"));
+    (alert.take_profits||[]).forEach((tp,i)=>{
+      if(tp.underlying!=null) levels.push(chartLevel(`T${i+1}`,tp.underlying,"#2DD4BF","4 4"));
+    });
+  }
+  if(indicators.vwap!=null) levels.push(chartLevel("VWAP",indicators.vwap,"#D9B54A","3 4"));
+  if(indicators.ema21!=null) levels.push(chartLevel("EMA21",indicators.ema21,"#5EC8F2","2 4"));
+  if(symbolState.orb?.complete){
+    levels.push(chartLevel("ORH",symbolState.orb.high,"#8D98B3","3 5"));
+    levels.push(chartLevel("ORL",symbolState.orb.low,"#8D98B3","3 5"));
+  }
+  const values = bars.flatMap(b=>[Number(b.high),Number(b.low)]).concat(levels.map(l=>l.value).filter(Number.isFinite));
+  if(alert) values.push(...alert.entry_zone.map(Number));
+  let lo=Math.min(...values), hi=Math.max(...values);
+  const pad=Math.max((hi-lo)*.08, hi*.0005, .01); lo-=pad; hi+=pad;
+  const plotW=W-left-right, plotH=H-top-bottom;
+  const y=v=>top+(hi-Number(v))/(hi-lo)*plotH;
+  const step=plotW/bars.length, bodyW=Math.max(2,Math.min(8,step*.58));
+  const parts=[];
+  for(let i=0;i<5;i++){
+    const value=hi-(hi-lo)*i/4, yy=y(value);
+    parts.push(`<line x1="${left}" y1="${yy}" x2="${W-right}" y2="${yy}" stroke="#1B2233" stroke-width="1"/>`);
+    parts.push(`<text x="${W-right+7}" y="${yy+3}" fill="#5C6784" font-size="10" font-family="ui-monospace,monospace">${value.toFixed(2)}</text>`);
+  }
+  if(alert){
+    const ey1=y(Math.max(...alert.entry_zone)), ey2=y(Math.min(...alert.entry_zone));
+    parts.push(`<rect x="${left}" y="${ey1}" width="${plotW}" height="${Math.max(2,ey2-ey1)}" fill="#5EC8F2" opacity=".09"/>`);
+    parts.push(`<text x="${left+6}" y="${Math.max(top+11,ey1-4)}" fill="#5EC8F2" font-size="10" font-family="ui-sans-serif,system-ui">ENTRY ZONE</text>`);
+  }
+  const levelLabels=levels.filter(l=>Number.isFinite(l.value)).map(l=>({...l,rawY:y(l.value)})).sort((a,b)=>a.rawY-b.rawY);
+  const labelGap=13, labelMin=top+7, labelMax=H-bottom-5;
+  levelLabels.forEach((l,i)=>{ l.labelY=Math.max(l.rawY,i?levelLabels[i-1].labelY+labelGap:labelMin); });
+  if(levelLabels.length && levelLabels.at(-1).labelY>labelMax){
+    levelLabels.at(-1).labelY=labelMax;
+    for(let i=levelLabels.length-2;i>=0;i--) levelLabels[i].labelY=Math.min(levelLabels[i].labelY,levelLabels[i+1].labelY-labelGap);
+  }
+  levelLabels.forEach(l=>{
+    parts.push(`<line x1="${left}" y1="${l.rawY}" x2="${W-right}" y2="${l.rawY}" stroke="${l.color}" stroke-width="1" stroke-dasharray="${l.dash}" opacity=".75"/>`);
+  });
+  bars.forEach((b,i)=>{
+    const x=left+(i+.5)*step, up=Number(b.close)>=Number(b.open), color=up?"#2DD4BF":"#F87171";
+    const yo=y(Number(b.open)), yc=y(Number(b.close)), yh=y(Number(b.high)), yl=y(Number(b.low));
+    parts.push(`<line x1="${x}" y1="${yh}" x2="${x}" y2="${yl}" stroke="${color}" stroke-width="1" opacity=".86"/>`);
+    parts.push(`<rect x="${x-bodyW/2}" y="${Math.min(yo,yc)}" width="${bodyW}" height="${Math.max(1.5,Math.abs(yc-yo))}" rx=".7" fill="${color}" opacity=".9"/>`);
+  });
+  levelLabels.forEach(l=>{
+    const labelX=W-right-4, boxX=labelX-80;
+    if(Math.abs(l.labelY-l.rawY)>3) parts.push(`<path d="M ${boxX-4} ${l.labelY} L ${boxX-12} ${l.labelY} L ${boxX-17} ${l.rawY}" fill="none" stroke="${l.color}" stroke-width=".8" opacity=".65"/>`);
+    parts.push(`<rect x="${boxX}" y="${l.labelY-8}" width="80" height="12" rx="2" fill="#0B101A" opacity=".88"/>`);
+    parts.push(`<text x="${labelX}" y="${l.labelY+1}" text-anchor="end" fill="${l.color}" font-size="9.5" font-family="ui-sans-serif,system-ui">${l.label} ${l.value.toFixed(2)}</text>`);
+  });
+  [0,Math.floor((bars.length-1)/2),bars.length-1].forEach(i=>{
+    const x=left+(i+.5)*step;
+    const label=new Date(bars[i].ts_close).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+    parts.push(`<text x="${x}" y="${H-8}" text-anchor="middle" fill="#5C6784" font-size="10" font-family="ui-sans-serif,system-ui">${label}</text>`);
+  });
+  svg.innerHTML=parts.join("");
+}
+
+function renderContext(s){
+  ensureSelection(s);
+  const d=s.symbols[selectedSymbol] || {};
+  const alert=selectedAlert(s);
+  const ev=alert ? evidenceFor(alert.strategy) : null;
+  document.getElementById("contextSymbol").textContent=selectedSymbol||"—";
+  document.getElementById("contextPrice").textContent=d.last!=null?`$${fmtPx(d.last)}`:"—";
+  const trendKeys=["D","4H","1H","15m","5m"].filter(tf=>d.matrix?.[tf]);
+  const visibleBars=Math.min((d.bars||[]).length,matchMedia("(max-width:520px)").matches?36:60);
+  document.getElementById("contextMeta").innerHTML=trendKeys.map(tf=>`<span title="${tf}">${tfBadge(d.matrix[tf])}</span>`).join("") +
+    `<span class="chip">5m · ${visibleBars} bars</span>`;
+
+  const banner=document.getElementById("contextBanner");
+  if(alert && ev?.status==="none"){
+    banner.className="context-banner neutral";
+    banner.innerHTML=`<svg class="icon"><use href="#i-alert"/></svg><span><strong>Evidence state unavailable.</strong> Treat this signal as non-executable until calibration and live-eligibility data load.</span>`;
+  }else if(alert && ev?.blocked){
+    banner.className="context-banner blocked";
+    banner.innerHTML=`<svg class="icon"><use href="#i-alert"/></svg><span><strong>Research only — blocked from live delivery.</strong> Historical evidence is not production-parity validated; confidence is context, not permission to trade.</span>`;
+  }else if(alert){
+    banner.className="context-banner ready";
+    banner.innerHTML=`<svg class="icon"><use href="#i-activity"/></svg><span><strong>${esc(alert.status||"ACTIVE")} signal selected.</strong> Validate price, expiry, evidence, and portfolio risk before any decision.</span>`;
+  }else{
+    banner.className="context-banner neutral";
+    banner.innerHTML=`<svg class="icon"><use href="#i-activity"/></svg><span><strong>Market context only.</strong> Select a signal from the queue to overlay its entry, stop, targets, evidence, and invalidation.</span>`;
+  }
+  renderMarketChart(d,alert);
+  document.getElementById("chartLegend").innerHTML=`
+    <span class="legend-key" style="color:var(--teal)"><span class="legend-line"></span>Up candle / targets</span>
+    <span class="legend-key" style="color:var(--red)"><span class="legend-line"></span>Down candle / stop</span>
+    <span class="legend-key" style="color:var(--cyan)"><span class="legend-line"></span>Entry zone / EMA21</span>
+    <span class="legend-key" style="color:var(--gold)"><span class="legend-line"></span>VWAP</span>`;
+
+  const grid=document.getElementById("decisionGrid");
+  if(!alert){
+    const up=trendKeys.filter(tf=>["UP","STRONG_UP"].includes(d.matrix[tf])).length;
+    const down=trendKeys.filter(tf=>["DOWN","STRONG_DOWN"].includes(d.matrix[tf])).length;
+    grid.innerHTML=`
+      <div class="decision-cell"><div class="decision-label">Decision state</div><div class="decision-value"><strong>No executable signal selected.</strong><br>Keep the chart as context; do not infer an entry from trend alone.</div></div>
+      <div class="decision-cell"><div class="decision-label">Trend alignment</div><div class="decision-value"><strong>${up} bullish · ${down} bearish</strong><br>${trendKeys.length-up-down} neutral across visible decision timeframes.</div></div>
+      <div class="decision-cell"><div class="decision-label">Next evaluation</div><div class="decision-value"><strong>${s.session==="RTH"?"Next 5-minute close":"Next market open"}</strong><br>Suppressed candidates remain available for audit below.</div></div>`;
+    return;
+  }
+  const targets=(alert.take_profits||[]).filter(t=>t.underlying!=null);
+  const evidenceLabel=ev?.blocked?"BLOCKED FROM LIVE":(ev?.status||"NO EVIDENCE");
+  const ci=ev?.meta?.interval_95_test;
+  grid.innerHTML=`
+    <div class="decision-cell"><div class="decision-label">Trade plan</div><div class="decision-value plan-levels">
+      <span>Entry <b>${fmtPx(alert.entry_zone?.[0])}–${fmtPx(alert.entry_zone?.[1])}</b></span>
+      <span>Stop <b style="color:var(--red)">${fmtPx(alert.stop_underlying)}</b></span>
+      ${targets.slice(0,3).map((t,i)=>`<span>T${i+1} <b style="color:var(--teal)">${fmtPx(t.underlying)}</b></span>`).join("")}
+      <span>Risk <b>$${Number(alert.dollar_risk||0).toLocaleString()}</b></span>
+      <span>Valid <b>${fmtCountdown(alert.valid_until)}</b></span>
+    </div></div>
+    <div class="decision-cell"><div class="decision-label">Why now · invalidates when</div><div class="decision-value"><strong>${esc(alert.thesis)}</strong><br><span style="color:var(--red)">${esc(alert.invalidation)}</span></div></div>
+    <div class="decision-cell"><div class="decision-label">Evidence · risk context</div><div class="decision-value"><strong style="color:${ev?.blocked?'var(--red)':'var(--gold)'}">${esc(evidenceLabel)}</strong><br>Model confidence ${(Number(alert.confidence)*100).toFixed(0)}%${ci?` · 95% CI ${(ci[0]*100).toFixed(0)}–${(ci[1]*100).toFixed(0)}%`:""}<br>R:R ${esc(alert.reward_risk)} · ${esc(alert.budget_note||"")}</div></div>`;
+}
+
 function renderMatrix(s){
   document.getElementById("matrix").innerHTML = symbolOrder.map(sym=>{
     const d = s.symbols[sym];
     const chips = tfOrder.filter(tf=>d.matrix[tf]).map(tf=>
       `<span title="${tf}">${tfBadge(d.matrix[tf])}</span>`).join("");
     const px = d.last ? d.last.toFixed(2) : "—";
-    return `<div class="sym-row" id="row-${sym}"><span class="tk">${sym}</span><span class="px num">${px}</span><span class="tf-chips">${chips}</span></div>`;
+    return `<button class="sym-row ${sym===selectedSymbol?'hl':''}" id="row-${sym}" data-symbol="${sym}" aria-label="View ${sym} market context"><span class="tk">${sym}</span><span class="px num">${px}</span><span class="tf-chips">${chips}</span></button>`;
   }).join("");
+  document.querySelectorAll(".sym-row[data-symbol]").forEach(row=>row.addEventListener("click",()=>selectSymbol(row.dataset.symbol)));
 }
 
 function renderBriefing(){
@@ -576,7 +825,7 @@ function evidenceFor(strategy){
 
 function characterChip(strategy, ev){
   if(strategy === "PULLBACK_CONTINUATION"){
-    return `<div class="character-chip"><svg class="icon" style="width:11px;height:11px"><use href="#i-alert"/></svg> High hit rate · Modest payoff · Cost sensitive · Forward paper</div>`;
+    return `<div class="character-chip"><svg class="icon" style="width:11px;height:11px"><use href="#i-alert"/></svg> ${ev.blocked?'Research only · Live blocked':'Modest payoff · Cost sensitive · Forward paper'}</div>`;
   }
   return "";
 }
@@ -601,10 +850,11 @@ function priceLadder(a){
 function renderAlertCard(a){
   const ev = evidenceFor(a.strategy);
   const badgeCls = (a.action||"").includes("SELL") ? "sell" : "buy";
-  const evBadgeCls = ev.status === "HISTORICAL_OOS" ? "oos" : ev.status === "none" ? "none" : "oos";
+  const evBadgeCls = ev.blocked ? "blocked" : ev.status === "HISTORICAL_OOS" ? "oos" : ev.status === "none" ? "none" : "oos";
+  const evLabel = ev.blocked ? "BLOCKED FROM LIVE" : ev.status;
   const interval = ev.meta && ev.meta.interval_95_test ? ` · 95% CI ${(ev.meta.interval_95_test[0]*100).toFixed(0)}–${(ev.meta.interval_95_test[1]*100).toFixed(0)}%` : "";
   const n = ev.buckets ? Object.values(ev.buckets).reduce((s,b)=>s+(b.n||0),0) : 0;
-  return `<div class="alert-card" role="article">
+  return `<div class="alert-card ${selectedAlertId===a.alert_id?'selected':''} ${ev.blocked?'blocked':''}" role="button" tabindex="0" aria-pressed="${selectedAlertId===a.alert_id}" data-alert-id="${esc(a.alert_id)}">
     <div class="ac-top">
       <span class="ac-status">${a.status||'ACTIVE'}</span>
       <span class="ac-age">${fmtAge(a.created_at)}</span>
@@ -620,7 +870,7 @@ function renderAlertCard(a){
       <div>R:R <b class="num">${a.reward_risk}</b></div>
     </div>
     <div class="evidence-line">
-      <span class="evidence-badge ${evBadgeCls}">${ev.status}</span>
+      <span class="evidence-badge ${evBadgeCls}">${evLabel}</span>
       <span>conf ${(a.confidence*100).toFixed(0)}%${interval}${n?` · n=${n}`:""}</span>
     </div>
     <div class="ac-thesis">${a.thesis}</div>
@@ -629,11 +879,16 @@ function renderAlertCard(a){
 }
 
 function renderTracking(s){
-  const active = (s.alerts||[]).filter(a=>a.status!=="EXPIRED" && a.status!=="CANCELLED");
+  const active = activeAlerts(s);
   document.getElementById("qCountTracking").textContent = "("+active.length+")";
   const el = document.getElementById("queueTracking");
   el.innerHTML = active.length ? active.slice().reverse().map(renderAlertCard).join("") :
-    `<div class="empty"><b>No edge right now.</b>The engine evaluates continuously — nothing has cleared the calibrated confidence gate. Silence is a feature. (RULE-M3)</div>`;
+    `<div class="empty"><b>No executable signal.</b>The engine is still evaluating. Candidates may be suppressed by setup, evidence, data-quality, or portfolio-risk gates.</div>`;
+  el.querySelectorAll("[data-alert-id]").forEach(card=>{
+    const activate=()=>selectAlert(card.dataset.alertId);
+    card.addEventListener("click",activate);
+    card.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); activate(); }});
+  });
 }
 
 function gateCounts(suppressed){
@@ -686,7 +941,7 @@ function renderPerformance(s){
 function renderRisk(s){
   // Committed = sum of dollar_risk on active alerts, grouped by module.
   const committed = {};
-  (s.alerts||[]).filter(a=>a.status!=="EXPIRED"&&a.status!=="CANCELLED").forEach(a=>{
+  activeAlerts(s).forEach(a=>{
     committed[a.module] = (committed[a.module]||0) + a.dollar_risk;
   });
   const modules = ["0DTE","SWING","LEAPS","HODL"];
@@ -695,7 +950,7 @@ function renderRisk(s){
     return `<div class="risk-row">
       <div class="rr-head"><span>${m}</span><b class="num">$${used.toLocaleString()} committed</b></div>
       <div class="risk-bar"><div style="width:${used>0?Math.min(used/50,100):0}%"></div></div>
-      <div class="risk-note">Configured via ⚙ Budgets — hot-reloads on save</div>
+      <div class="risk-note">Configured in Budgets — hot-reloads on save</div>
     </div>`;
   }).join("");
 }
@@ -768,8 +1023,7 @@ function renderPaletteResults(q){
   const items = [
     ...symbolOrder.map(s=>({label:s, type:"Symbol", action:()=>{
       closePalette();
-      const row = document.getElementById("row-"+s);
-      if(row){ row.scrollIntoView({block:"center"}); row.classList.add("hl","tint"); setTimeout(()=>row.classList.remove("hl","tint"),1200); }
+      selectSymbol(s);
     }})),
     {label:"Open Budgets", type:"Action", action:()=>{ closePalette(); openBudgets(); }},
   ];
@@ -865,6 +1119,12 @@ function connectWS(){
     ws.onerror = () => ws.close();
   }catch(e){ setTimeout(connectWS, 5000); }
 }
+
+let resizeTimer;
+window.addEventListener("resize",()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{ if(lastState) renderContext(lastState); },120);
+});
 
 refresh(); refreshCalibration(); refreshBriefing();
 setInterval(refresh, 15000);
