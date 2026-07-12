@@ -10,7 +10,25 @@ engine moves to its own process (doc 01 topology — v1 runs single-process).
 from __future__ import annotations
 
 import asyncio
+import os
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+
+def _load_dotenv() -> None:
+    """Load repo .env into the environment (existing vars win) so Telegram
+    credentials and DB passwords work without shell exports."""
+    env = Path(__file__).resolve().parents[3] / ".env"
+    if not env.exists():
+        return
+    for line in env.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
+
+
+_load_dotenv()
 
 from intellidhan_delivery.briefing import build_briefing
 from intellidhan_delivery.format import format_alert
@@ -70,7 +88,8 @@ class LiveLoop:
             if key in self.seen_bars:
                 continue
             self.seen_bars.add(key)
-            self.executor.on_bar(bar)
+            for settled in self.executor.on_bar(bar):
+                await self._notify_settlement(settled)
             for setup in self.runner.on_bar_5m(bar):
                 alert = self.composer.compose(setup)
                 if alert is None:
@@ -78,6 +97,20 @@ class LiveLoop:
                 self.alerts.append(alert)
                 self.executor.track(PaperTrade.from_alert(alert, setup))
                 await self._deliver(alert)
+
+    async def _notify_settlement(self, trade) -> None:
+        """Stop/TP/flatten follow-ups (doc 05 §4 lifecycle, v1)."""
+        emoji = {"STOPPED": "🛑", "STOPPED_AFTER_BE": "🛡", "TP_FULL": "💰",
+                 "FLATTENED_TIME": "⏱", "EXPIRED_UNFILLED": "⌛"}.get(
+            trade.outcome.value, "ℹ️")
+        r = f"{trade.realized_r:+.2f}R" if trade.realized_r is not None else "n/a"
+        msg = (f"{emoji} {trade.symbol} {trade.strategy.replace('_', ' ')} — "
+               f"{trade.outcome.value.replace('_', ' ').title()} at {r} "
+               f"(entry {trade.entry:.2f}, tranches exited {trade.tranches_exited}/3)\n"
+               f"⚠️ Educational tool — not financial advice.")
+        await self.telegram.send(msg)
+        for q in list(self.ws_subscribers):
+            q.put_nowait({"type": "settlement", "data": trade.model_dump(mode="json")})
 
     async def _deliver(self, alert: Alert) -> None:
         await self.telegram.send(format_alert(alert))
