@@ -124,6 +124,14 @@ class SymbolState:
     def trend_snap(self, tf: Timeframe) -> TrendSnapshot | None:
         return self.trend[tf].snapshot
 
+    def trigger_bar(self, tf: Timeframe) -> Bar | None:
+        """The genuine completed bar for `tf` — full-bucket OHLC (e.g. the real
+        H1 bar), never the raw 5m bar that triggered its rollup. Strategies
+        whose trigger_tf != M5 MUST read price/touch geometry from this, not
+        from `last_bar`, or entry/stop/target logic silently uses the wrong
+        timeframe's range (the exact bug this accessor exists to prevent)."""
+        return self.trend[tf].last_bar
+
     def et_time(self) -> time | None:
         return self.last_bar.ts_close.astimezone(ET).time() if self.last_bar else None
 

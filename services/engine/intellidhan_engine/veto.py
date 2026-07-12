@@ -25,14 +25,53 @@ MODULE_CONCURRENCY = {Module.ZDTE: 2, Module.SWING: 5, Module.LEAPS: 6, Module.H
 ZDTE_NO_ENTRY_BEFORE = time(9, 35)   # RULE-T12
 ZDTE_NO_ENTRY_AFTER = time(15, 50)
 
+# doc 03 §5 correlation cap: "QQQ/TQQQ/NDX/SOXL count as one cluster" — the
+# spec's own named example. Symbols not listed are treated as their own
+# single-member cluster; broader sector clustering is future work, not
+# invented here without evidence.
+CORRELATION_CLUSTER = {
+    "QQQ": "NDX", "TQQQ": "NDX", "SQQQ": "NDX",
+    "SPY": "SPX", "SPXL": "SPX", "SPXS": "SPX", "UPRO": "SPX",
+    "SMH": "SOX", "SOXL": "SOX", "SOXS": "SOX",
+}
+MAX_OPEN_PER_CLUSTER = 2
+
+
+def cluster_of(symbol: str) -> str:
+    return CORRELATION_CLUSTER.get(symbol, symbol)
+
 
 @dataclass
 class EngineControls:
-    """Mutable discipline state the behavior plane will publish (doc 17 §5)."""
+    """Mutable discipline state the behavior plane will publish (doc 17 §5).
+
+    open_by_module/open_by_cluster/open_symbol_strategy are lifecycle-driven:
+    the caller (backtest/live loop) MUST call register_open() when an alert
+    is composed and register_close() when its paper trade settles (including
+    EXPIRED_UNFILLED) — otherwise these gates silently never fire, which was
+    exactly the bug found in review 2026-07-12: MODULE_CONCURRENCY existed
+    but nothing ever incremented open_by_module, so it was a permanent no-op.
+    """
 
     open_by_module: dict[Module, int] = field(default_factory=dict)
+    open_by_cluster: dict[str, int] = field(default_factory=dict)
+    open_symbol_strategy: dict[tuple[str, str], int] = field(default_factory=dict)
     cooldown_until: dict[Module, object] = field(default_factory=dict)  # ts by module
     consecutive_stops_today: dict[Module, int] = field(default_factory=dict)
+
+    def register_open(self, module: Module, symbol: str, strategy: str) -> None:
+        self.open_by_module[module] = self.open_by_module.get(module, 0) + 1
+        c = cluster_of(symbol)
+        self.open_by_cluster[c] = self.open_by_cluster.get(c, 0) + 1
+        key = (symbol, strategy)
+        self.open_symbol_strategy[key] = self.open_symbol_strategy.get(key, 0) + 1
+
+    def register_close(self, module: Module, symbol: str, strategy: str) -> None:
+        self.open_by_module[module] = max(0, self.open_by_module.get(module, 0) - 1)
+        c = cluster_of(symbol)
+        self.open_by_cluster[c] = max(0, self.open_by_cluster.get(c, 0) - 1)
+        key = (symbol, strategy)
+        self.open_symbol_strategy[key] = max(0, self.open_symbol_strategy.get(key, 0) - 1)
 
 
 @dataclass(frozen=True)
@@ -101,6 +140,20 @@ def run_gates(
     open_count = controls.open_by_module.get(sig.module, 0)
     if open_count >= MODULE_CONCURRENCY[sig.module]:
         return Verdict(False, "concurrency", f"{open_count} open ≥ cap")
+
+    # Duplicate guard (doc 03 §5): don't re-alert the same symbol+strategy
+    # while a prior alert on it is still open or pending fill
+    dup_key = (state.symbol, sig.strategy)
+    if controls.open_symbol_strategy.get(dup_key, 0) > 0:
+        return Verdict(False, "duplicate",
+                       f"{state.symbol} {sig.strategy} already has an open/pending alert")
+
+    # Correlation cap (doc 03 §5): max concurrent opens per correlated cluster
+    cluster = cluster_of(state.symbol)
+    cluster_count = controls.open_by_cluster.get(cluster, 0)
+    if cluster_count >= MAX_OPEN_PER_CLUSTER:
+        return Verdict(False, "correlation",
+                       f"{cluster} cluster at cap ({cluster_count}/{MAX_OPEN_PER_CLUSTER})")
 
     # Confidence gate — counter-trend needs 85 (RULE-T1)
     threshold = COUNTER_TREND_THRESHOLD if sig.counter_trend else CONFIDENCE_THRESHOLD

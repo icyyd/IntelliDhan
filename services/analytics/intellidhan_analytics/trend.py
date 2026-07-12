@@ -67,8 +67,12 @@ class TrendEngine:
         self._prev_ema9: float | None = None
         self.snapshot: TrendSnapshot | None = None
         self.last_indicators: IndicatorSnapshot | None = None
+        self.last_bar: Bar | None = None  # the actual completed bar for THIS timeframe —
+                                          # e.g. the true H1 bar (full-hour OHLC), never the
+                                          # 5m bar that triggered its rollup (parity fix)
 
     def update(self, bar: Bar, session_id: str) -> TrendSnapshot:
+        self.last_bar = bar
         snap = self.indicators.update(bar, session_id)
         self.last_indicators = snap
         self.structure.update(bar)

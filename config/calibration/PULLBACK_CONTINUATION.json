@@ -8,6 +8,10 @@
     }
   },
   "meta": {
+    "evidence_status": "HISTORICAL_OOS",
+    "live_eligible": false,
+    "evidence_note": "Historical out-of-sample evidence only — NOT yet live-validated. BLOCKED from gated/live delivery (strategies.py RawSignal.live_eligible=False) pending research/production parity revalidation. Still evaluated in SHADOW mode for forward-evidence accumulation. See docs/18-enhancement-review.md.",
+    "interval_95_test": [0.672, 0.838],
     "fitted_from": "research_swing SW15 held-out splits (val n=115 wr .765 + test n=105 wr .781); train excluded to avoid selection optimism",
     "params": {
       "t_mults": [
@@ -20,9 +24,10 @@
       "stop_atr": 1.0
     },
     "universe": "12 liquid large caps/ETFs, 2y 1H bars",
-    "win_definition": "TP1 before initial stop (doc 03 \u00a74)",
-    "expectancy": "avg_r +0.041 val / +0.044 test, PF 1.18/1.20",
-    "caveats": "single flat bucket (composite-conditional resolution pending live samples); 1H-bar fill granularity; long-only; period includes mostly bull regimes",
+    "win_definition": "TP1 before initial stop (doc 03 §4)",
+    "expectancy": "avg_r +0.041 val / +0.044 test, PF 1.18/1.20 (pre-cost; spread/slippage/fees NOT modeled)",
+    "caveats": "single flat bucket (composite-conditional resolution pending live samples); long-only; sample period includes mostly bull regimes; cross-sectionally correlated symbols inflate apparent sample size; 95% Wilson interval on the n=98 test set is 67.2%-83.8%, so the 76.5% point estimate does not establish with high confidence that the true rate exceeds 75%",
+    "known_engine_fixes_2026_07_12": "trigger-bar identity bug fixed (strategy was reading the 5m rollup-trigger bar instead of the true completed H1 bar for touch/entry geometry); risk-state wiring fixed (correlation cap and duplicate guard were specified but never incremented, so they never fired). Post-fix forward-style checks on the trailing 55 days remained weak/inconclusive on very small samples across successive re-runs. An independent parity analysis found the direct-H1 research population and the production 5m-rollup population do not yet demonstrably agree and recommended blocking live delivery until reconciled — action taken same day: strategy set live_eligible=False, verified by regression test and a real 55-day backtest showing zero gated alerts.",
     "analytics_version": "v1"
   }
 }

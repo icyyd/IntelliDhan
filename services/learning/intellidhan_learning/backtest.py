@@ -51,12 +51,14 @@ async def run_backtest(symbols: list[str], days: int, shadow: bool = False,
 
     alerts = []
     for bar in all_5m:
-        executor.on_bar(bar)  # manage opens BEFORE new signals on the same bar
+        for settled in executor.on_bar(bar):  # manage opens BEFORE new signals on the same bar
+            runner.controls.register_close(settled.module, settled.symbol, settled.strategy)
         for setup in runner.on_bar_5m(bar):
             alert = composer.compose(setup)
             if alert is not None:
                 alerts.append(alert)
                 executor.track(PaperTrade.from_alert(alert, setup))
+                runner.controls.register_open(setup.module, setup.symbol, setup.strategy)
 
     by_strategy: dict[str, list[PaperTrade]] = defaultdict(list)
     for t in executor.trades:

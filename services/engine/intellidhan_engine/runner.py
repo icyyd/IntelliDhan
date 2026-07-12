@@ -66,6 +66,24 @@ class EngineRunner:
         comp = composite(factors)
         cal = self.calibration[sig.strategy]
         conf = cal.confidence(comp)
+
+        # Administrative eligibility block (independent of market/risk state):
+        # a strategy can be pulled from live/gated delivery while continuing
+        # to harvest SHADOW research samples. Checked before the veto wall so
+        # it's unconditional — no factor combination can override it.
+        if not sig.live_eligible and not self.shadow:
+            self.suppressed.append(
+                SuppressedSetup(
+                    setup_id=setup_id, strategy=sig.strategy, symbol=state.symbol,
+                    ts=state.ts(), gate="disabled",
+                    detail="strategy disabled from live/gated delivery pending "
+                           "research/production parity revalidation "
+                           "(see docs/18-enhancement-review.md)",
+                    composite=comp, confidence=conf,
+                )
+            )
+            return None
+
         gate_conf = 1.0 if self.shadow else conf
         verdict: Verdict = run_gates(state, sig, gate_conf, self.controls)
         if not verdict.passed:

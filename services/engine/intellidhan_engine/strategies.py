@@ -29,6 +29,10 @@ class RawSignal:
     counter_trend: bool = False
     pop_based: bool = False       # doc 08 rr_metric POP_BASED: gate on calibrated
                                   # probability instead of the 2:1 R:R rule
+    live_eligible: bool = True    # False = SHADOW-only: still evaluated and paper-
+                                  # tracked for research, but structurally cannot
+                                  # produce a gated/live alert (doc 08 §4 governance;
+                                  # see docs/18-enhancement-review.md for why)
 
 
 def _two_closes_beyond(state: SymbolState, level: float, above: bool) -> bool:
@@ -263,7 +267,9 @@ class PullbackContinuation:
             return None
         if d_snap.score < self.D_TREND_MIN or ind.ema21 <= ind.ema50:
             return None
-        bar = state.last_bar
+        bar = state.trigger_bar(Timeframe.H1)  # true H1 OHLC, not the 5m rollup trigger
+        if bar is None:
+            return None
         zone_lo, zone_hi = ind.ema50, ind.ema21
         touched = bar.low <= zone_hi and bar.low >= zone_lo - 0.5 * ind.atr14
         if not (touched and ind.rsi14 >= self.RSI_MIN and bar.close > ind.ema9):
@@ -278,6 +284,13 @@ class PullbackContinuation:
             trigger_tf=self.trigger_tf, entry=entry, stop=stop, targets=targets,
             f2_quality=round(min(50.0 + d_snap.score * 0.5, 100.0), 1),
             pop_based=True,
+            live_eligible=False,  # BLOCKED pending full research/production parity —
+                                  # see docs/18-enhancement-review.md §3.3/§12. The
+                                  # direct-H1 research population and the production
+                                  # 5m-rollup population do not yet agree; the 76.5%
+                                  # calibration must not gate live alerts until they do.
+                                  # Still evaluated + paper-tracked in SHADOW for
+                                  # continued forward-evidence accumulation.
             explain=(f"1H pullback into the 21/50 EMA zone within a daily uptrend "
                      f"(D score {d_snap.score:+.0f}), RSI {ind.rsi14:.0f} holding, "
                      f"close reclaimed the 9EMA. High-probability continuation class."),

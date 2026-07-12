@@ -89,6 +89,8 @@ class LiveLoop:
                 continue
             self.seen_bars.add(key)
             for settled in self.executor.on_bar(bar):
+                self.runner.controls.register_close(
+                    settled.module, settled.symbol, settled.strategy)
                 await self._notify_settlement(settled)
             for setup in self.runner.on_bar_5m(bar):
                 alert = self.composer.compose(setup)
@@ -96,6 +98,7 @@ class LiveLoop:
                     continue
                 self.alerts.append(alert)
                 self.executor.track(PaperTrade.from_alert(alert, setup))
+                self.runner.controls.register_open(setup.module, setup.symbol, setup.strategy)
                 await self._deliver(alert)
 
     async def _notify_settlement(self, trade) -> None:

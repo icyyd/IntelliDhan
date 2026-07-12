@@ -15,6 +15,7 @@ from typing import Protocol
 
 import yaml
 
+from intellidhan_engine.calibration import CalibrationMap
 from intellidhan_engine.voice import complement_line, lint
 from intellidhan_schemas.signals import (
     Action,
@@ -197,6 +198,7 @@ class Composer:
         if setup.module == Module.ZDTE:
             management.append("Hard flatten by 15:55 ET")
         thesis = f"{setup.explain} {complement_line(setup.confidence)}"
+        risks = [self._evidence_risk_line(setup.strategy)]
         return Alert(
             alert_id=alert_id, created_at=setup.ts, module=setup.module,
             strategy=setup.strategy, action=action, symbol=setup.symbol,
@@ -209,9 +211,24 @@ class Composer:
             confidence=setup.confidence, factors=setup.factors,
             trend_matrix={k: _state_word(v) for k, v in setup.mtf_matrix.items()},
             thesis=thesis, invalidation=setup.invalidation, management=management,
-            risks=["Model confidence is uncalibrated (v0) — SHADOW grading in effect"],
+            risks=risks,
             valid_until=setup.ts + VALIDITY[setup.module],
         )
+
+    @staticmethod
+    def _evidence_risk_line(strategy: str) -> str:
+        """Honest evidence-status line (doc 18 review §5.3) — never a generic
+        placeholder. Reflects what the calibration file actually says, not
+        an assumed 'uncalibrated' default that stayed hardcoded even for
+        strategies that DO have held-out evidence."""
+        cal = CalibrationMap.load(strategy)
+        note = cal.meta.get("evidence_note") if cal.meta else None
+        if note:
+            return note
+        if cal.buckets:
+            return (f"Calibrated from {sum(b['n'] for b in cal.buckets.values())} historical "
+                    f"samples — evidence status not yet classified; treat as research-stage.")
+        return "No calibration evidence on file for this strategy — SHADOW/research grading only."
 
 
 def _state_word(score: float) -> str:
