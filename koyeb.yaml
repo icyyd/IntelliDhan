@@ -1,0 +1,57 @@
+# Koyeb deployment reference for the IntelliDhan gateway.
+#
+# Koyeb drives auto-deploys from its GitHub integration, not this file —
+# this documents the exact settings to enter in the dashboard. Reuses the
+# service originally configured for IntelliDhan-legacy (single Nano
+# instance, port 8000, /api/health check) — repoint its GitHub source to
+# this repo (icyyd/IntelliDhan) and this Dockerfile.
+#
+# ── Secrets to set in Koyeb dashboard → Service → Settings → Environment ──
+#   TELEGRAM_BOT_TOKEN     # optional — alerts print to Koyeb logs if unset
+#   TELEGRAM_CHAT_ID       # optional — required alongside the token above
+#
+# No database/Redis required: the live loop runs entirely in-memory and
+# does not depend on deploy/docker-compose.yml's persistence layer.
+#
+# KNOWN LIMITATION: config/budgets.yaml lives on the container's ephemeral
+# filesystem. Edits made via the dashboard's Budgets dialog persist only
+# until the next redeploy/restart, which resets it to the git-committed
+# defaults. Edit config/budgets.yaml in the repo for changes that should
+# survive a restart.
+
+name: intellidhan
+type: WEB
+
+definition:
+  # Single-instance by design: the live loop's orchestrator state is
+  # in-memory and cannot be sharded across replicas.
+  scalings:
+    min: 1
+    max: 1
+
+  regions:
+    - fra
+
+  instance_types:
+    - type: free      # Nano: 512 MB RAM, 0.1 vCPU, always-on on the free plan
+
+  docker:
+    dockerfile: Dockerfile
+
+  ports:
+    - port: 8000
+      protocol: http
+
+  health_checks:
+    - type: http
+      port: 8000
+      path: /api/health
+      interval_seconds: 30
+      timeout_seconds: 5
+      grace_period_seconds: 45
+      healthy_threshold: 1
+      unhealthy_threshold: 3
+
+  env:
+    - key: PORT
+      value: "8000"
