@@ -45,11 +45,23 @@ def _two_closes_beyond(state: SymbolState, level: float, above: bool) -> bool:
 
 
 class OrbBreakout:
-    """RULE-T3/T4: confirmed break of the 9:30–10:00 range with volume (doc 04)."""
+    """RULE-T3/T4: confirmed break of the 9:30–10:00 range with volume (doc 04).
+
+    Parameterized for the tuning harness; defaults are the production config.
+    """
 
     key = "ORB_BREAKOUT"
     module = Module.ZDTE
     trigger_tf = Timeframe.M5
+
+    def __init__(self, key: str = "ORB_BREAKOUT", *, stop_frac: float = 0.35,
+                 t_mults=(0.5, 1.0, 1.75), min_relvol: float = 0.0,
+                 h1_min: float = 0.0) -> None:
+        self.key = key
+        self.stop_frac = stop_frac
+        self.t_mults = t_mults
+        self.min_relvol = min_relvol
+        self.h1_min = h1_min
 
     def evaluate(self, state: SymbolState) -> RawSignal | None:
         orb = state.opening_range
@@ -58,6 +70,8 @@ class OrbBreakout:
             return None
         bar = state.last_bar
         rel_vol = snap.rel_volume or 0.0
+        if self.min_relvol and rel_vol < self.min_relvol:
+            return None
         vwap = snap.vwap
         long_break = _two_closes_beyond(state, orb.high, above=True)
         short_break = _two_closes_beyond(state, orb.low, above=False)
@@ -75,11 +89,12 @@ class OrbBreakout:
             return None
         direction = Direction.LONG if long_break else Direction.SHORT
         # higher-TF agreement (RULE-T2): 1H trend must not oppose the break
+        # (h1_min > 0 additionally demands positive alignment, not mere non-opposition)
         h1 = state.trend_snap(Timeframe.H1)
         if h1 is not None:
-            if direction == Direction.LONG and h1.score < 0:
+            if direction == Direction.LONG and h1.score < self.h1_min:
                 return None
-            if direction == Direction.SHORT and h1.score > 0:
+            if direction == Direction.SHORT and h1.score > -self.h1_min:
                 return None
         # VWAP must agree (RULE-T6)
         if vwap is not None:
@@ -92,12 +107,12 @@ class OrbBreakout:
             return None
         if direction == Direction.LONG:
             entry = bar.close
-            stop = orb.high - range_size * 0.35   # failed break = back inside range
-            targets = [orb.high + range_size * m for m in (0.5, 1.0, 1.75)]
+            stop = orb.high - range_size * self.stop_frac  # failed break = back inside range
+            targets = [orb.high + range_size * m for m in self.t_mults]
         else:
             entry = bar.close
-            stop = orb.low + range_size * 0.35
-            targets = [orb.low - range_size * m for m in (0.5, 1.0, 1.75)]
+            stop = orb.low + range_size * self.stop_frac
+            targets = [orb.low - range_size * m for m in self.t_mults]
         # F2: confirmation is structural; volume grades the quality (RULE-T9)
         f2 = 55.0 + min(rel_vol, 3.0) * 15.0
         return RawSignal(
@@ -187,46 +202,65 @@ class Ema9TrendPullback:
 
 
 class VwapReclaim:
-    """Loss and reclaim of VWAP with 2-candle confirmation (RULE-T6, doc 04)."""
+    """Loss and reclaim of VWAP with 2-candle confirmation (RULE-T6, doc 04).
+
+    Parameterized for the tuning harness; defaults are the production config.
+    """
 
     key = "VWAP_RECLAIM"
     module = Module.ZDTE
     trigger_tf = Timeframe.M5
+
+    def __init__(self, key: str = "VWAP_RECLAIM", *, lookback: int = 8,
+                 min_before: int = 4, t_mults=(1.0, 1.8, 3.0),
+                 stop_lookback: int = 4, stop_atr_pad: float = 0.15,
+                 t15_opp: float = 20.0, min_relvol: float = 0.0) -> None:
+        self.key = key
+        self.lookback = lookback
+        self.min_before = min_before
+        self.t_mults = t_mults
+        self.stop_lookback = stop_lookback
+        self.stop_atr_pad = stop_atr_pad
+        self.t15_opp = t15_opp
+        self.min_relvol = min_relvol
 
     def evaluate(self, state: SymbolState) -> RawSignal | None:
         snap = state.indicators(Timeframe.M5)
         if snap is None or snap.vwap is None or snap.atr14 is None:
             return None
         recent = state.recent_5m
-        if len(recent) < 8 or state.bars_in_session < 8:
+        if len(recent) < self.lookback or state.bars_in_session < self.lookback:
+            return None
+        if self.min_relvol and (snap.rel_volume or 0.0) < self.min_relvol:
             return None
         vwap = snap.vwap
-        below_before = sum(1 for b in recent[-8:-2] if b.close < vwap)
-        above_before = sum(1 for b in recent[-8:-2] if b.close > vwap)
+        window = recent[-self.lookback:-2]
+        below_before = sum(1 for b in window if b.close < vwap)
+        above_before = sum(1 for b in window if b.close > vwap)
         two_above = recent[-2].close > vwap and recent[-1].close > vwap
         two_below = recent[-2].close < vwap and recent[-1].close < vwap
         # only the bar completing the confirmation fires (dedupe like ORB)
         three_above = len(recent) >= 3 and recent[-3].close > vwap and two_above
         three_below = len(recent) >= 3 and recent[-3].close < vwap and two_below
-        long_reclaim = below_before >= 4 and two_above and not three_above
-        short_reclaim = above_before >= 4 and two_below and not three_below
+        long_reclaim = below_before >= self.min_before and two_above and not three_above
+        short_reclaim = above_before >= self.min_before and two_below and not three_below
         if not (long_reclaim or short_reclaim):
             return None
         direction = Direction.LONG if long_reclaim else Direction.SHORT
         # 15m trend must not oppose (RULE-T2)
         t15 = state.trend_snap(Timeframe.M15)
         if t15 is not None:
-            if direction == Direction.LONG and t15.score < -20:
+            if direction == Direction.LONG and t15.score < -self.t15_opp:
                 return None
-            if direction == Direction.SHORT and t15.score > 20:
+            if direction == Direction.SHORT and t15.score > self.t15_opp:
                 return None
         entry = recent[-1].close
         if direction == Direction.LONG:
-            stop = min(b.low for b in recent[-4:]) - 0.15 * snap.atr14
-            targets = [entry + snap.atr14 * m for m in (1.0, 1.8, 3.0)]
+            stop = min(b.low for b in recent[-self.stop_lookback:]) - self.stop_atr_pad * snap.atr14
+            targets = [entry + snap.atr14 * m for m in self.t_mults]
         else:
-            stop = max(b.high for b in recent[-4:]) + 0.15 * snap.atr14
-            targets = [entry - snap.atr14 * m for m in (1.0, 1.8, 3.0)]
+            stop = max(b.high for b in recent[-self.stop_lookback:]) + self.stop_atr_pad * snap.atr14
+            targets = [entry - snap.atr14 * m for m in self.t_mults]
         rel_vol = snap.rel_volume or 0.0
         f2 = 50.0 + min(rel_vol, 2.5) * 14.0 + (8.0 if abs(entry - vwap) < 0.5 * snap.atr14 else 0.0)
         side = "reclaim above" if direction == Direction.LONG else "loss below"
