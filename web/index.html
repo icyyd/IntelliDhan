@@ -349,6 +349,265 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   .context-meta{justify-content:flex-start; margin-top:9px}
   .context-stage,.context-chart{min-height:260px}
 }
+
+/* ── Card-first visual refresh ─────────────────────────────────────────
+   Softer, friendlier surfaces with alerts as the primary product object.
+   Charts remain available as progressive disclosure inside selected setup. */
+:root{
+  --bg:#080B14;
+  --panel:rgba(17,23,38,.82);
+  --panel-elevated:rgba(24,31,50,.88);
+  --border:rgba(163,177,220,.16);
+  --border-soft:rgba(163,177,220,.09);
+  --text:#F4F6FC;
+  --text-dim:#AAB3CC;
+  --text-faint:#727D99;
+  --cyan:#91A4FF;
+  --gold:#F6C86B;
+  --teal:#5EEAD4;
+  --red:#FB7185;
+  --amber:#FBBF68;
+  --radius-card:24px;
+  --radius-chip:999px;
+  --shadow-card:0 18px 50px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
+}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 8% 4%,rgba(96,110,220,.16),transparent 28rem),
+    radial-gradient(circle at 92% 18%,rgba(45,212,191,.10),transparent 24rem),
+    radial-gradient(circle at 55% 80%,rgba(251,191,104,.055),transparent 30rem),
+    var(--bg);
+}
+.topbar{
+  height:60px; margin:12px 18px 18px; padding:0 16px; top:10px;
+  border:1px solid var(--border); border-radius:20px;
+  background:rgba(15,20,34,.82); backdrop-filter:blur(18px);
+  box-shadow:0 14px 40px rgba(0,0,0,.24);
+}
+.brand{font-size:16px; letter-spacing:-.02em}
+.brand b{color:var(--cyan)}
+.tape{gap:9px}
+.tape .tk{padding:5px 9px; border-radius:99px; background:rgba(255,255,255,.035)}
+.cmdk-btn,.icon-btn,.chip{background:rgba(255,255,255,.045); border-color:var(--border)}
+.cmdk-btn{padding:7px 12px}
+.icon-btn{width:34px; height:34px; border-radius:12px}
+.shell{
+  grid-template-columns:70px minmax(0,1fr) 310px; gap:18px;
+  padding:0 18px 20px; min-height:calc(100vh - 90px);
+}
+.navrail{
+  align-self:start; position:sticky; top:88px; height:calc(100vh - 108px);
+  border:1px solid var(--border); border-radius:24px; padding:11px 0;
+  background:rgba(15,20,34,.72); backdrop-filter:blur(16px); box-shadow:var(--shadow-card);
+}
+.nav-item{width:46px; height:46px; border-radius:16px; color:var(--text-faint)}
+.nav-item.active{background:var(--cyan); color:#11162A; border-color:transparent; box-shadow:0 8px 24px rgba(145,164,255,.24)}
+.nav-item[disabled]{display:none}
+.workspace{padding:0; gap:18px}
+.decision-rail{padding:0; border:0; background:none; gap:18px}
+.panel{
+  border-color:var(--border); border-radius:var(--radius-card); padding:20px;
+  background:linear-gradient(145deg,rgba(25,32,52,.88),rgba(14,19,32,.88));
+  backdrop-filter:blur(18px); box-shadow:var(--shadow-card);
+}
+.panel-head{margin-bottom:15px}
+.panel-head h2{font-size:12px; color:var(--text); letter-spacing:.04em; text-transform:none}
+.panel-head .count{padding:4px 9px; border-radius:99px; background:rgba(255,255,255,.05); color:var(--text-dim)}
+
+.desk-hero{display:flex; align-items:flex-end; gap:22px; padding:8px 4px 2px}
+.desk-copy{min-width:250px}
+.desk-eyebrow{color:var(--cyan); font-size:11px; font-weight:750; letter-spacing:.1em; text-transform:uppercase}
+.desk-hero h1{font-size:30px; line-height:1.12; letter-spacing:-.035em; margin:5px 0 5px}
+.desk-hero p{margin:0; color:var(--text-dim); font-size:13px}
+.desk-stats{display:grid; grid-template-columns:repeat(3,minmax(130px,1fr)); gap:10px; margin-left:auto; width:min(560px,100%)}
+.desk-stat{display:flex; align-items:center; gap:10px; padding:11px 13px; border:1px solid var(--border); border-radius:18px; background:rgba(255,255,255,.035)}
+.stat-bubble{display:grid; place-items:center; width:34px; height:34px; border-radius:13px; background:rgba(145,164,255,.13); color:var(--cyan); flex:none}
+.stat-bubble.mint{background:rgba(94,234,212,.12); color:var(--teal)}
+.stat-bubble.warm{background:rgba(246,200,107,.12); color:var(--gold)}
+.desk-stat b{display:block; font:700 15px var(--mono)}
+.desk-stat small{display:block; color:var(--text-faint); font-size:10.5px; white-space:nowrap}
+
+.signal-board{padding:18px}
+.section-heading{display:flex; align-items:center; gap:16px; margin-bottom:15px}
+.section-heading-copy h2{font-size:18px; letter-spacing:-.02em; margin:0 0 2px}
+.section-heading-copy p{font-size:11.5px; color:var(--text-faint); margin:0}
+.queue-tabs{margin:0 0 0 auto; padding:4px; gap:3px; border:1px solid var(--border); border-radius:99px; background:rgba(3,7,16,.28)}
+.qtab{flex:none; min-width:104px; padding:7px 12px; border:0; border-radius:99px}
+.qtab.active{background:var(--cyan); color:#11162A; box-shadow:0 6px 18px rgba(145,164,255,.18)}
+#queueTracking{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
+#queueTracking>.empty{grid-column:1/-1}
+.alert-card{
+  position:relative; overflow:hidden; margin:0; min-height:300px; padding:18px;
+  border:1px solid var(--border); border-left:1px solid var(--border); border-radius:22px;
+  background:linear-gradient(155deg,rgba(39,48,76,.68),rgba(15,21,36,.82));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  transition:border-color 180ms ease,box-shadow 180ms ease,background-color 180ms ease;
+}
+.alert-card::before{content:""; position:absolute; width:150px; height:150px; border-radius:50%; right:-65px; top:-75px; background:rgba(145,164,255,.09); pointer-events:none}
+.alert-card:hover{border-color:rgba(145,164,255,.46); box-shadow:0 16px 34px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.05)}
+.alert-card.selected{border-color:var(--cyan); background:linear-gradient(155deg,rgba(54,64,101,.76),rgba(16,22,38,.88)); box-shadow:0 0 0 3px rgba(145,164,255,.10),0 18px 38px rgba(0,0,0,.24)}
+.alert-card.blocked{border-left:1px solid rgba(251,113,133,.42); background:linear-gradient(155deg,rgba(75,39,58,.40),rgba(17,22,38,.90))}
+.ac-top{margin-bottom:14px}
+.ac-status{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:99px; background:rgba(94,234,212,.10); color:var(--teal)}
+.ac-status::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor}
+.ac-age{font-size:10.5px}
+.badge{padding:5px 10px; font-size:10.5px}
+.badge.buy{background:rgba(94,234,212,.12)}
+.badge.sell{background:rgba(196,181,253,.14)}
+.ac-hero{display:flex; gap:14px; align-items:flex-start}
+.ac-hero-copy{min-width:0; flex:1}
+.ac-sym{font-size:24px; line-height:1.05; letter-spacing:-.035em}
+.ac-live{font:12px var(--mono); color:var(--text-dim); margin-left:6px}
+.ac-strat{display:block; margin-top:5px; font-size:11px}
+.confidence-orb{display:grid; place-items:center; width:58px; height:58px; border-radius:50%; flex:none; background:conic-gradient(var(--cyan) var(--confidence),rgba(255,255,255,.07) 0); position:relative}
+.confidence-orb::after{content:""; position:absolute; inset:5px; border-radius:50%; background:#171E31}
+.confidence-orb span{position:relative; z-index:1; text-align:center; font:700 12px var(--mono); line-height:1.05}
+.confidence-orb small{display:block; color:var(--text-faint); font:8px var(--sans); text-transform:uppercase; margin-top:2px}
+.character-chip{margin:11px 0 0; border:0; background:rgba(246,200,107,.10); padding:5px 9px}
+.ac-thesis{font-size:12.5px; line-height:1.55; margin:14px 0; min-height:39px; color:var(--text-dim)}
+.level-bubbles{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px}
+.level-bubble{padding:9px 8px; border-radius:14px; background:rgba(255,255,255,.045); min-width:0}
+.level-bubble span{display:block; color:var(--text-faint); font-size:9px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px}
+.level-bubble b{display:block; overflow:hidden; text-overflow:ellipsis; font:650 11px var(--mono); color:var(--text)}
+.level-bubble.stop b{color:var(--red)}
+.level-bubble.target b{color:var(--teal)}
+.evidence-line{border-top:0; padding-top:0; margin-top:14px; flex-wrap:wrap}
+.evidence-badge{padding:4px 8px}
+.ac-foot{margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft)}
+.open-detail{margin-left:auto; color:var(--cyan); font-size:11px; font-weight:650; display:inline-flex; gap:5px; align-items:center}
+.open-detail svg{width:13px; height:13px}
+
+.context-panel{border-radius:24px}
+.context-head{padding:20px; border-bottom:0}
+.context-kicker{color:var(--cyan)}
+.context-symbol{font-size:26px}
+.context-banner{margin:0 20px 14px; padding:11px 13px; border:1px solid var(--border); border-radius:16px}
+.context-banner.blocked{border-color:rgba(251,113,133,.25); background:rgba(251,113,133,.08)}
+.context-banner.ready{border-color:rgba(94,234,212,.20); background:rgba(94,234,212,.07)}
+.context-banner.neutral{background:rgba(145,164,255,.06)}
+.decision-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding:0 20px 18px; border:0}
+.decision-cell{padding:14px; border:1px solid var(--border); border-radius:17px; background:rgba(255,255,255,.035)}
+.decision-cell:last-child{border-right:1px solid var(--border)}
+.chart-toggle{display:flex; align-items:center; gap:10px; width:calc(100% - 40px); margin:0 20px 18px; padding:12px 14px; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.035); color:var(--text); text-align:left; cursor:pointer}
+.chart-toggle:hover{border-color:rgba(145,164,255,.42)}
+.chart-toggle>svg:first-child{color:var(--cyan)}
+.chart-toggle .toggle-copy{flex:1}
+.chart-toggle b{display:block; font-size:12px}
+.chart-toggle small{display:block; color:var(--text-faint); font-size:10.5px}
+.chart-toggle .toggle-chevron{transition:transform 180ms ease}
+.chart-toggle[aria-expanded="true"] .toggle-chevron{transform:rotate(90deg)}
+.chart-drawer{margin:0 20px 20px; overflow:hidden; border:1px solid var(--border); border-radius:18px; background:#0B101A}
+.context-stage{min-height:280px}
+.context-chart{min-height:280px}
+.chart-legend{padding:10px 13px}
+
+.market-panel #matrix{grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px}
+.sym-row{display:grid; grid-template-columns:1fr auto; gap:4px 8px; padding:12px; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.03)}
+.sym-row:last-child{border-bottom:1px solid var(--border)}
+.sym-row:hover{background:rgba(145,164,255,.06); border-color:rgba(145,164,255,.32)}
+.sym-row.hl{border-radius:16px; box-shadow:0 0 0 2px rgba(145,164,255,.13); background:rgba(145,164,255,.075)}
+.sym-row .tk{width:auto; font-size:13px}
+.sym-row .px{width:auto; text-align:right; font-size:11px}
+.sym-row .tf-chips{grid-column:1/-1; margin-top:4px}
+.tf-chip{border-radius:99px; padding:3px 7px}
+.brief-plan{line-height:1.6}
+.risk-panel{position:sticky; top:88px}
+.risk-row{padding:11px; border-radius:16px; background:rgba(255,255,255,.03)}
+.risk-bar{height:8px; border-radius:99px}
+.risk-bar>div{background:linear-gradient(90deg,var(--cyan),var(--teal))}
+.drawer-toggle{font-size:11px; text-transform:none; letter-spacing:.03em}
+.notrade-summary,.evidence-card,.evidence-metrics .em,.bd-module{border-radius:18px; background:rgba(255,255,255,.025)}
+.bottom-drawer{margin:0 18px 14px; border:1px solid var(--border); border-radius:24px; overflow:hidden; background:rgba(15,20,34,.78); backdrop-filter:blur(16px); box-shadow:var(--shadow-card)}
+.bd-tabs{padding:5px; margin:8px; display:inline-flex; border:1px solid var(--border); border-radius:99px}
+.bd-tab{padding:8px 13px; border:0; border-radius:99px}
+.bd-tab.active{background:rgba(145,164,255,.12); color:var(--cyan)}
+footer.disclaimer{margin:0 18px 16px; padding:0 8px; border:0; text-align:center}
+.cmdk-box,dialog#budgets-dialog{border-radius:24px; box-shadow:0 24px 80px rgba(0,0,0,.48)}
+.bd-save{background:var(--cyan); color:#11162A; border-radius:12px}
+.autotrade-panel .panel-head{align-items:center}
+.auto-mode{margin-left:auto; padding:4px 9px; border-radius:99px; font:750 10px var(--mono); letter-spacing:.04em; background:rgba(114,125,153,.12); color:var(--text-dim)}
+.auto-mode.shadow{background:rgba(246,200,107,.12); color:var(--gold)}
+.auto-mode.supervised{background:rgba(145,164,255,.14); color:var(--cyan)}
+.auto-mode.armed{background:rgba(94,234,212,.13); color:var(--teal); box-shadow:0 0 0 3px rgba(94,234,212,.06)}
+.auto-agent{display:flex; align-items:center; gap:11px; padding:12px; border:1px solid var(--border); border-radius:17px; background:rgba(255,255,255,.03)}
+.auto-agent b{display:block; font-size:12px}
+.auto-agent small{display:block; color:var(--text-faint); font-size:10px; line-height:1.45; margin-top:2px}
+.auto-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin:10px 0}
+.auto-stats>span{padding:9px 7px; border-radius:14px; background:rgba(255,255,255,.035); min-width:0}
+.auto-stats b{display:block; font:700 12px var(--mono); overflow:hidden; text-overflow:ellipsis}
+.auto-stats small{display:block; color:var(--text-faint); font-size:8.5px; white-space:nowrap}
+.auto-configure,.auto-disarm{display:flex; align-items:center; justify-content:center; gap:7px; border:1px solid var(--border); border-radius:13px; background:rgba(145,164,255,.08); color:var(--cyan); cursor:pointer; font-weight:650}
+.auto-configure{width:100%; padding:9px}
+.auto-configure:hover{border-color:rgba(145,164,255,.42)}
+dialog#autotrade-dialog{background:var(--panel-elevated); color:var(--text); border:1px solid var(--border); border-radius:24px; padding:0; width:650px; max-width:94vw; box-shadow:0 24px 80px rgba(0,0,0,.48)}
+dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(4px)}
+.dialog-subtitle{font-size:10.5px; color:var(--text-faint); margin-top:3px}
+.auto-form{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:18px 20px; max-height:62vh; overflow-y:auto}
+.auto-wide{grid-column:1/-1}
+.auto-field{display:block}
+.auto-field>span{display:block; color:var(--text-dim); font-size:10.5px; margin-bottom:5px}
+.auto-field input,.auto-field select{width:100%; height:38px; padding:7px 10px; border:1px solid var(--border); border-radius:11px; background:rgba(3,7,16,.45); color:var(--text); font:12px var(--sans)}
+.auto-field input[type="number"]{font-family:var(--mono)}
+.auto-check{display:flex; align-items:center; gap:8px; color:var(--text-dim); font-size:11.5px}
+.auto-check input{accent-color:var(--cyan)}
+.auto-warning{display:flex; align-items:flex-start; gap:9px; padding:12px; border:1px solid rgba(251,113,133,.22); border-radius:15px; background:rgba(251,113,133,.07); color:#FCA5B3; font-size:10.5px; line-height:1.5}
+.auto-warning svg{width:15px; height:15px; flex:none; margin-top:1px}
+.auto-disarm{padding:8px 13px; background:rgba(251,113,133,.08); color:var(--red)}
+
+@media (max-width:1180px){
+  .shell{grid-template-columns:70px minmax(0,1fr)}
+  .decision-rail{grid-column:2; display:grid; grid-template-columns:repeat(2,minmax(0,1fr))}
+  .risk-panel{position:static}
+}
+@media (max-width:900px){
+  .topbar{margin:10px 12px 14px}
+  .shell{grid-template-columns:1fr; padding:0 12px 16px}
+  .navrail{display:none}
+  .decision-rail{grid-column:1}
+  .tape{display:none}
+  .desk-hero{display:block}
+  .desk-stats{margin:14px 0 0; width:100%}
+}
+@media (max-width:700px){
+  #queueTracking{grid-template-columns:1fr}
+  .section-heading{align-items:flex-start; flex-wrap:wrap}
+  .queue-tabs{margin-left:0}
+  .desk-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .desk-stat:last-child{grid-column:1/-1}
+  .decision-grid{grid-template-columns:1fr}
+  .decision-cell:last-child{border-right:1px solid var(--border)}
+  .market-panel #matrix{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .decision-rail{grid-template-columns:1fr}
+}
+@media (max-width:480px){
+  .topbar{margin:8px; padding:0 10px; height:56px}
+  .shell{padding:0 8px 12px}
+  .workspace,.decision-rail{gap:12px}
+  .panel{padding:15px; border-radius:20px}
+  .desk-hero{padding:4px 4px 0}
+  .desk-hero h1{font-size:26px}
+  .desk-stats{gap:7px}
+  .desk-stat{padding:9px; border-radius:15px}
+  .stat-bubble{width:30px; height:30px; border-radius:11px}
+  .section-heading{margin-bottom:12px}
+  .qtab{min-width:0; flex:1}
+  .queue-tabs{width:100%}
+  .alert-card{padding:16px; min-height:0}
+  .level-bubbles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .context-head{padding:17px}
+  .context-banner{margin:0 17px 12px}
+  .decision-grid{padding:0 17px 14px}
+  .chart-toggle{width:calc(100% - 34px); margin:0 17px 16px}
+  .chart-drawer{margin:0 10px 14px}
+  .market-panel #matrix{grid-template-columns:1fr}
+  .bottom-drawer{margin:0 8px 10px; border-radius:20px}
+  .bd-tabs{display:flex; overflow-x:auto; margin:6px}
+  .bd-tab{white-space:nowrap}
+  .auto-form{grid-template-columns:1fr; padding:15px; max-height:66vh}
+  .auto-wide{grid-column:1}
+  dialog#autotrade-dialog .bd-foot2{flex-wrap:wrap}
+}
 </style>
 </head>
 <body>
@@ -381,7 +640,7 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
 
 <div class="shell">
   <nav class="navrail" aria-label="Primary">
-    <button class="nav-item active" title="Command Center">CC</button>
+    <button class="nav-item active" title="Signals" aria-label="Signals"><svg class="icon"><use href="#i-activity"/></svg></button>
     <button class="nav-item" disabled title="0DTE — not yet implemented">0D</button>
     <button class="nav-item" disabled title="Swings — not yet implemented">SW</button>
     <button class="nav-item" disabled title="LEAPS — not yet implemented">LP</button>
@@ -394,55 +653,92 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   </nav>
 
   <main class="workspace" id="main">
-    <section class="panel context-panel" aria-labelledby="contextTitle">
+    <section class="desk-hero" aria-labelledby="deskTitle">
+      <div class="desk-copy">
+        <div class="desk-eyebrow">Decision-ready insights</div>
+        <h1 id="deskTitle">Signal inbox</h1>
+        <p>Current opportunities, evidence state, and risk context—without the noise.</p>
+      </div>
+      <div class="desk-stats" aria-label="Signal summary">
+        <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="summarySignals">—</b><small>Active signals</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summarySuppressed">—</b><small>Recent suppressions</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble mint"><svg class="icon"><use href="#i-clock"/></svg></span><span><b id="summaryNext">—</b><small>Next evaluation</small></span></div>
+      </div>
+    </section>
+
+    <section class="panel signal-board" aria-labelledby="signalBoardTitle">
+      <div class="section-heading">
+        <div class="section-heading-copy">
+          <h2 id="signalBoardTitle">Your signal cards</h2>
+          <p>Open a card for the complete plan, invalidation, and optional price context.</p>
+        </div>
+        <div class="queue-tabs" role="tablist">
+          <button class="qtab active" id="qtabTracking" role="tab" aria-selected="true">Signals <span id="qCountTracking">(0)</span></button>
+          <button class="qtab" id="qtabSuppressed" role="tab" aria-selected="false">Suppressed <span id="qCountSuppressed">(0)</span></button>
+        </div>
+      </div>
+      <div id="queueTracking" aria-live="polite"></div>
+      <div id="queueSuppressed" hidden></div>
+    </section>
+
+    <section class="panel context-panel" id="contextPanel" aria-labelledby="contextTitle">
       <div class="context-head">
         <div>
-          <div class="context-kicker" id="contextTitle">Signal workspace</div>
+          <div class="context-kicker" id="contextTitle">Selected setup</div>
           <div><span class="context-symbol" id="contextSymbol">—</span><span class="context-price" id="contextPrice">—</span></div>
         </div>
         <div class="context-meta" id="contextMeta"></div>
       </div>
       <div class="context-banner neutral" id="contextBanner" role="status"></div>
-      <div class="context-stage">
-        <svg class="context-chart" id="marketChart" viewBox="0 0 920 330" preserveAspectRatio="none" role="img" aria-label="Five-minute price chart with signal levels"></svg>
-        <div class="chart-empty" id="chartEmpty" hidden></div>
-      </div>
-      <div class="chart-legend" id="chartLegend"></div>
       <div class="decision-grid" id="decisionGrid"></div>
+      <button class="chart-toggle" id="chartToggle" type="button" aria-expanded="false" aria-controls="chartDrawer">
+        <svg class="icon"><use href="#i-activity"/></svg>
+        <span class="toggle-copy"><b>Price context</b><small>Optional 5-minute candles, entry zone, stop, and targets</small></span>
+        <svg class="icon toggle-chevron"><use href="#i-chevron-right"/></svg>
+      </button>
+      <div class="chart-drawer" id="chartDrawer" hidden>
+        <div class="context-stage">
+          <svg class="context-chart" id="marketChart" viewBox="0 0 920 330" preserveAspectRatio="none" role="img" aria-label="Five-minute price chart with signal levels"></svg>
+          <div class="chart-empty" id="chartEmpty" hidden></div>
+        </div>
+        <div class="chart-legend" id="chartLegend"></div>
+      </div>
     </section>
 
     <section class="panel market-panel">
-      <div class="panel-head"><h2>Market scan · multi-timeframe state</h2><span class="count" id="symCount"></span></div>
+      <div class="panel-head"><h2>Market pulse</h2><span class="count" id="symCount"></span></div>
       <div id="matrix"></div>
-    </section>
-
-    <section class="panel" id="briefPanel" hidden>
-      <div class="panel-head"><h2>Today's Briefing</h2></div>
-      <div id="briefBody"></div>
-    </section>
-
-    <section class="panel">
-      <button class="drawer-toggle" id="drawerToggle" aria-expanded="false">
-        <svg class="icon"><use href="#i-chevron-right"/></svg> Levels · Profile · Auction State
-      </button>
-      <div class="drawer-body" id="drawerBody"><div id="drawerInner"></div></div>
     </section>
   </main>
 
-  <aside class="decision-rail" aria-label="Decision queue">
-    <div class="panel" style="padding:0; border:none; background:none">
-      <div class="queue-tabs" role="tablist">
-        <button class="qtab active" id="qtabTracking" role="tab" aria-selected="true">Signals <span id="qCountTracking">(0)</span></button>
-        <button class="qtab" id="qtabSuppressed" role="tab" aria-selected="false">Suppressed <span id="qCountSuppressed">(0)</span></button>
+  <aside class="decision-rail" aria-label="Daily context">
+    <section class="panel" id="briefPanel" hidden>
+      <div class="panel-head"><h2>Today's focus</h2></div>
+      <div id="briefBody"></div>
+    </section>
+
+    <section class="panel autotrade-panel" aria-labelledby="autotradeTitle">
+      <div class="panel-head"><h2 id="autotradeTitle">Auto-trade bridge</h2><span class="auto-mode off" id="autotradeMode">OFF</span></div>
+      <div class="auto-agent"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b>Claude → Robinhood MCP</b><small>Broker authentication remains with the primary agent</small></span></div>
+      <div class="auto-stats">
+        <span><b id="autotradeReady">0</b><small>Ready</small></span>
+        <span><b id="autotradeApproval">0</b><small>Needs approval</small></span>
+        <span><b id="autotradeExpiry">—</b><small>Armed until</small></span>
       </div>
-      <div id="queueTracking" aria-live="polite"></div>
-      <div id="queueSuppressed" hidden></div>
-    </div>
+      <button class="auto-configure" type="button" onclick="openAutotrade()"><svg class="icon"><use href="#i-gear"/></svg> Configure automation</button>
+    </section>
 
     <div class="panel risk-panel">
       <div class="panel-head"><h2>Risk &amp; Budget</h2></div>
       <div id="riskUsage"></div>
     </div>
+
+    <section class="panel">
+      <button class="drawer-toggle" id="drawerToggle" aria-expanded="false">
+        <svg class="icon"><use href="#i-chevron-right"/></svg> Levels, profile &amp; auction state
+      </button>
+      <div class="drawer-body" id="drawerBody"><div id="drawerInner"></div></div>
+    </section>
   </aside>
 </div>
 
@@ -483,13 +779,40 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   </div>
 </dialog>
 
+<!-- Agent-mediated auto-trade policy; Robinhood credentials never enter this form. -->
+<dialog id="autotrade-dialog">
+  <div class="bd-head2">
+    <div><h2>Auto-trade policy</h2><div class="dialog-subtitle">IntelliDhan governs intents; Claude executes through Robinhood MCP.</div></div>
+    <button class="bd-close" onclick="document.getElementById('autotrade-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="auto-form">
+    <label class="auto-field auto-wide"><span>Control token</span><input type="password" id="autoToken" autocomplete="off" placeholder="AUTOTRADE_CONTROL_TOKEN"></label>
+    <label class="auto-field"><span>Mode</span><select id="autoMode"><option>OFF</option><option>SHADOW</option><option>SUPERVISED</option><option>ARMED</option></select></label>
+    <label class="auto-field"><span>Arm for minutes</span><input type="number" id="autoMinutes" min="1" max="480" value="30"></label>
+    <label class="auto-field"><span>Minimum confidence (%)</span><input type="number" id="autoConfidence" min="50" max="95" value="75"></label>
+    <label class="auto-field"><span>Max risk / order ($)</span><input type="number" id="autoOrderRisk" min="1" value="250"></label>
+    <label class="auto-field"><span>Max daily risk ($)</span><input type="number" id="autoDailyRisk" min="1" value="500"></label>
+    <label class="auto-field"><span>Max open intents</span><input type="number" id="autoOpenIntents" min="1" max="20" value="1"></label>
+    <label class="auto-field auto-wide"><span>Allowed symbols</span><input type="text" id="autoSymbols" placeholder="SPY, QQQ"></label>
+    <label class="auto-field auto-wide"><span>Allowed strategies</span><input type="text" id="autoStrategies" placeholder="ORB_BREAKOUT"></label>
+    <label class="auto-field auto-wide"><span>Allowed modules</span><input type="text" id="autoModules" placeholder="0DTE, SWING"></label>
+    <label class="auto-check auto-wide"><input type="checkbox" id="autoOptions"><span>Allow long option purchases</span></label>
+    <div class="auto-warning auto-wide"><svg class="icon"><use href="#i-alert"/></svg><span><b>ARMED mode can place real orders without per-order approval.</b> It is time-limited and still requires every evidence, allowlist, risk, price-zone, MCP review, and protection gate to pass.</span></div>
+  </div>
+  <div class="bd-foot2">
+    <button class="bd-save" onclick="saveAutotrade()">Save policy</button>
+    <button class="auto-disarm" onclick="disarmAutotrade()">Disarm now</button>
+    <span class="bd-status" id="autotrade-status" role="status"></span>
+  </div>
+</dialog>
+
 <script>
 const ARROWS = {STRONG_UP:"strong-up",UP:"up",NEUTRAL:"",DOWN:"down",STRONG_DOWN:"strong-down"};
 const ICON = {STRONG_UP:"i-up",UP:"i-up",NEUTRAL:"i-minus",DOWN:"i-down",STRONG_DOWN:"i-down"};
 const tfOrder = ["M","W","D","4H","1H","15m","5m"];
 let lastState = null, calibration = {}, briefing = null;
 let symbolOrder = [];
-let selectedSymbol = null, selectedAlertId = null;
+let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 
 function esc(value){
   return String(value ?? "").replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
@@ -501,6 +824,12 @@ function activeAlerts(s){
 }
 function selectedAlert(s){
   return activeAlerts(s).find(a=>a.alert_id===selectedAlertId) || null;
+}
+function orderedAlerts(s){
+  return activeAlerts(s).slice().sort((a,b)=>{
+    const rank=x=>{ const ev=evidenceFor(x.strategy); return ev.blocked?2:ev.status==="none"?1:0; };
+    return rank(a)-rank(b) || new Date(b.created_at)-new Date(a.created_at);
+  });
 }
 function ensureSelection(s){
   const active = activeAlerts(s);
@@ -514,22 +843,24 @@ function ensureSelection(s){
 }
 function selectSymbol(symbol){
   if(!lastState?.symbols?.[symbol]) return;
+  selectionTouched = true;
   selectedSymbol = symbol;
   selectedAlertId = null;
   renderContext(lastState);
   renderMatrix(lastState);
   renderTracking(lastState);
-  document.getElementById("main").scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  document.getElementById("contextPanel").scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
 }
 function selectAlert(alertId){
   const alert = activeAlerts(lastState||{}).find(a=>a.alert_id===alertId);
   if(!alert) return;
+  selectionTouched = true;
   selectedAlertId = alertId;
   selectedSymbol = alert.symbol;
   renderContext(lastState);
   renderMatrix(lastState);
   renderTracking(lastState);
-  document.getElementById("main").scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  document.getElementById("contextPanel").scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
 }
 
 function fmtAge(iso){
@@ -568,7 +899,13 @@ async function refreshCalibration(){
   try{
     calibration = await fetchJSON("/api/calibration");
     renderEvidencePanel();
-    if(lastState){ renderContext(lastState); renderTracking(lastState); }
+    if(lastState){
+      if(!selectionTouched){
+        const preferred=orderedAlerts(lastState)[0];
+        if(preferred){ selectedAlertId=preferred.alert_id; selectedSymbol=preferred.symbol; }
+      }
+      renderContext(lastState); renderMatrix(lastState); renderTracking(lastState);
+    }
   }catch(e){}
 }
 async function refreshBriefing(){
@@ -616,6 +953,7 @@ function renderAll(){
   }).join("");
 
   renderMatrix(s);
+  renderOverview(s);
   renderContext(s);
   renderDrawer(s);
   renderTracking(s);
@@ -623,6 +961,12 @@ function renderAll(){
   renderSuppressionTape(s);
   renderPerformance(s);
   renderRisk(s);
+}
+
+function renderOverview(s){
+  document.getElementById("summarySignals").textContent=activeAlerts(s).length;
+  document.getElementById("summarySuppressed").textContent=(s.suppressed||[]).length;
+  document.getElementById("summaryNext").textContent=s.session==="RTH"?"5 min":"Next open";
 }
 
 function tfBadge(state){
@@ -718,6 +1062,7 @@ function renderContext(s){
   const d=s.symbols[selectedSymbol] || {};
   const alert=selectedAlert(s);
   const ev=alert ? evidenceFor(alert.strategy) : null;
+  document.getElementById("contextTitle").textContent=alert?"Selected setup":"Market context";
   document.getElementById("contextSymbol").textContent=selectedSymbol||"—";
   document.getElementById("contextPrice").textContent=d.last!=null?`$${fmtPx(d.last)}`:"—";
   const trendKeys=["D","4H","1H","15m","5m"].filter(tf=>d.matrix?.[tf]);
@@ -737,7 +1082,7 @@ function renderContext(s){
     banner.innerHTML=`<svg class="icon"><use href="#i-activity"/></svg><span><strong>${esc(alert.status||"ACTIVE")} signal selected.</strong> Validate price, expiry, evidence, and portfolio risk before any decision.</span>`;
   }else{
     banner.className="context-banner neutral";
-    banner.innerHTML=`<svg class="icon"><use href="#i-activity"/></svg><span><strong>Market context only.</strong> Select a signal from the queue to overlay its entry, stop, targets, evidence, and invalidation.</span>`;
+    banner.innerHTML=`<svg class="icon"><use href="#i-activity"/></svg><span><strong>Market context only.</strong> Open a signal card to see its entry, stop, targets, evidence, and invalidation.</span>`;
   }
   renderMarketChart(d,alert);
   document.getElementById("chartLegend").innerHTML=`
@@ -751,13 +1096,13 @@ function renderContext(s){
     const up=trendKeys.filter(tf=>["UP","STRONG_UP"].includes(d.matrix[tf])).length;
     const down=trendKeys.filter(tf=>["DOWN","STRONG_DOWN"].includes(d.matrix[tf])).length;
     grid.innerHTML=`
-      <div class="decision-cell"><div class="decision-label">Decision state</div><div class="decision-value"><strong>No executable signal selected.</strong><br>Keep the chart as context; do not infer an entry from trend alone.</div></div>
+      <div class="decision-cell"><div class="decision-label">Decision state</div><div class="decision-value"><strong>No executable signal selected.</strong><br>Use trend as context only; do not infer an entry from direction alone.</div></div>
       <div class="decision-cell"><div class="decision-label">Trend alignment</div><div class="decision-value"><strong>${up} bullish · ${down} bearish</strong><br>${trendKeys.length-up-down} neutral across visible decision timeframes.</div></div>
       <div class="decision-cell"><div class="decision-label">Next evaluation</div><div class="decision-value"><strong>${s.session==="RTH"?"Next 5-minute close":"Next market open"}</strong><br>Suppressed candidates remain available for audit below.</div></div>`;
     return;
   }
   const targets=(alert.take_profits||[]).filter(t=>t.underlying!=null);
-  const evidenceLabel=ev?.blocked?"BLOCKED FROM LIVE":(ev?.status||"NO EVIDENCE");
+  const evidenceLabel=ev?.blocked?"BLOCKED FROM LIVE":ev?.status==="none"?"EVIDENCE PENDING":(ev?.status||"NO EVIDENCE");
   const ci=ev?.meta?.interval_95_test;
   grid.innerHTML=`
     <div class="decision-cell"><div class="decision-label">Trade plan</div><div class="decision-value plan-levels">
@@ -774,7 +1119,7 @@ function renderContext(s){
 function renderMatrix(s){
   document.getElementById("matrix").innerHTML = symbolOrder.map(sym=>{
     const d = s.symbols[sym];
-    const chips = tfOrder.filter(tf=>d.matrix[tf]).map(tf=>
+    const chips = ["D","1H","5m"].filter(tf=>d.matrix[tf]).map(tf=>
       `<span title="${tf}">${tfBadge(d.matrix[tf])}</span>`).join("");
     const px = d.last ? d.last.toFixed(2) : "—";
     return `<button class="sym-row ${sym===selectedSymbol?'hl':''}" id="row-${sym}" data-symbol="${sym}" aria-label="View ${sym} market context"><span class="tk">${sym}</span><span class="px num">${px}</span><span class="tf-chips">${chips}</span></button>`;
@@ -812,6 +1157,13 @@ document.getElementById("drawerToggle").addEventListener("click", ()=>{
   const open = body.classList.toggle("open");
   btn.classList.toggle("open", open);
   btn.setAttribute("aria-expanded", open);
+});
+document.getElementById("chartToggle").addEventListener("click",()=>{
+  const btn=document.getElementById("chartToggle");
+  const drawer=document.getElementById("chartDrawer");
+  const open=btn.getAttribute("aria-expanded")!=="true";
+  btn.setAttribute("aria-expanded",String(open));
+  drawer.hidden=!open;
 });
 
 function evidenceFor(strategy){
@@ -851,38 +1203,45 @@ function renderAlertCard(a){
   const ev = evidenceFor(a.strategy);
   const badgeCls = (a.action||"").includes("SELL") ? "sell" : "buy";
   const evBadgeCls = ev.blocked ? "blocked" : ev.status === "HISTORICAL_OOS" ? "oos" : ev.status === "none" ? "none" : "oos";
-  const evLabel = ev.blocked ? "BLOCKED FROM LIVE" : ev.status;
-  const interval = ev.meta && ev.meta.interval_95_test ? ` · 95% CI ${(ev.meta.interval_95_test[0]*100).toFixed(0)}–${(ev.meta.interval_95_test[1]*100).toFixed(0)}%` : "";
+  const evLabel = ev.blocked ? "BLOCKED FROM LIVE" : ev.status === "none" ? "EVIDENCE PENDING" : ev.status;
+  const interval = ev.meta && ev.meta.interval_95_test ? `95% CI ${(ev.meta.interval_95_test[0]*100).toFixed(0)}–${(ev.meta.interval_95_test[1]*100).toFixed(0)}%` : "";
   const n = ev.buckets ? Object.values(ev.buckets).reduce((s,b)=>s+(b.n||0),0) : 0;
+  const confidence=Math.round(Number(a.confidence||0)*100);
+  const firstTarget=(a.take_profits||[]).find(t=>t.underlying!=null)?.underlying;
   return `<div class="alert-card ${selectedAlertId===a.alert_id?'selected':''} ${ev.blocked?'blocked':''}" role="button" tabindex="0" aria-pressed="${selectedAlertId===a.alert_id}" data-alert-id="${esc(a.alert_id)}">
     <div class="ac-top">
-      <span class="ac-status">${a.status||'ACTIVE'}</span>
+      <span class="ac-status">${esc(a.status||'ACTIVE')}</span>
       <span class="ac-age">${fmtAge(a.created_at)}</span>
-      <span class="badge ${badgeCls}" style="margin-left:auto">${a.action}</span>
+      <span class="badge ${badgeCls}" style="margin-left:auto">${esc(a.action)}</span>
     </div>
-    <div><span class="ac-sym">${a.symbol}</span> <span class="ac-strat">${a.strategy.replace(/_/g,' ')} · ${a.module}</span></div>
+    <div class="ac-hero">
+      <div class="ac-hero-copy">
+        <span class="ac-sym">${esc(a.symbol)}</span><span class="ac-live">$${fmtPx(a.underlying_price)}</span>
+        <span class="ac-strat">${esc(a.strategy.replace(/_/g,' '))} · ${esc(a.module)}</span>
+      </div>
+      <div class="confidence-orb" style="--confidence:${confidence*3.6}deg" aria-label="${confidence}% model confidence"><span>${confidence}%<small>confidence</small></span></div>
+    </div>
     ${characterChip(a.strategy, ev)}
-    ${priceLadder(a)}
-    <div class="ac-grid">
-      <div>Entry zone <b class="num">${a.entry_zone[0]}–${a.entry_zone[1]}</b></div>
-      <div>Live price <b class="num">${a.underlying_price}</b></div>
-      <div>Max risk <b class="num">$${a.dollar_risk.toLocaleString()}</b></div>
-      <div>R:R <b class="num">${a.reward_risk}</b></div>
+    <div class="ac-thesis">${esc(a.thesis)}</div>
+    <div class="level-bubbles">
+      <div class="level-bubble"><span>Entry</span><b>${fmtPx(a.entry_zone?.[0])}–${fmtPx(a.entry_zone?.[1])}</b></div>
+      <div class="level-bubble stop"><span>Stop</span><b>${fmtPx(a.stop_underlying)}</b></div>
+      <div class="level-bubble target"><span>Target 1</span><b>${fmtPx(firstTarget)}</b></div>
+      <div class="level-bubble"><span>Max risk</span><b>$${Number(a.dollar_risk||0).toLocaleString()}</b></div>
     </div>
     <div class="evidence-line">
       <span class="evidence-badge ${evBadgeCls}">${evLabel}</span>
-      <span>conf ${(a.confidence*100).toFixed(0)}%${interval}${n?` · n=${n}`:""}</span>
+      <span>${interval}${n?`${interval?' · ':''}n=${n}`:""}${(interval||n)?' · ':''}R:R ${esc(a.reward_risk)}</span>
     </div>
-    <div class="ac-thesis">${a.thesis}</div>
-    <div class="ac-foot"><span class="validity">Valid: ${fmtCountdown(a.valid_until)}</span></div>
+    <div class="ac-foot"><span class="validity">Valid · ${fmtCountdown(a.valid_until)}</span><span class="open-detail">Open plan <svg class="icon"><use href="#i-chevron-right"/></svg></span></div>
   </div>`;
 }
 
 function renderTracking(s){
-  const active = activeAlerts(s);
+  const active = orderedAlerts(s);
   document.getElementById("qCountTracking").textContent = "("+active.length+")";
   const el = document.getElementById("queueTracking");
-  el.innerHTML = active.length ? active.slice().reverse().map(renderAlertCard).join("") :
+  el.innerHTML = active.length ? active.map(renderAlertCard).join("") :
     `<div class="empty"><b>No executable signal.</b>The engine is still evaluating. Candidates may be suppressed by setup, evidence, data-quality, or portfolio-risk gates.</div>`;
   el.querySelectorAll("[data-alert-id]").forEach(card=>{
     const activate=()=>selectAlert(card.dataset.alertId);
@@ -1047,6 +1406,85 @@ document.addEventListener("keydown", e=>{
   }
 });
 
+// ── Agent-mediated auto-trade policy ─────────────────────────────────
+let autotradeCache=null;
+function renderAutotrade(data){
+  autotradeCache=data;
+  const mode=data.effective_mode||"OFF";
+  const badge=document.getElementById("autotradeMode");
+  badge.textContent=mode;
+  badge.className="auto-mode "+mode.toLowerCase();
+  document.getElementById("autotradeReady").textContent=data.ready||0;
+  document.getElementById("autotradeApproval").textContent=data.awaiting_approval||0;
+  const until=data.policy?.armed_until;
+  document.getElementById("autotradeExpiry").textContent=until
+    ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "—";
+}
+async function refreshAutotrade(){
+  try{ renderAutotrade(await fetchJSON("/api/autotrade")); }catch(e){}
+}
+function listValue(values){ return (values||[]).join(", "); }
+function parseList(value){ return [...new Set(value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean))]; }
+async function openAutotrade(){
+  const dlg=document.getElementById("autotrade-dialog");
+  const status=document.getElementById("autotrade-status");
+  status.textContent=""; status.className="bd-status";
+  document.getElementById("autoToken").value="";
+  dlg.showModal();
+  await refreshAutotrade();
+  const p=autotradeCache?.policy||{};
+  document.getElementById("autoMode").value=p.mode||"OFF";
+  document.getElementById("autoConfidence").value=Math.round((p.min_confidence||.75)*100);
+  document.getElementById("autoOrderRisk").value=p.max_dollar_risk_per_order||250;
+  document.getElementById("autoDailyRisk").value=p.max_daily_dollar_risk||500;
+  document.getElementById("autoOpenIntents").value=p.max_open_intents||1;
+  document.getElementById("autoSymbols").value=listValue(p.allowed_symbols);
+  document.getElementById("autoStrategies").value=listValue(p.allowed_strategies);
+  document.getElementById("autoModules").value=listValue(p.allowed_modules);
+  document.getElementById("autoOptions").checked=Boolean(p.allow_options);
+}
+async function autotradeRequest(path,method,payload){
+  const token=document.getElementById("autoToken").value;
+  if(!token) throw new Error("Enter the local control token");
+  const r=await fetch(path,{method,headers:{"Content-Type":"application/json","X-Autotrade-Token":token},body:payload?JSON.stringify(payload):undefined});
+  if(!r.ok){ const err=await r.json().catch(()=>({detail:"request failed"})); throw new Error(err.detail||"request failed"); }
+  return r.json();
+}
+async function saveAutotrade(){
+  const status=document.getElementById("autotrade-status");
+  const mode=document.getElementById("autoMode").value;
+  const payload={
+    mode,
+    min_confidence:Number(document.getElementById("autoConfidence").value)/100,
+    max_dollar_risk_per_order:Number(document.getElementById("autoOrderRisk").value),
+    max_daily_dollar_risk:Number(document.getElementById("autoDailyRisk").value),
+    max_open_intents:Number(document.getElementById("autoOpenIntents").value),
+    allowed_symbols:parseList(document.getElementById("autoSymbols").value),
+    allowed_strategies:parseList(document.getElementById("autoStrategies").value),
+    allowed_modules:parseList(document.getElementById("autoModules").value),
+    allow_options:document.getElementById("autoOptions").checked,
+  };
+  if(mode==="ARMED") payload.arm_for_minutes=Number(document.getElementById("autoMinutes").value);
+  status.textContent="Saving…"; status.className="bd-status";
+  try{
+    await autotradeRequest("/api/autotrade/policy","PUT",payload);
+    await refreshAutotrade();
+    status.textContent=mode==="ARMED"?"Armed for the requested window.":"Policy saved.";
+    status.className="bd-status ok";
+  }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
+}
+async function disarmAutotrade(){
+  const status=document.getElementById("autotrade-status");
+  status.textContent="Disarming…"; status.className="bd-status";
+  try{
+    await autotradeRequest("/api/autotrade/disarm","POST");
+    document.getElementById("autoMode").value="OFF";
+    await refreshAutotrade();
+    status.textContent="Disarmed. New alerts will not create execution intents.";
+    status.className="bd-status ok";
+  }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
+}
+
 // ── Budgets dialog (hot-reload API) ─────────────────────────────────
 let budgetsCache = null;
 const CAP_LABEL = {"0DTE":"Daily capital","SWING":"Daily capital","LEAPS":"Standing capital","HODL":"Standing capital"};
@@ -1126,10 +1564,11 @@ window.addEventListener("resize",()=>{
   resizeTimer=setTimeout(()=>{ if(lastState) renderContext(lastState); },120);
 });
 
-refresh(); refreshCalibration(); refreshBriefing();
+refresh(); refreshCalibration(); refreshBriefing(); refreshAutotrade();
 setInterval(refresh, 15000);
 setInterval(refreshCalibration, 60000);
 setInterval(refreshBriefing, 60000);
+setInterval(refreshAutotrade, 15000);
 connectWS();
 </script>
 </body>

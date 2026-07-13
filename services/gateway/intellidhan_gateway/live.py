@@ -25,6 +25,8 @@ from intellidhan_learning.paper import PaperExecutor, PaperTrade, performance_re
 from intellidhan_schemas import SessionState, Timeframe
 from intellidhan_schemas.signals import Alert
 
+from intellidhan_gateway.autotrade import AutotradeManager
+
 def _load_dotenv() -> None:
     """Load repo .env into the environment (existing vars win) so Telegram
     credentials and DB passwords work without shell exports. Runs at module
@@ -55,6 +57,7 @@ class LiveLoop:
         self.composer = Composer(Budgets(), option_selector=None)
         self.executor = PaperExecutor()
         self.telegram = TelegramSender()
+        self.autotrade = AutotradeManager()
         self.alerts: list[Alert] = []
         self.last_briefing: dict | None = None
         self._briefed_on: str | None = None
@@ -116,9 +119,17 @@ class LiveLoop:
             q.put_nowait({"type": "settlement", "data": trade.model_dump(mode="json")})
 
     async def _deliver(self, alert: Alert) -> None:
+        intent = None
+        try:
+            intent = self.autotrade.on_alert(alert)
+        except Exception as exc:  # automation must fail closed without blocking alerts
+            print(f"[autotrade] intent creation failed: {exc}")
         await self.telegram.send(format_alert(alert))
         for q in list(self.ws_subscribers):
             q.put_nowait({"type": "alert", "data": alert.model_dump(mode="json")})
+            if intent is not None:
+                q.put_nowait({"type": "autotrade_intent",
+                              "data": intent.model_dump(mode="json")})
 
     async def maybe_brief(self, now: datetime) -> None:
         """8:30 ET daily briefing (doc 12); once per trading day."""
@@ -188,5 +199,6 @@ class LiveLoop:
             "profiles": {k: v.model_dump(mode="json")
                          for k, v in self.profile_states().items()},
             "briefing": self.last_briefing,
+            "autotrade": self.autotrade.status(),
             "last_poll": self.last_poll.isoformat() if self.last_poll else None,
         }

@@ -7,10 +7,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Body, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 
 from intellidhan_gateway.live import LiveLoop
@@ -28,6 +30,28 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="IntelliDhan", lifespan=lifespan)
+
+
+def _require_token(request: Request, env_name: str, *, control: bool = False) -> None:
+    expected = os.getenv(env_name)
+    if not expected:
+        raise HTTPException(
+            status_code=503,
+            detail=f"{env_name} is not configured; auto-trade control is fail-closed",
+        )
+    if control:
+        provided = request.headers.get("x-autotrade-token", "")
+    else:
+        auth = request.headers.get("authorization", "")
+        provided = auth[7:] if auth.lower().startswith("bearer ") else ""
+    if not provided or not secrets.compare_digest(provided, expected):
+        raise HTTPException(status_code=401, detail="invalid auto-trade token")
+
+
+def _autotrade_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, KeyError):
+        return HTTPException(status_code=404, detail=str(exc))
+    return HTTPException(status_code=422, detail=str(exc))
 
 
 @app.get("/api/health")
@@ -67,6 +91,98 @@ async def put_budgets(new_budgets: dict = Body(...)):
     except (ValueError, KeyError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return loop.composer.budgets.as_dict()
+
+
+@app.get("/api/autotrade")
+async def get_autotrade():
+    """Credential-free status for the dashboard; never returns broker data."""
+    return loop.autotrade.status()
+
+
+@app.put("/api/autotrade/policy")
+async def put_autotrade_policy(request: Request, updates: dict = Body(...)):
+    _require_token(request, "AUTOTRADE_CONTROL_TOKEN", control=True)
+    try:
+        return loop.autotrade.update_policy(updates).model_dump(mode="json")
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.post("/api/autotrade/disarm")
+async def disarm_autotrade(request: Request):
+    _require_token(request, "AUTOTRADE_CONTROL_TOKEN", control=True)
+    return loop.autotrade.update_policy({"mode": "OFF"}).model_dump(mode="json")
+
+
+@app.post("/api/autotrade/intents/from-alert/{alert_id}")
+async def create_intent_from_alert(alert_id: str, request: Request):
+    """Explicitly evaluate an existing active alert after policy arming."""
+    _require_token(request, "AUTOTRADE_CONTROL_TOKEN", control=True)
+    alert = next((item for item in loop.alerts if item.alert_id == alert_id), None)
+    if alert is None:
+        raise HTTPException(status_code=404, detail="unknown alert")
+    intent = loop.autotrade.on_alert(alert)
+    if intent is None:
+        raise HTTPException(status_code=409, detail="automation mode is OFF")
+    return intent.model_dump(mode="json")
+
+
+@app.post("/api/autotrade/intents/{intent_id}/approve")
+async def approve_autotrade_intent(intent_id: str, request: Request):
+    _require_token(request, "AUTOTRADE_CONTROL_TOKEN", control=True)
+    try:
+        return loop.autotrade.approve(intent_id).model_dump(mode="json")
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.post("/api/autotrade/intents/{intent_id}/reject")
+async def reject_autotrade_intent(
+    intent_id: str, request: Request, payload: dict = Body(default={})
+):
+    _require_token(request, "AUTOTRADE_CONTROL_TOKEN", control=True)
+    try:
+        return loop.autotrade.reject(intent_id, payload.get("reason", "")).model_dump(mode="json")
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.get("/api/autotrade/intents")
+async def list_autotrade_intents(request: Request, status: str | None = None):
+    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
+    try:
+        intents = loop.autotrade.list_intents(status)
+    except ValueError as exc:
+        raise _autotrade_error(exc) from exc
+    return {
+        "contract_version": "1.0",
+        "effective_mode": loop.autotrade.effective_mode().value,
+        "intents": [item.model_dump(mode="json") for item in intents],
+    }
+
+
+@app.post("/api/autotrade/intents/{intent_id}/claim")
+async def claim_autotrade_intent(
+    intent_id: str, request: Request, payload: dict = Body(default={})
+):
+    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
+    try:
+        return loop.autotrade.claim(intent_id, payload.get("agent", "claude")).model_dump(
+            mode="json"
+        )
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.post("/api/autotrade/intents/{intent_id}/receipt")
+async def record_autotrade_receipt(
+    intent_id: str, request: Request, payload: dict = Body(...)
+):
+    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
+    try:
+        return loop.autotrade.record_receipt(intent_id, payload).model_dump(mode="json")
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
 
 
 @app.websocket("/ws")
