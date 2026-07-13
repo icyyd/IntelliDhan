@@ -24,7 +24,7 @@ from intellidhan_ingestor.providers import YahooProvider
 from intellidhan_ingestor.sentinel import check_bars
 from intellidhan_learning.paper import PaperExecutor, PaperTrade, performance_report
 from intellidhan_schemas import DataQuality, SessionState, Timeframe
-from intellidhan_schemas.signals import Alert
+from intellidhan_schemas.signals import Alert, stable_plan_key
 
 from intellidhan_gateway.autotrade import AutotradeManager
 from intellidhan_gateway.terminal_store import TerminalStore
@@ -66,6 +66,7 @@ class LiveLoop:
         self.store = store or TerminalStore()
         self.alerts: list[Alert] = []
         self._alert_ids: set[str] = set()
+        self._alert_plan_keys: set[str] = set()
         self.last_briefing: dict | None = None
         self._briefed_on: str | None = None
         self.seen_bars: set[tuple[str, datetime]] = set()
@@ -96,17 +97,36 @@ class LiveLoop:
         persisted_budgets = self.store.get_setting("budgets")
         if persisted_budgets:
             self.composer.budgets.update(persisted_budgets)
-        self.alerts = [Alert.model_validate(item) for item in self.store.list_alerts()]
-        self._alert_ids = {alert.alert_id for alert in self.alerts}
-        alert_created_at = {alert.alert_id: alert.created_at for alert in self.alerts}
+        loaded_alerts: list[Alert] = []
+        for item in self.store.list_alerts():
+            alert = Alert.model_validate(item)
+            if alert.plan_key is None:
+                alert = alert.model_copy(update={"plan_key": stable_plan_key(
+                    alert.created_at, alert.symbol, alert.module, alert.strategy
+                )})
+                self.store.upsert_alert(alert.model_dump(mode="json"))
+            loaded_alerts.append(alert)
+        self._alert_ids = {alert.alert_id for alert in loaded_alerts}
+        alerts_by_plan = {alert.plan_key: alert for alert in loaded_alerts}
+        self.alerts = list(alerts_by_plan.values())
+        self._alert_plan_keys = set(alerts_by_plan)
+        alert_created_at = {alert.alert_id: alert.created_at for alert in loaded_alerts}
         restored_trades: list[PaperTrade] = []
         for item in self.store.list_paper_trades():
             trade = PaperTrade.model_validate(item)
+            changed = False
             if trade.created_at is None:
                 # Migrate pre-created_at rows safely.  A matching alert retains
                 # downtime catch-up; an orphan is bounded at restart so stale
                 # historical bars can never mutate it.
                 trade.created_at = alert_created_at.get(trade.alert_id, restart_at)
+                changed = True
+            if trade.plan_key is None:
+                trade.plan_key = stable_plan_key(
+                    trade.created_at, trade.symbol, trade.module, trade.strategy
+                )
+                changed = True
+            if changed:
                 self.store.upsert_paper_trade(trade.model_dump(mode="json"))
             restored_trades.append(trade)
         self.executor.restore(restored_trades)
@@ -188,10 +208,17 @@ class LiveLoop:
                 alert = self.composer.compose(setup)
                 if alert is None:
                     continue
-                is_new_alert = alert.alert_id not in self._alert_ids
+                plan_key = alert.plan_key or stable_plan_key(
+                    alert.created_at, alert.symbol, alert.module, alert.strategy
+                )
+                is_new_alert = (
+                    alert.alert_id not in self._alert_ids
+                    and plan_key not in self._alert_plan_keys
+                )
+                self._alert_ids.add(alert.alert_id)
                 if is_new_alert:
                     self.alerts.append(alert)
-                    self._alert_ids.add(alert.alert_id)
+                    self._alert_plan_keys.add(plan_key)
                     if self.persistence_ready:
                         self.store.upsert_alert(alert.model_dump(mode="json"))
                 trade = PaperTrade.from_alert(alert, setup)

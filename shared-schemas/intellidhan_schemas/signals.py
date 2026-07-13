@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
@@ -20,6 +20,24 @@ class Module(str, Enum):
 class Direction(str, Enum):
     LONG = "LONG"
     SHORT = "SHORT"
+
+
+def stable_plan_key(created_at: datetime, symbol: str, module: Module, strategy: str) -> str:
+    """Natural identity for one strategy plan, stable across process restarts.
+
+    A strategy evaluates at most once per symbol/bar, so the completed-bar
+    timestamp plus its registry key is the durable uniqueness boundary.  Do
+    not add process-local counters here: boot replay windows change over time.
+    """
+
+    stamp = created_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+    def slug(value: str) -> str:
+        return "_".join(filter(None, "".join(
+            char if char.isalnum() else "_" for char in value.upper()
+        ).split("_")))
+
+    return f"pln_{stamp}_{slug(symbol)}_{slug(module.value)}_{slug(strategy)}"
 
 
 class Action(str, Enum):
@@ -102,6 +120,7 @@ class Alert(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     alert_id: str
+    plan_key: str | None = None
     created_at: datetime
     module: Module
     strategy: str

@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from intellidhan_ingestor.market_clock import ET
 from intellidhan_schemas import Bar
-from intellidhan_schemas.signals import Alert, Direction, Module, Setup
+from intellidhan_schemas.signals import Alert, Direction, Module, Setup, stable_plan_key
 
 
 class Outcome(str, Enum):
@@ -31,6 +31,7 @@ class Outcome(str, Enum):
 
 class PaperTrade(BaseModel):
     alert_id: str
+    plan_key: str | None = None
     symbol: str
     module: Module
     strategy: str
@@ -56,7 +57,11 @@ class PaperTrade(BaseModel):
     @classmethod
     def from_alert(cls, alert: Alert, setup: Setup) -> "PaperTrade":
         return cls(
-            alert_id=alert.alert_id, symbol=alert.symbol, module=alert.module,
+            alert_id=alert.alert_id,
+            plan_key=alert.plan_key or stable_plan_key(
+                alert.created_at, alert.symbol, alert.module, alert.strategy
+            ),
+            symbol=alert.symbol, module=alert.module,
             strategy=alert.strategy, direction=setup.direction,
             confidence=alert.confidence, composite=setup.composite, created_at=alert.created_at,
             entry=setup.entry_underlying,
@@ -76,15 +81,38 @@ class PaperExecutor:
         self.trades: list[PaperTrade] = []
         self._active: dict[str, list[PaperTrade]] = {}
         self._by_alert_id: dict[str, PaperTrade] = {}
+        self._by_plan_key: dict[str, PaperTrade] = {}
+
+    @staticmethod
+    def _identity(trade: PaperTrade) -> str:
+        if trade.plan_key:
+            return trade.plan_key
+        if trade.created_at is not None:
+            return stable_plan_key(
+                trade.created_at, trade.symbol, trade.module, trade.strategy
+            )
+        return f"legacy_alert:{trade.alert_id}"
+
+    @staticmethod
+    def _progress_rank(trade: PaperTrade) -> int:
+        if trade.outcome not in {Outcome.PENDING, Outcome.OPEN}:
+            return 3
+        return 2 if trade.outcome == Outcome.OPEN else 1
 
     def restore(self, trades: list[PaperTrade]) -> None:
         """Rebuild the executor after a process restart from its durable ledger."""
-        # The alert id is the durable identity.  Keep the last representation
-        # if a malformed/legacy source supplies duplicates; replay must never
-        # grade the same printed plan twice.
-        deduped = {trade.alert_id: trade for trade in trades}
+        # The natural plan key is the durable identity.  Prefer the most
+        # advanced representation if malformed/legacy rows contain duplicates;
+        # replay must never regress a settled plan back to PENDING.
+        deduped: dict[str, PaperTrade] = {}
+        for trade in trades:
+            identity = self._identity(trade)
+            current = deduped.get(identity)
+            if current is None or self._progress_rank(trade) >= self._progress_rank(current):
+                deduped[identity] = trade
         self.trades = list(deduped.values())
-        self._by_alert_id = dict(deduped)
+        self._by_alert_id = {trade.alert_id: trade for trade in trades}
+        self._by_plan_key = dict(deduped)
         self._active = {}
         for trade in self.trades:
             if trade.outcome in {Outcome.PENDING, Outcome.OPEN}:
@@ -92,10 +120,12 @@ class PaperExecutor:
 
     def track(self, trade: PaperTrade) -> bool:
         """Track a new plan once; return False for replay-regenerated duplicates."""
-        if trade.alert_id in self._by_alert_id:
+        identity = self._identity(trade)
+        if trade.alert_id in self._by_alert_id or identity in self._by_plan_key:
             return False
         self.trades.append(trade)
         self._by_alert_id[trade.alert_id] = trade
+        self._by_plan_key[identity] = trade
         self._active.setdefault(trade.symbol, []).append(trade)
         return True
 

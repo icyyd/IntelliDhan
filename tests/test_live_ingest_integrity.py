@@ -117,11 +117,13 @@ def test_restored_trades_ignore_bars_before_creation_or_fill():
 
 def test_executor_deduplicates_replay_regenerated_trade_ids():
     original = make_trade()
+    original.created_at = datetime(2026, 7, 10, 14, 30, tzinfo=timezone.utc)
     duplicate = original.model_copy(deep=True)
+    duplicate.alert_id = "alr_same_plan_different_process_sequence"
     executor = PaperExecutor()
-    executor.restore([original, duplicate])
+    executor.restore([original])
     assert len(executor.trades) == 1
-    assert executor.track(original.model_copy(deep=True)) is False
+    assert executor.track(duplicate) is False
     assert len(executor.active_trades()) == 1
 
 
@@ -173,6 +175,7 @@ async def test_boot_replay_suppresses_delivery_but_live_polling_delivers(monkeyp
 
     class FakeAlert:
         alert_id = "alr_replay_fixture"
+        plan_key = "pln_replay_fixture"
 
     fake_setup = FakeSetup()
     fake_alert = FakeAlert()
