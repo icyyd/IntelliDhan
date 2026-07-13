@@ -344,3 +344,53 @@ async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(tm
     regenerated = PaperTrade.from_alert(target_alert, target_setup)
     assert loop.executor.track(regenerated) is False
     assert migrated.outcome == Outcome.STOPPED
+
+
+def test_snapshot_is_json_serializable_when_ready():
+    """Regression: health() datetimes embedded in snapshot().readiness must be
+    ISO strings — /api/state serializes with plain json.dumps (no encoder),
+    so a raw datetime 500s the dashboard the moment the system turns READY."""
+    import json
+
+    loop = LiveLoop()
+    now = datetime.now(timezone.utc)
+    loop.started_at = now
+    loop.last_poll = now
+    loop.last_successful_poll = now
+    loop.last_heartbeat = now
+    payload = json.loads(json.dumps(loop.snapshot()))
+    assert payload["readiness"]["started_at"] == now.isoformat()
+    assert payload["readiness"]["last_heartbeat"] == now.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_one_bad_symbol_is_quarantined_not_fatal(monkeypatch):
+    """Regression: a single symbol's DQ failure (halt gap, feed hole) must not
+    discard every other symbol's bars for the poll."""
+    loop = LiveLoop(symbols=["QQQ", "SPY"])
+    now = datetime.now(timezone.utc)
+
+    class HalfBadProvider:
+        async def get_bars(self, symbol, timeframe, start, end, **kw):
+            if symbol == "SPY":
+                raise RuntimeError("data quality rejected SPY:5m: gap 45m")
+            return [bar5(now - timedelta(minutes=5), 100, 101, 99, 100.5)]
+
+    loop.provider = HalfBadProvider()
+    monkeypatch.setattr(loop, "_accept_quality", lambda key, sym, bars: None)
+    await loop._ingest_recent(days=1)  # must not raise
+    assert ("QQQ", (now - timedelta(minutes=5))) in loop.seen_bars  # QQQ processed
+    assert "SPY" in (loop.last_error or "")  # quarantine surfaced for health
+
+
+@pytest.mark.asyncio
+async def test_all_symbols_failing_still_degrades_the_poll():
+    loop = LiveLoop(symbols=["QQQ", "SPY"])
+
+    class DeadProvider:
+        async def get_bars(self, symbol, timeframe, start, end, **kw):
+            raise RuntimeError("total outage")
+
+    loop.provider = DeadProvider()
+    with pytest.raises(RuntimeError):
+        await loop._ingest_recent(days=1)

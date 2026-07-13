@@ -181,12 +181,29 @@ class LiveLoop:
         replay = self.started_at is None
         end = datetime.now(timezone.utc)
         bars = []
+        quarantined: list[str] = []
         for sym in self.symbols:
-            fetched = await self.provider.get_bars(
-                sym, Timeframe.M5, end - timedelta(days=days), end
-            )
-            self._accept_quality(f"{sym}:5m", sym, fetched)
+            # Per-symbol quarantine: one symbol's halt gap or feed hole must
+            # not discard every other symbol's bars for the poll — that would
+            # freeze alerting AND paper-trade stop/target settlement across
+            # the whole universe until the bad symbol's window rolls over.
+            try:
+                fetched = await self.provider.get_bars(
+                    sym, Timeframe.M5, end - timedelta(days=days), end
+                )
+                self._accept_quality(f"{sym}:5m", sym, fetched)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                quarantined.append(f"{sym}: {exc}")
+                continue
             bars.extend(fetched)
+        if quarantined:
+            self.last_error = "quarantined this poll — " + "; ".join(quarantined)
+            print(f"[live] {self.last_error}")
+            if len(quarantined) == len(self.symbols):
+                # total feed outage is still a degraded poll, not a quiet one
+                raise RuntimeError(self.last_error)
         bars.sort(key=lambda b: (b.ts_close, b.symbol))
         for bar in bars:
             if bar.ts_close > end:
@@ -372,10 +389,15 @@ class LiveLoop:
             "persistence": persistence,
             "durability_required": durability_required,
             "durability_ready": durability_ready,
-            "started_at": self.started_at,
-            "last_poll": self.last_poll,
-            "last_successful_poll": self.last_successful_poll,
-            "last_heartbeat": self.last_heartbeat,
+            # ISO strings, not datetimes: snapshot() embeds this dict and
+            # /api/state serializes with plain json.dumps (no encoder) — raw
+            # datetimes 500 the dashboard the moment the system turns READY.
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "last_poll": self.last_poll.isoformat() if self.last_poll else None,
+            "last_successful_poll": (self.last_successful_poll.isoformat()
+                                     if self.last_successful_poll else None),
+            "last_heartbeat": (self.last_heartbeat.isoformat()
+                               if self.last_heartbeat else None),
             "heartbeat_age_seconds": heartbeat_age_seconds,
             "last_error": self.last_error,
             "data_quality": self.quality_reports,
