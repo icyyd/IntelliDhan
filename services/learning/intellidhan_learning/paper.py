@@ -99,6 +99,18 @@ class PaperExecutor:
             if bar.low <= t.entry <= bar.high:
                 t.filled_at = bar.ts_close
                 t.outcome = Outcome.OPEN
+                # A bar that fills the limit AND trades through the stop is a
+                # certain real-world stop-out — any intrabar path reaching the
+                # entry has also reached the stop. Exempting the fill bar from
+                # the stop check (as before) inflated measured win rates.
+                # Targets stay uncredited on the fill bar (pessimistic).
+                fill_bar_stopped = (bar.low <= t.initial_stop if sign > 0
+                                    else bar.high >= t.initial_stop)
+                if fill_bar_stopped:
+                    t.realized_r = -1.0
+                    t.outcome = Outcome.STOPPED
+                    t.exit_ts = bar.ts_close
+                    return True
             return False
 
         # OPEN: excursions in R

@@ -55,6 +55,7 @@ class YahooProvider:
             raise
         bars: list[Bar] = []
         intraday = timeframe.seconds < Timeframe.D1.seconds
+        fetched_at = datetime.now(timezone.utc)
         for ts, row in df.iterrows():
             if row.isna().any():
                 continue  # sentinel will flag the gap; never fabricate data (G7)
@@ -64,6 +65,14 @@ class YahooProvider:
             # Yahoo stamps bar *open* time; canonical Bar is keyed by close time.
             if intraday:
                 ts_utc = ts_utc + timedelta(seconds=timeframe.seconds)
+                if ts_utc > fetched_at:
+                    # Still-forming candle: Yahoo includes the in-progress bar,
+                    # whose OHLCV keeps changing until its window closes. Bar
+                    # semantics are close-time only — emitting the partial
+                    # snapshot poisons EMAs/VWAP/opening-range downstream, and
+                    # a (symbol, ts_close) dedupe would then block the real
+                    # completed bar forever.
+                    continue
             bars.append(
                 Bar(
                     symbol=symbol,

@@ -80,6 +80,11 @@ class LiveLoop:
         self.started_at = end
 
     async def _ingest_recent(self, days: int) -> None:
+        # Before boot() completes (started_at is None) this is a historical
+        # replay: it must warm engine/executor/risk state but never re-send
+        # Telegram messages, re-broadcast, or create autotrade intents —
+        # otherwise every restart re-delivers days of stale alerts as new.
+        replay = self.started_at is None
         end = datetime.now(timezone.utc)
         bars = []
         for sym in self.symbols:
@@ -87,6 +92,8 @@ class LiveLoop:
                 sym, Timeframe.M5, end - timedelta(days=days), end))
         bars.sort(key=lambda b: (b.ts_close, b.symbol))
         for bar in bars:
+            if bar.ts_close > end:
+                continue  # belt-and-suspenders: never consume a forming bar
             key = (bar.symbol, bar.ts_close)
             if key in self.seen_bars:
                 continue
@@ -94,7 +101,8 @@ class LiveLoop:
             for settled in self.executor.on_bar(bar):
                 self.runner.controls.register_close(
                     settled.module, settled.symbol, settled.strategy)
-                await self._notify_settlement(settled)
+                if not replay:
+                    await self._notify_settlement(settled)
             for setup in self.runner.on_bar_5m(bar):
                 alert = self.composer.compose(setup)
                 if alert is None:
@@ -102,7 +110,8 @@ class LiveLoop:
                 self.alerts.append(alert)
                 self.executor.track(PaperTrade.from_alert(alert, setup))
                 self.runner.controls.register_open(setup.module, setup.symbol, setup.strategy)
-                await self._deliver(alert)
+                if not replay:
+                    await self._deliver(alert)
 
     async def _notify_settlement(self, trade) -> None:
         """Stop/TP/flatten follow-ups (doc 05 §4 lifecycle, v1)."""
