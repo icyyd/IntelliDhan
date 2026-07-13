@@ -250,7 +250,16 @@ class TerminalStore:
             ),
         )
 
-    def list_alerts(self, limit: int = 250) -> list[dict[str, Any]]:
+    def list_alerts(self, limit: int | None = 250) -> list[dict[str, Any]]:
+        """Read alerts oldest-to-newest; ``None`` is the migration/audit path.
+
+        Interactive callers stay bounded by default.  Restart migration must
+        see every durable alert because paper trades are unbounded and legacy
+        rows need the matching alert timestamp to recover their natural key.
+        """
+        if limit is None:
+            rows = self._fetchall("SELECT payload FROM alerts ORDER BY created_at")
+            return [json.loads(row["payload"]) for row in rows]
         rows = self._fetchall(
             "SELECT payload FROM alerts ORDER BY created_at DESC LIMIT ?", (limit,)
         )

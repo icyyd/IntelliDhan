@@ -15,11 +15,12 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from intellidhan_engine.composer import Budgets, Composer
 from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.terminal_store import TerminalStore
 from intellidhan_learning.paper import Outcome, PaperExecutor, PaperTrade
 from intellidhan_schemas import Bar, Timeframe
-from intellidhan_schemas.signals import Direction, Module
+from intellidhan_schemas.signals import Direction, Module, Setup
 
 
 def bar5(ts, o, h, lo, c, sym="QQQ", v=1e6):
@@ -259,3 +260,87 @@ async def test_restart_replay_is_time_safe_persists_settlement_and_restores_cont
     assert loop.runner.controls.open_by_module[Module.ZDTE] == 1
     assert loop.runner.controls.open_by_cluster["NDX"] == 1
     assert loop.runner.controls.open_symbol_strategy[("QQQ", "T")] == 1
+
+
+@pytest.mark.asyncio
+async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(tmp_path):
+    store = TerminalStore(tmp_path / "legacy-window.sqlite3")
+    store.init_schema()
+    created = datetime(2026, 7, 10, 14, 30, tzinfo=timezone.utc)
+
+    def setup_at(ts):
+        return Setup(
+            setup_id=f"stp_{ts:%Y%m%d_%H%M}",
+            module=Module.ZDTE,
+            strategy="ORB_BREAKOUT",
+            symbol="QQQ",
+            direction=Direction.LONG,
+            trigger_tf=Timeframe.M5,
+            ts=ts,
+            mtf_matrix={"5m": 80.0, "15m": 70.0},
+            factors={"F1_trend": 80.0},
+            composite=82.0,
+            confidence=0.8,
+            entry_underlying=100.0,
+            stop_underlying=99.0,
+            targets_underlying=[101.0, 102.0, 103.0],
+            reward_risk=2.0,
+            explain="Fixture breakout confirmation.",
+            invalidation="Two closes below the opening range.",
+        )
+
+    composer = Composer(Budgets("config/budgets.yaml"), option_selector=None)
+    target_setup = setup_at(created)
+    target_alert = composer.compose(target_setup)
+    legacy_alert_id = "alr_legacy_target_1"
+    legacy_alert = target_alert.model_dump(mode="json", exclude={"plan_key"})
+    legacy_alert["alert_id"] = legacy_alert_id
+    store.upsert_alert(legacy_alert)
+
+    terminal_trade = PaperTrade.from_alert(target_alert, target_setup)
+    terminal_trade.alert_id = legacy_alert_id
+    terminal_trade.plan_key = None
+    terminal_trade.created_at = None
+    terminal_trade.outcome = Outcome.STOPPED
+    terminal_trade.realized_r = -1.0
+    terminal_trade.exit_ts = created + timedelta(minutes=5)
+    store.upsert_paper_trade(terminal_trade.model_dump(mode="json"))
+
+    # Push the matching legacy alert just outside the normal newest-250 view.
+    for index in range(250):
+        newer = composer.compose(setup_at(created + timedelta(minutes=5 * (index + 1))))
+        store.upsert_alert(newer.model_dump(mode="json"))
+    assert len(store.list_alerts()) == 250
+    assert len(store.list_alerts(limit=None)) == 251
+
+    class MigrationProvider:
+        async def get_bars(self, symbol, timeframe, start, end, **kwargs):
+            if timeframe == Timeframe.M5:
+                return []
+            return [
+                Bar(
+                    symbol=symbol,
+                    timeframe=Timeframe.D1,
+                    ts_close=created - timedelta(days=1),
+                    open=100,
+                    high=101,
+                    low=99,
+                    close=100,
+                    volume=1e6,
+                    source="fx",
+                )
+            ]
+
+    loop = LiveLoop(symbols=["QQQ"], store=store)
+    loop.provider = MigrationProvider()
+    await loop.boot()
+
+    migrated = next(
+        trade for trade in loop.executor.trades if trade.alert_id == legacy_alert_id
+    )
+    assert migrated.created_at == created
+    assert migrated.plan_key == target_alert.plan_key
+    assert migrated.outcome == Outcome.STOPPED
+    regenerated = PaperTrade.from_alert(target_alert, target_setup)
+    assert loop.executor.track(regenerated) is False
+    assert migrated.outcome == Outcome.STOPPED

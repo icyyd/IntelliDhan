@@ -98,7 +98,9 @@ class LiveLoop:
         if persisted_budgets:
             self.composer.budgets.update(persisted_budgets)
         loaded_alerts: list[Alert] = []
-        for item in self.store.list_alerts():
+        # Migration and replay idempotency require the identity of every
+        # durable alert, not only the dashboard's default newest-250 window.
+        for item in self.store.list_alerts(limit=None):
             alert = Alert.model_validate(item)
             if alert.plan_key is None:
                 alert = alert.model_copy(update={"plan_key": stable_plan_key(
