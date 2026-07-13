@@ -648,7 +648,59 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
 @media (max-width:900px){
   #queue0dteTracking,#queueSwingTracking{grid-template-columns:1fr}
 }
+
+/* ── Light theme (toggle in topbar; dark stays the default) ───────────── */
+:root[data-theme="light"]{
+  --bg:#EEF1F7;
+  --panel:#FFFFFF;
+  --panel-elevated:#F6F8FC;
+  --border:#D4DAE8;
+  --border-soft:#E2E7F2;
+  --text:#1A2233;
+  --text-dim:#4C5870;
+  --text-faint:#7C87A0;
+  --cyan:#0E7DB8;
+  --gold:#9A7B18;
+  --teal:#0F8E7E;
+  --red:#D64545;
+  --amber:#B27A0C;
+  --slate:#64748B;
+  --on-accent:#FFFFFF;
+  --body-glow:radial-gradient(circle at 8% 4%,rgba(96,110,220,.08),transparent 28rem),radial-gradient(circle at 92% 18%,rgba(15,142,126,.06),transparent 24rem),radial-gradient(circle at 55% 80%,rgba(154,123,24,.045),transparent 30rem);
+  --glass-a:rgba(255,255,255,.86);
+  --glass-b:rgba(255,255,255,.78);
+  --glass-c:rgba(255,255,255,.82);
+  --shadow-bar:0 10px 30px rgba(26,34,51,.10);
+  --shadow-card:0 12px 34px rgba(26,34,51,.08), inset 0 1px 0 rgba(255,255,255,.65);
+  --panel-gradient:linear-gradient(145deg,rgba(255,255,255,.95),rgba(244,247,252,.95));
+  --card-gradient:linear-gradient(155deg,rgba(255,255,255,.93),rgba(240,244,251,.93));
+  --card-gradient-selected:linear-gradient(155deg,rgba(230,240,252,.96),rgba(243,247,252,.96));
+  --card-gradient-blocked:linear-gradient(155deg,rgba(250,233,236,.88),rgba(247,246,250,.96));
+  --tint-a:rgba(26,34,51,.03);
+  --tint-b:rgba(26,34,51,.035);
+  --tint-c:rgba(26,34,51,.045);
+  --tint-d:rgba(26,34,51,.055);
+  --tint-e:rgba(26,34,51,.06);
+  --well:rgba(26,34,51,.05);
+  --input-bg:rgba(26,34,51,.055);
+  --orb-track:rgba(26,34,51,.12);
+  --orb-inner:#FFFFFF;
+  --red-soft:#AD3A3A;
+  --teal-soft:#0B6D5F;
+  --violet:#6D5BD0;
+  --chart-bg:#F7F9FD;
+  --chart-grid:#DDE3EF;
+  --chart-axis:#7C87A0;
+  --chart-up:#0F8E7E;
+  --chart-down:#D64545;
+  --chart-vwap:#9A7B18;
+  --chart-ema:#0E7DB8;
+  --chart-entry:#0E7DB8;
+  --chart-ref:#7C87A0;
+}
+:root[data-theme="light"] ::selection{background:rgba(14,125,184,.18)}
 </style>
+<script>try{if(localStorage.getItem("id-theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -665,6 +717,7 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
 </svg>
 
@@ -675,6 +728,7 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   <button class="cmdk-btn" onclick="openPalette()" aria-label="Open command palette"><svg class="icon"><use href="#i-search"/></svg> <span class="cmdk-btn-label">Jump to…</span> <kbd>⌘K</kbd></button>
   <span class="chip" id="dataHealth" role="status"><span class="dot"></span> Connecting…</span>
   <span class="chip" id="session" role="status">—</span>
+  <button class="icon-btn" id="themeToggle" aria-label="Switch to light theme" title="Theme"><svg class="icon"><use href="#i-sun"/></svg></button>
   <button class="icon-btn" onclick="openBudgets()" aria-label="Open capital budget settings" title="Budgets"><svg class="icon"><use href="#i-gear"/></svg></button>
 </header>
 
@@ -1110,21 +1164,26 @@ function renderMarketChart(symbolState, alert){
     return;
   }
   empty.hidden = true;
+  const upC=chartCssColor("--chart-up","#2DD4BF"), downC=chartCssColor("--chart-down","#F87171"),
+        gridC=chartCssColor("--chart-grid","#1B2233"), axisC=chartCssColor("--chart-axis","#5C6784"),
+        vwapC=chartCssColor("--chart-vwap","#D9B54A"), emaC=chartCssColor("--chart-ema","#5EC8F2"),
+        entryC=chartCssColor("--chart-entry","#5EC8F2"), refC=chartCssColor("--chart-ref","#8D98B3"),
+        bgC=chartCssColor("--chart-bg","#0B101A");
   const W=compact?360:medium?720:920, H=330, left=12, right=compact?48:66, top=16, bottom=28;
   svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
   const indicators = symbolState.indicators?.["5m"] || {};
   const levels = [];
   if(alert){
-    levels.push(chartLevel("STOP",alert.stop_underlying,"#F87171","5 4"));
+    levels.push(chartLevel("STOP",alert.stop_underlying,downC,"5 4"));
     (alert.take_profits||[]).forEach((tp,i)=>{
-      if(tp.underlying!=null) levels.push(chartLevel(`T${i+1}`,tp.underlying,"#2DD4BF","4 4"));
+      if(tp.underlying!=null) levels.push(chartLevel(`T${i+1}`,tp.underlying,upC,"4 4"));
     });
   }
-  if(indicators.vwap!=null) levels.push(chartLevel("VWAP",indicators.vwap,"#D9B54A","3 4"));
-  if(indicators.ema21!=null) levels.push(chartLevel("EMA21",indicators.ema21,"#5EC8F2","2 4"));
+  if(indicators.vwap!=null) levels.push(chartLevel("VWAP",indicators.vwap,vwapC,"3 4"));
+  if(indicators.ema21!=null) levels.push(chartLevel("EMA21",indicators.ema21,emaC,"2 4"));
   if(symbolState.orb?.complete){
-    levels.push(chartLevel("ORH",symbolState.orb.high,"#8D98B3","3 5"));
-    levels.push(chartLevel("ORL",symbolState.orb.low,"#8D98B3","3 5"));
+    levels.push(chartLevel("ORH",symbolState.orb.high,refC,"3 5"));
+    levels.push(chartLevel("ORL",symbolState.orb.low,refC,"3 5"));
   }
   const values = bars.flatMap(b=>[Number(b.high),Number(b.low)]).concat(levels.map(l=>l.value).filter(Number.isFinite));
   if(alert) values.push(...alert.entry_zone.map(Number));
@@ -1136,13 +1195,13 @@ function renderMarketChart(symbolState, alert){
   const parts=[];
   for(let i=0;i<5;i++){
     const value=hi-(hi-lo)*i/4, yy=y(value);
-    parts.push(`<line x1="${left}" y1="${yy}" x2="${W-right}" y2="${yy}" stroke="#1B2233" stroke-width="1"/>`);
-    parts.push(`<text x="${W-right+7}" y="${yy+3}" fill="#5C6784" font-size="10" font-family="ui-monospace,monospace">${value.toFixed(2)}</text>`);
+    parts.push(`<line x1="${left}" y1="${yy}" x2="${W-right}" y2="${yy}" stroke="${gridC}" stroke-width="1"/>`);
+    parts.push(`<text x="${W-right+7}" y="${yy+3}" fill="${axisC}" font-size="10" font-family="ui-monospace,monospace">${value.toFixed(2)}</text>`);
   }
   if(alert){
     const ey1=y(Math.max(...alert.entry_zone)), ey2=y(Math.min(...alert.entry_zone));
-    parts.push(`<rect x="${left}" y="${ey1}" width="${plotW}" height="${Math.max(2,ey2-ey1)}" fill="#5EC8F2" opacity=".09"/>`);
-    parts.push(`<text x="${left+6}" y="${Math.max(top+11,ey1-4)}" fill="#5EC8F2" font-size="10" font-family="ui-sans-serif,system-ui">ENTRY ZONE</text>`);
+    parts.push(`<rect x="${left}" y="${ey1}" width="${plotW}" height="${Math.max(2,ey2-ey1)}" fill="${entryC}" opacity=".12"/>`);
+    parts.push(`<text x="${left+6}" y="${Math.max(top+11,ey1-4)}" fill="${entryC}" font-size="10" font-family="ui-sans-serif,system-ui">ENTRY ZONE</text>`);
   }
   const levelLabels=levels.filter(l=>Number.isFinite(l.value)).map(l=>({...l,rawY:y(l.value)})).sort((a,b)=>a.rawY-b.rawY);
   const labelGap=13, labelMin=top+7, labelMax=H-bottom-5;
@@ -1155,7 +1214,7 @@ function renderMarketChart(symbolState, alert){
     parts.push(`<line x1="${left}" y1="${l.rawY}" x2="${W-right}" y2="${l.rawY}" stroke="${l.color}" stroke-width="1" stroke-dasharray="${l.dash}" opacity=".75"/>`);
   });
   bars.forEach((b,i)=>{
-    const x=left+(i+.5)*step, up=Number(b.close)>=Number(b.open), color=up?"#2DD4BF":"#F87171";
+    const x=left+(i+.5)*step, up=Number(b.close)>=Number(b.open), color=up?upC:downC;
     const yo=y(Number(b.open)), yc=y(Number(b.close)), yh=y(Number(b.high)), yl=y(Number(b.low));
     parts.push(`<line x1="${x}" y1="${yh}" x2="${x}" y2="${yl}" stroke="${color}" stroke-width="1" opacity=".86"/>`);
     parts.push(`<rect x="${x-bodyW/2}" y="${Math.min(yo,yc)}" width="${bodyW}" height="${Math.max(1.5,Math.abs(yc-yo))}" rx=".7" fill="${color}" opacity=".9"/>`);
@@ -1163,13 +1222,13 @@ function renderMarketChart(symbolState, alert){
   levelLabels.forEach(l=>{
     const labelX=W-right-4, boxX=labelX-80;
     if(Math.abs(l.labelY-l.rawY)>3) parts.push(`<path d="M ${boxX-4} ${l.labelY} L ${boxX-12} ${l.labelY} L ${boxX-17} ${l.rawY}" fill="none" stroke="${l.color}" stroke-width=".8" opacity=".65"/>`);
-    parts.push(`<rect x="${boxX}" y="${l.labelY-8}" width="80" height="12" rx="2" fill="#0B101A" opacity=".88"/>`);
+    parts.push(`<rect x="${boxX}" y="${l.labelY-8}" width="80" height="12" rx="2" fill="${bgC}" opacity=".88"/>`);
     parts.push(`<text x="${labelX}" y="${l.labelY+1}" text-anchor="end" fill="${l.color}" font-size="9.5" font-family="ui-sans-serif,system-ui">${l.label} ${l.value.toFixed(2)}</text>`);
   });
   [0,Math.floor((bars.length-1)/2),bars.length-1].forEach(i=>{
     const x=left+(i+.5)*step;
     const label=new Date(bars[i].ts_close).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
-    parts.push(`<text x="${x}" y="${H-8}" text-anchor="middle" fill="#5C6784" font-size="10" font-family="ui-sans-serif,system-ui">${label}</text>`);
+    parts.push(`<text x="${x}" y="${H-8}" text-anchor="middle" fill="${axisC}" font-size="10" font-family="ui-sans-serif,system-ui">${label}</text>`);
   });
   svg.innerHTML=parts.join("");
 }
@@ -1637,6 +1696,20 @@ function renderSwingTrendChips(d){
   document.getElementById("swingTrendInner").innerHTML =
     rows.join(`<span style="flex-basis:100%"></span>`);
 }
+// ── Theme toggle (dark is default; choice persists in localStorage) ──
+function applyTheme(theme){
+  if(theme === "light") document.documentElement.dataset.theme = "light";
+  else delete document.documentElement.dataset.theme;
+  try{ localStorage.setItem("id-theme", theme); }catch(e){}
+  const btn = document.getElementById("themeToggle");
+  btn.setAttribute("aria-label", theme==="light" ? "Switch to dark theme" : "Switch to light theme");
+  btn.querySelector("use").setAttribute("href", theme==="light" ? "#i-moon" : "#i-sun");
+  if(lastState) renderAll();   // charts re-read their palette from CSS variables
+}
+document.getElementById("themeToggle").addEventListener("click", ()=>
+  applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light"));
+if(document.documentElement.dataset.theme === "light") applyTheme("light");
+
 function renderSwingView(s){
   ensureSwingSelection(s);
   document.getElementById("summarySwingSignals").textContent = moduleAlerts(s,"SWING").length;
