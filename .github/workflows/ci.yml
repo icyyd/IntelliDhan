@@ -17,3 +17,30 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: pytest -v
+
+  account-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: intellidhan_test
+          POSTGRES_USER: intellidhan
+          POSTGRES_PASSWORD: intellidhan-test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U intellidhan -d intellidhan_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_POSTGRES_URL: postgresql://intellidhan:intellidhan-test@localhost:5432/intellidhan_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: pytest -o addopts="" -m integration -v tests/test_accounts_postgres.py

@@ -15,6 +15,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
+from uuid import uuid4
 
 import psycopg
 from psycopg.rows import dict_row
@@ -83,6 +84,75 @@ CREATE TABLE IF NOT EXISTS saved_screens (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS users (
+    user_id TEXT PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_login_at TEXT
+);
+CREATE TABLE IF NOT EXISTS user_sessions (
+    session_hash TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL,
+    revoked_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id
+    ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at
+    ON user_sessions(expires_at);
+CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id TEXT PRIMARY KEY,
+    payload TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+CREATE TABLE IF NOT EXISTS user_capital_limits (
+    user_id TEXT NOT NULL,
+    module TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, module),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+CREATE TABLE IF NOT EXISTS user_watchlists (
+    user_id TEXT NOT NULL,
+    watchlist_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, watchlist_id),
+    UNIQUE (user_id, name),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+CREATE TABLE IF NOT EXISTS user_watchlist_members (
+    user_id TEXT NOT NULL,
+    watchlist_id TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, watchlist_id, symbol),
+    FOREIGN KEY (user_id, watchlist_id)
+        REFERENCES user_watchlists(user_id, watchlist_id)
+);
+CREATE TABLE IF NOT EXISTS user_saved_screens (
+    user_id TEXT NOT NULL,
+    screen_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    filters TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, screen_id),
+    UNIQUE (user_id, name),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
 """
 
 
@@ -133,6 +203,7 @@ class TerminalStore:
         path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(path)
         connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys=ON")
         try:
             yield connection
             connection.commit()
@@ -187,6 +258,340 @@ class TerminalStore:
             "SELECT payload FROM runtime_settings WHERE setting_key=?", (key,)
         )
         return json.loads(rows[0]["payload"]) if rows else None
+
+    # Account records are deliberately separate from shared engine state.  This
+    # keeps personal limits and research lists isolated without a destructive
+    # migration of legacy single-owner installations.
+
+    def count_users(self) -> int:
+        rows = self._fetchall("SELECT COUNT(*) AS count FROM users")
+        return int(rows[0]["count"])
+
+    def create_user(
+        self,
+        *,
+        email: str,
+        display_name: str,
+        password_hash: str,
+        role: str = "TRADER",
+        preferences: dict[str, Any] | None = None,
+        capital_limits: dict[str, dict[str, Any]] | None = None,
+        default_watchlist: str | None = None,
+        require_first: bool = False,
+    ) -> dict[str, Any]:
+        """Create an account and its personal defaults in one transaction.
+
+        ``require_first`` serializes the zero-user bootstrap claim so two
+        concurrent requests cannot both create the initial administrator.
+        """
+        email = email.strip().lower()
+        display_name = display_name.strip()
+        role = role.strip().upper()
+        if not email or len(email) > 254:
+            raise ValueError("email must be 1–254 characters")
+        if not display_name or len(display_name) > 80:
+            raise ValueError("display name must be 1–80 characters")
+        if role not in {"ADMIN", "TRADER", "VIEWER"}:
+            raise ValueError("role must be ADMIN, TRADER, or VIEWER")
+        if require_first and role != "ADMIN":
+            raise ValueError("the initial account must be an administrator")
+        watchlist_name = default_watchlist.strip() if default_watchlist else None
+        if watchlist_name and (len(watchlist_name) > 60 or not _slug(watchlist_name)):
+            raise ValueError("watchlist name must be 1–60 letters or numbers")
+        user_id = uuid4().hex
+        now = _now()
+        public_user = {
+            "user_id": user_id,
+            "email": email,
+            "display_name": display_name,
+            "role": role,
+            "active": True,
+            "created_at": now,
+            "updated_at": now,
+            "last_login_at": None,
+        }
+        self._ensure()
+        try:
+            with self._connection() as connection:
+                if require_first:
+                    if self.postgres:
+                        connection.execute(
+                            "SELECT pg_advisory_xact_lock(%s)", (4_923_187_441,)
+                        )
+                    else:
+                        connection.execute("BEGIN IMMEDIATE")
+                    row = connection.execute(
+                        "SELECT COUNT(*) AS count FROM users"
+                    ).fetchone()
+                    if int(row["count"]) != 0:
+                        raise ValueError("the initial administrator already exists")
+                connection.execute(
+                    self._sql(
+                        """INSERT INTO users
+                           (user_id, email, display_name, password_hash, role, active,
+                            created_at, updated_at)
+                           VALUES (?, ?, ?, ?, ?, 1, ?, ?)"""
+                    ),
+                    (user_id, email, display_name, password_hash, role, now, now),
+                )
+                connection.execute(
+                    self._sql(
+                        """INSERT INTO user_preferences (user_id, payload, updated_at)
+                           VALUES (?, ?, ?)"""
+                    ),
+                    (user_id, json.dumps(preferences or {}), now),
+                )
+                for module, payload in (capital_limits or {}).items():
+                    connection.execute(
+                        self._sql(
+                            """INSERT INTO user_capital_limits
+                               (user_id, module, payload, updated_at)
+                               VALUES (?, ?, ?, ?)"""
+                        ),
+                        (user_id, module, json.dumps(payload), now),
+                    )
+                if watchlist_name:
+                    connection.execute(
+                        self._sql(
+                            """INSERT INTO user_watchlists
+                               (user_id, watchlist_id, name, created_at, updated_at)
+                               VALUES (?, ?, ?, ?, ?)"""
+                        ),
+                        (user_id, _slug(watchlist_name), watchlist_name, now, now),
+                    )
+        except (sqlite3.IntegrityError, psycopg.IntegrityError) as exc:
+            if self.get_user_by_email(email):
+                raise ValueError("an account with that email already exists") from exc
+            raise RuntimeError("account defaults could not be initialized") from exc
+        return public_user
+
+    def get_user(self, user_id: str) -> dict[str, Any] | None:
+        rows = self._fetchall(
+            """SELECT user_id, email, display_name, role, active, created_at,
+                      updated_at, last_login_at
+               FROM users WHERE user_id=?""",
+            (user_id,),
+        )
+        if not rows:
+            return None
+        rows[0]["active"] = bool(rows[0]["active"])
+        return rows[0]
+
+    def get_user_by_email(self, email: str, *, include_password: bool = False) -> dict[str, Any] | None:
+        columns = (
+            "user_id, email, display_name, role, active, created_at, updated_at, "
+            "last_login_at"
+        )
+        if include_password:
+            columns += ", password_hash"
+        rows = self._fetchall(
+            f"SELECT {columns} FROM users WHERE email=?", (email.strip().lower(),)
+        )
+        if not rows:
+            return None
+        rows[0]["active"] = bool(rows[0]["active"])
+        return rows[0]
+
+    def list_users(self) -> list[dict[str, Any]]:
+        rows = self._fetchall(
+            """SELECT user_id, email, display_name, role, active, created_at,
+                      updated_at, last_login_at
+               FROM users ORDER BY display_name, email"""
+        )
+        for row in rows:
+            row["active"] = bool(row["active"])
+        return rows
+
+    def mark_user_login(self, user_id: str) -> None:
+        now = _now()
+        self._execute(
+            "UPDATE users SET last_login_at=?, updated_at=? WHERE user_id=?",
+            (now, now, user_id),
+        )
+
+    def create_user_session(
+        self, *, session_hash: str, user_id: str, expires_at: str
+    ) -> None:
+        now = _now()
+        self._execute(
+            """INSERT INTO user_sessions
+               (session_hash, user_id, created_at, expires_at, last_seen_at, revoked_at)
+               VALUES (?, ?, ?, ?, ?, NULL)""",
+            (session_hash, user_id, now, expires_at, now),
+        )
+
+    def get_user_session(self, session_hash: str) -> dict[str, Any] | None:
+        rows = self._fetchall(
+            """SELECT s.session_hash, s.created_at AS session_created_at,
+                      s.expires_at, s.last_seen_at, u.user_id, u.email,
+                      u.display_name, u.role, u.active
+               FROM user_sessions s
+               JOIN users u ON u.user_id=s.user_id
+               WHERE s.session_hash=? AND s.revoked_at IS NULL
+                 AND s.expires_at>? AND u.active=1""",
+            (session_hash, _now()),
+        )
+        if not rows:
+            return None
+        row = rows[0]
+        row["active"] = bool(row["active"])
+        return row
+
+    def revoke_user_session(self, session_hash: str) -> None:
+        self._execute(
+            "UPDATE user_sessions SET revoked_at=? WHERE session_hash=?",
+            (_now(), session_hash),
+        )
+
+    def revoke_user_sessions(self, user_id: str) -> None:
+        self._execute(
+            "UPDATE user_sessions SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL",
+            (_now(), user_id),
+        )
+
+    def get_user_preferences(self, user_id: str) -> dict[str, Any]:
+        rows = self._fetchall(
+            "SELECT payload FROM user_preferences WHERE user_id=?", (user_id,)
+        )
+        return json.loads(rows[0]["payload"]) if rows else {}
+
+    def put_user_preferences(self, user_id: str, payload: dict[str, Any]) -> None:
+        self._execute(
+            """INSERT INTO user_preferences (user_id, payload, updated_at)
+               VALUES (?, ?, ?)
+               ON CONFLICT(user_id) DO UPDATE SET
+                 payload=excluded.payload, updated_at=excluded.updated_at""",
+            (user_id, json.dumps(payload), _now()),
+        )
+
+    def get_user_capital_limits(self, user_id: str) -> dict[str, dict[str, Any]]:
+        rows = self._fetchall(
+            """SELECT module, payload FROM user_capital_limits
+               WHERE user_id=? ORDER BY module""",
+            (user_id,),
+        )
+        return {row["module"]: json.loads(row["payload"]) for row in rows}
+
+    def put_user_capital_limits(
+        self, user_id: str, limits: dict[str, dict[str, Any]]
+    ) -> None:
+        now = _now()
+        self._ensure()
+        with self._connection() as connection:
+            for module, payload in limits.items():
+                connection.execute(
+                    self._sql(
+                        """INSERT INTO user_capital_limits
+                           (user_id, module, payload, updated_at)
+                           VALUES (?, ?, ?, ?)
+                           ON CONFLICT(user_id, module) DO UPDATE SET
+                             payload=excluded.payload, updated_at=excluded.updated_at"""
+                    ),
+                    (user_id, module, json.dumps(payload), now),
+                )
+
+    def create_user_watchlist(self, user_id: str, name: str) -> dict[str, Any]:
+        name = name.strip()
+        if not name or len(name) > 60:
+            raise ValueError("watchlist name must be 1–60 characters")
+        watchlist_id = _slug(name)
+        if not watchlist_id:
+            raise ValueError("watchlist name must contain letters or numbers")
+        now = _now()
+        self._execute(
+            """INSERT INTO user_watchlists
+               (user_id, watchlist_id, name, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(user_id, watchlist_id) DO UPDATE SET
+                 name=excluded.name, updated_at=excluded.updated_at""",
+            (user_id, watchlist_id, name, now, now),
+        )
+        return {"watchlist_id": watchlist_id, "name": name, "symbols": []}
+
+    def list_user_watchlists(self, user_id: str) -> list[dict[str, Any]]:
+        watchlists = self._fetchall(
+            """SELECT watchlist_id, name, created_at, updated_at
+               FROM user_watchlists WHERE user_id=? ORDER BY name""",
+            (user_id,),
+        )
+        members = self._fetchall(
+            """SELECT watchlist_id, symbol, note, created_at
+               FROM user_watchlist_members WHERE user_id=? ORDER BY created_at""",
+            (user_id,),
+        )
+        by_list: dict[str, list[dict[str, Any]]] = {}
+        for member in members:
+            by_list.setdefault(member["watchlist_id"], []).append(member)
+        for item in watchlists:
+            item["members"] = by_list.get(item["watchlist_id"], [])
+            item["symbols"] = [member["symbol"] for member in item["members"]]
+        return watchlists
+
+    def add_user_watchlist_member(
+        self, user_id: str, watchlist_id: str, symbol: str, note: str = ""
+    ) -> None:
+        if not self._fetchall(
+            """SELECT watchlist_id FROM user_watchlists
+               WHERE user_id=? AND watchlist_id=?""",
+            (user_id, watchlist_id),
+        ):
+            raise KeyError("unknown watchlist")
+        self._execute(
+            """INSERT INTO user_watchlist_members
+               (user_id, watchlist_id, symbol, note, created_at)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(user_id, watchlist_id, symbol) DO UPDATE SET
+                 note=excluded.note""",
+            (user_id, watchlist_id, symbol.upper(), note.strip()[:500], _now()),
+        )
+
+    def remove_user_watchlist_member(
+        self, user_id: str, watchlist_id: str, symbol: str
+    ) -> None:
+        self._execute(
+            """DELETE FROM user_watchlist_members
+               WHERE user_id=? AND watchlist_id=? AND symbol=?""",
+            (user_id, watchlist_id, symbol.upper()),
+        )
+
+    def user_watchlists_for_symbol(self, user_id: str, symbol: str) -> list[str]:
+        rows = self._fetchall(
+            """SELECT watchlist_id FROM user_watchlist_members
+               WHERE user_id=? AND symbol=? ORDER BY watchlist_id""",
+            (user_id, symbol.upper()),
+        )
+        return [row["watchlist_id"] for row in rows]
+
+    def put_user_saved_screen(
+        self, user_id: str, name: str, filters: dict[str, Any]
+    ) -> dict[str, Any]:
+        name = name.strip()
+        if not name or len(name) > 60:
+            raise ValueError("screen name must be 1–60 characters")
+        screen_id = _slug(name)
+        if not screen_id:
+            raise ValueError("screen name must contain letters or numbers")
+        now = _now()
+        self._execute(
+            """INSERT INTO user_saved_screens
+               (user_id, screen_id, name, filters, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT(user_id, screen_id) DO UPDATE SET
+                 name=excluded.name, filters=excluded.filters,
+                 updated_at=excluded.updated_at""",
+            (user_id, screen_id, name, json.dumps(filters), now, now),
+        )
+        return {"screen_id": screen_id, "name": name, "filters": filters}
+
+    def list_user_saved_screens(self, user_id: str) -> list[dict[str, Any]]:
+        rows = self._fetchall(
+            """SELECT screen_id, name, filters, created_at, updated_at
+               FROM user_saved_screens WHERE user_id=? ORDER BY name""",
+            (user_id,),
+        )
+        for row in rows:
+            row["filters"] = json.loads(row["filters"])
+        return rows
 
     def seed_universe(self, records: list[dict[str, Any]], universe_id: str = "live") -> None:
         self._ensure()

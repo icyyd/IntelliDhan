@@ -27,6 +27,7 @@
   --sans:Inter, "Geist", system-ui, sans-serif;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;padding:0}
 body{
   background:var(--bg); color:var(--text); font:14px/1.5 var(--sans);
@@ -85,7 +86,7 @@ button{font-family:inherit}
 }
 .cmdk-btn kbd{font-family:var(--mono); background:var(--border-soft); padding:1px 5px; border-radius:4px; font-size:10.5px}
 .icon-btn{
-  display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px;
+  display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px;
   background:transparent; border:1px solid var(--border); border-radius:var(--radius-chip);
   color:var(--text-dim); cursor:pointer;
 }
@@ -309,10 +310,10 @@ dialog#budgets-dialog::backdrop{background:rgba(4,8,16,.6)}
 .bd-module h3{font-size:12px; letter-spacing:.06em; margin:0 0 8px}
 .bd-row2{display:flex; align-items:center; gap:10px; margin-bottom:8px}
 .bd-row2 label{flex:1; color:var(--text-faint); font-size:12px}
-.bd-row2 input{width:140px; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:6px 8px; font-family:var(--mono)}
+.bd-row2 input{width:140px; height:44px; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:6px 8px; font-family:var(--mono)}
 .bd-hint{color:var(--text-faint); font-size:11px; margin-top:2px}
 .bd-foot2{display:flex; align-items:center; gap:10px; padding:14px 20px; border-top:1px solid var(--border)}
-.bd-save{background:var(--gold); color:#1a1200; border:none; border-radius:8px; padding:8px 18px; font-weight:700; cursor:pointer; font-family:inherit}
+.bd-save{background:var(--gold); color:#1a1200; border:none; border-radius:8px; min-height:44px; padding:8px 18px; font-weight:700; cursor:pointer; font-family:inherit}
 .bd-status{font-size:12px; color:var(--text-faint)}
 .bd-status.ok{color:var(--teal)}
 .bd-status.err{color:var(--red)}
@@ -342,6 +343,7 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   .topbar{gap:5px; padding:0 8px; overflow-x:auto; scrollbar-width:none}
   .topbar::-webkit-scrollbar{display:none}
   .brand{font-size:13px; flex:none}
+  #dataHealth,#session,#themeToggle{display:none}
   .cmdk-btn{padding:6px; gap:0; flex:none}
   .cmdk-btn kbd,.cmdk-btn-label{display:none}
   .chip{padding:4px 7px; font-size:10px; max-width:78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:none}
@@ -419,7 +421,7 @@ body{
 .tape .tk{padding:5px 9px; border-radius:99px; background:var(--tint-c)}
 .cmdk-btn,.icon-btn,.chip{background:var(--tint-d); border-color:var(--border)}
 .cmdk-btn{padding:7px 12px}
-.icon-btn{width:34px; height:34px; border-radius:12px}
+.icon-btn{width:44px; height:44px; border-radius:14px}
 .shell{
   grid-template-columns:70px minmax(0,1fr) 310px; gap:18px;
   padding:0 18px 20px; min-height:calc(100vh - 90px);
@@ -564,18 +566,18 @@ footer.disclaimer{margin:0 18px 16px; padding:0 8px; border:0; text-align:center
 .auto-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin:10px 0}
 .auto-stats>span{padding:9px 7px; border-radius:14px; background:rgba(255,255,255,.035); min-width:0}
 .auto-stats b{display:block; font:700 12px var(--mono); overflow:hidden; text-overflow:ellipsis}
-.auto-stats small{display:block; color:var(--text-faint); font-size:8.5px; white-space:nowrap}
-.auto-configure,.auto-disarm{display:flex; align-items:center; justify-content:center; gap:7px; border:1px solid var(--border); border-radius:13px; background:rgba(145,164,255,.08); color:var(--cyan); cursor:pointer; font-weight:650}
+.auto-stats small{display:block; color:var(--text-dim); font-size:10.5px; white-space:nowrap}
+.auto-configure,.auto-disarm{display:flex; align-items:center; justify-content:center; gap:7px; min-height:44px; border:1px solid var(--border); border-radius:13px; background:rgba(145,164,255,.08); color:var(--cyan); cursor:pointer; font-weight:650}
 .auto-configure{width:100%; padding:9px}
 .auto-configure:hover{border-color:rgba(145,164,255,.42)}
 dialog#autotrade-dialog{background:var(--panel-elevated); color:var(--text); border:1px solid var(--border); border-radius:24px; padding:0; width:650px; max-width:94vw; box-shadow:0 24px 80px rgba(0,0,0,.48)}
 dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(4px)}
-.dialog-subtitle{font-size:10.5px; color:var(--text-faint); margin-top:3px}
+.dialog-subtitle{font-size:11.5px; color:var(--text-dim); margin-top:3px}
 .auto-form{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:18px 20px; max-height:62vh; overflow-y:auto}
 .auto-wide{grid-column:1/-1}
 .auto-field{display:block}
 .auto-field>span{display:block; color:var(--text-dim); font-size:10.5px; margin-bottom:5px}
-.auto-field input,.auto-field select{width:100%; height:38px; padding:7px 10px; border:1px solid var(--border); border-radius:11px; background:rgba(3,7,16,.45); color:var(--text); font:12px var(--sans)}
+.auto-field input,.auto-field select{width:100%; height:44px; padding:7px 10px; border:1px solid var(--border); border-radius:11px; background:rgba(3,7,16,.45); color:var(--text); font:12px var(--sans)}
 .auto-field input[type="number"]{font-family:var(--mono)}
 .auto-check{display:flex; align-items:center; gap:8px; color:var(--text-dim); font-size:11.5px}
 .auto-check input{accent-color:var(--cyan)}
@@ -838,12 +840,30 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
 .screen-tools>.watch-status{align-self:center; flex:1; margin:0}
 .analysis-watch{margin-left:auto}
 .owner-state{position:relative}
-dialog#owner-dialog{background:var(--panel-elevated); color:var(--text); border:1px solid var(--border); border-radius:24px; padding:0; width:420px; max-width:92vw; box-shadow:0 24px 80px rgba(0,0,0,.48)}
+dialog#owner-dialog{background:var(--panel-elevated); color:var(--text); border:1px solid var(--border); border-radius:24px; padding:0; width:520px; max-width:92vw; box-shadow:0 24px 80px rgba(0,0,0,.48)}
 dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(4px)}
 .owner-body{padding:20px}
 .owner-body p{margin:0 0 15px; color:var(--text-dim); font-size:11.5px; line-height:1.6}
-.owner-body .auto-field input{height:43px}
+.owner-body .auto-field input,.owner-body .auto-field select{height:44px}
 .owner-actions{display:flex; align-items:center; gap:10px; margin-top:14px}
+.account-tabs{display:flex; gap:5px; padding:5px; border:1px solid var(--border); border-radius:15px; background:rgba(255,255,255,.025); margin-bottom:16px}
+.account-tab{flex:1; min-height:44px; border:0; border-radius:11px; background:transparent; color:var(--text-dim); font:700 12px var(--sans); cursor:pointer}
+.account-tab.active{background:rgba(145,164,255,.13); color:var(--cyan)}
+.account-form{display:grid; gap:12px}
+.account-card{padding:14px; border:1px solid var(--border); border-radius:18px; background:rgba(255,255,255,.03); margin-bottom:12px}
+.account-identity{display:flex; align-items:center; gap:12px}
+.account-avatar{display:grid; place-items:center; width:42px; height:42px; border-radius:15px; background:linear-gradient(145deg,rgba(145,164,255,.2),rgba(94,234,212,.12)); color:var(--cyan); font-weight:800}
+.account-identity b,.account-identity small{display:block}
+.account-identity small{color:var(--text-dim); margin-top:3px; font-size:11px}
+.account-role{margin-left:auto; padding:5px 8px; border-radius:99px; background:rgba(94,234,212,.1); color:var(--teal); font:700 9px var(--mono)}
+.preference-grid{display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:12px}
+.preference-grid .auto-check{min-height:44px; padding:8px 10px; border:1px solid var(--border-soft); border-radius:13px; background:rgba(255,255,255,.025)}
+.account-admin{margin-top:12px; border-top:1px solid var(--border-soft); padding-top:12px}
+.account-admin summary{cursor:pointer; color:var(--cyan); font-size:11px; font-weight:700}
+.account-helper{color:var(--text-dim); font-size:11.5px; line-height:1.5; margin-top:8px}
+.owner-body .secondary-action{min-height:44px}
+.bd-close{display:grid; place-items:center; min-width:44px; height:44px}
+@media (max-width:520px){.preference-grid{grid-template-columns:1fr}.owner-actions{align-items:flex-start; flex-wrap:wrap}}
 @media (max-width:1100px){
   .discover-layout{grid-template-columns:1fr}
   .watch-panel{position:static}
@@ -914,6 +934,10 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   --chart-ref:#7C87A0;
 }
 :root[data-theme="light"] ::selection{background:rgba(14,125,184,.18)}
+:root[data-compact="true"] .alert-card{padding:13px}
+:root[data-compact="true"] .ac-thesis{margin:9px 0; min-height:0}
+:root[data-compact="true"] .level-bubble{padding:7px}
+:root[data-reduce-motion="true"] *{scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important}
 </style>
 <script>try{if(localStorage.getItem("id-theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
 </head>
@@ -947,8 +971,8 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   <span class="chip" id="dataHealth" role="status"><span class="dot"></span> Connecting…</span>
   <span class="chip" id="session" role="status">—</span>
   <button class="icon-btn" id="themeToggle" aria-label="Switch to light theme" title="Theme"><svg class="icon"><use href="#i-sun"/></svg></button>
-  <button class="icon-btn owner-state" id="ownerButton" onclick="openOwnerDialog()" aria-label="Owner sign in" title="Owner session"><svg class="icon"><use href="#i-user"/></svg></button>
-  <button class="icon-btn" onclick="openBudgets()" aria-label="Open capital budget settings" title="Budgets"><svg class="icon"><use href="#i-gear"/></svg></button>
+  <button class="icon-btn owner-state" id="ownerButton" onclick="openOwnerDialog()" aria-label="Sign in" title="Account"><svg class="icon"><use href="#i-user"/></svg></button>
+  <button class="icon-btn" onclick="openBudgets()" aria-label="Open capital and risk limits" title="Capital &amp; risk limits"><svg class="icon"><use href="#i-gear"/></svg></button>
 </header>
 
 <nav class="mobile-nav" aria-label="Primary tasks">
@@ -969,7 +993,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
     <button class="nav-item" disabled title="LEAPS — not yet implemented">LP</button>
     <button class="nav-item" disabled title="HODL — not yet implemented">HD</button>
     <button class="nav-item" disabled title="Trade Log — not yet implemented">TL</button>
-    <button class="nav-item" disabled title="Research &amp; Calibration — see bottom drawer for now">RS</button>
+    <button class="nav-item" disabled title="Historical reliability — see bottom drawer for now">RS</button>
     <button class="nav-item" disabled title="Briefings archive — not yet implemented">BR</button>
     <div class="nav-spacer"></div>
     <button class="nav-item" onclick="openBudgets()" title="Settings"><svg class="icon" style="width:16px;height:16px"><use href="#i-gear"/></svg></button>
@@ -981,11 +1005,11 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       <div class="desk-copy">
         <div class="desk-eyebrow">Decision-ready insights</div>
         <h1 id="deskTitle">Signal inbox</h1>
-        <p>Current opportunities, evidence state, and risk context—without the noise.</p>
+        <p>Current opportunities, historical reliability, and risk context—without the noise.</p>
       </div>
       <div class="desk-stats" aria-label="Signal summary">
         <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="summarySignals">—</b><small>Active signals</small></span></div>
-        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summarySuppressed">—</b><small>Recent suppressions</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summarySuppressed">—</b><small>Held-back candidates</small></span></div>
         <div class="desk-stat"><span class="stat-bubble mint"><svg class="icon"><use href="#i-clock"/></svg></span><span><b id="summaryNext">—</b><small>Next evaluation</small></span></div>
       </div>
     </section>
@@ -994,11 +1018,11 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       <div class="section-heading">
         <div class="section-heading-copy">
           <h2 id="signalBoardTitle">Your signal cards</h2>
-          <p>Open a card for the complete plan, invalidation, and optional price context.</p>
+          <p>Open a card for the complete plan, exit condition, and optional price context.</p>
         </div>
         <div class="queue-tabs" role="tablist">
           <button class="qtab active" id="qtabTracking" role="tab" aria-selected="true">Signals <span id="qCountTracking">(0)</span></button>
-          <button class="qtab" id="qtabSuppressed" role="tab" aria-selected="false">Suppressed <span id="qCountSuppressed">(0)</span></button>
+          <button class="qtab" id="qtabSuppressed" role="tab" aria-selected="false">Held back <span id="qCountSuppressed">(0)</span></button>
         </div>
       </div>
       <div id="queueTracking" aria-live="polite"></div>
@@ -1040,11 +1064,11 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       <div class="desk-copy">
         <div class="desk-eyebrow">Same-day options desk</div>
         <h1 id="deskTitle0dte">0DTE</h1>
-        <p>Intraday signals with the day's auction, profile, and opening-range context.</p>
+        <p>Intraday signals with trend strength, key price areas, and opening-range context.</p>
       </div>
       <div class="desk-stats" aria-label="0DTE summary">
         <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="summary0dteSignals">—</b><small>Active 0DTE signals</small></span></div>
-        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summary0dteSuppressed">—</b><small>Suppressed</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summary0dteSuppressed">—</b><small>Held back</small></span></div>
       </div>
     </section>
 
@@ -1056,7 +1080,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
         </div>
         <div class="queue-tabs" role="tablist">
           <button class="qtab active" id="qtab0dteTracking" role="tab" aria-selected="true">Signals <span id="qCount0dteTracking">(0)</span></button>
-          <button class="qtab" id="qtab0dteSuppressed" role="tab" aria-selected="false">Suppressed <span id="qCount0dteSuppressed">(0)</span></button>
+          <button class="qtab" id="qtab0dteSuppressed" role="tab" aria-selected="false">Held back <span id="qCount0dteSuppressed">(0)</span></button>
         </div>
       </div>
       <div id="queue0dteTracking" aria-live="polite"></div>
@@ -1064,7 +1088,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
     </section>
 
     <section class="panel" aria-labelledby="profile0dteTitle">
-      <div class="panel-head"><h2 id="profile0dteTitle">Auction &amp; profile state</h2><span class="count">POC · VA · Open · Shape · 1TF</span></div>
+      <div class="panel-head"><h2 id="profile0dteTitle">Market direction &amp; key price areas</h2><span class="count">Key level · Fair-value range · Open · Pattern · Trend</span></div>
       <div id="profile0dteInner"></div>
     </section>
    </div>
@@ -1078,7 +1102,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       </div>
       <div class="desk-stats" aria-label="Swing summary">
         <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="summarySwingSignals">—</b><small>Active swing signals</small></span></div>
-        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summarySwingSuppressed">—</b><small>Suppressed</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summarySwingSuppressed">—</b><small>Held back</small></span></div>
       </div>
     </section>
 
@@ -1090,7 +1114,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
         </div>
         <div class="queue-tabs" role="tablist">
           <button class="qtab active" id="qtabSwingTracking" role="tab" aria-selected="true">Signals <span id="qCountSwingTracking">(0)</span></button>
-          <button class="qtab" id="qtabSwingSuppressed" role="tab" aria-selected="false">Suppressed <span id="qCountSwingSuppressed">(0)</span></button>
+          <button class="qtab" id="qtabSwingSuppressed" role="tab" aria-selected="false">Held back <span id="qCountSwingSuppressed">(0)</span></button>
         </div>
       </div>
       <div id="queueSwingTracking" aria-live="polite"></div>
@@ -1113,7 +1137,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       <div class="desk-copy">
         <div class="desk-eyebrow">Find candidates worth researching</div>
         <h1 id="discoverTitle">Discover</h1>
-        <p>Rank the configured universe by transparent trend, liquidity, and risk evidence. No hidden stock-picking probability.</p>
+        <p>Rank the configured universe by transparent trend, liquidity, and risk data. No hidden stock-picking probability.</p>
       </div>
       <div class="desk-stats" aria-label="Discovery summary">
         <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-grid"/></svg></span><span><b id="discoverMatches">—</b><small>Current matches</small></span></div>
@@ -1155,7 +1179,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       <aside class="panel watch-panel" aria-labelledby="watchTitle">
         <div class="panel-head"><h2 id="watchTitle">Research watchlist</h2><span class="count" id="watchCount">0</span></div>
         <div class="watch-status" id="watchStatus" role="status" aria-live="polite"></div>
-        <div class="watch-list" id="watchList"><div class="watch-empty">Sign in as owner to save and reopen candidates.</div></div>
+        <div class="watch-list" id="watchList"><div class="watch-empty">Sign in to save and reopen candidates.</div></div>
       </aside>
     </div>
    </div>
@@ -1226,17 +1250,17 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
         <span><b id="autotradeApproval">0</b><small>Needs approval</small></span>
         <span><b id="autotradeExpiry">—</b><small>Armed until</small></span>
       </div>
-      <button class="auto-configure" type="button" onclick="openAutotrade()"><svg class="icon"><use href="#i-gear"/></svg> Configure automation</button>
+      <button class="auto-configure" id="autotradeConfigure" type="button" onclick="openAutotrade()"><svg class="icon"><use href="#i-gear"/></svg> Configure automation</button>
     </section>
 
     <div class="panel risk-panel">
-      <div class="panel-head"><h2>Risk &amp; Budget</h2></div>
+      <div class="panel-head"><h2>Capital &amp; risk</h2></div>
       <div id="riskUsage"></div>
     </div>
 
     <section class="panel">
       <button class="drawer-toggle" id="drawerToggle" aria-expanded="false">
-        <svg class="icon"><use href="#i-chevron-right"/></svg> Levels, profile &amp; auction state
+        <svg class="icon"><use href="#i-chevron-right"/></svg> Key levels, price balance &amp; trend strength
       </button>
       <div class="drawer-body" id="drawerBody"><div id="drawerInner"></div></div>
     </section>
@@ -1245,8 +1269,8 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 
 <footer class="bottom-drawer">
   <div class="bd-tabs" role="tablist">
-    <button class="bd-tab active" data-tab="suppression">Suppression Tape</button>
-    <button class="bd-tab" data-tab="evidence">Calibration &amp; Evidence</button>
+    <button class="bd-tab active" data-tab="suppression">Why signals were held back</button>
+    <button class="bd-tab" data-tab="evidence">Historical reliability</button>
     <button class="bd-tab" data-tab="performance">Paper Performance</button>
   </div>
   <div class="bd-body">
@@ -1267,10 +1291,10 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   </div>
 </div>
 
-<!-- Budgets dialog -->
+<!-- Personal capital and risk limits -->
 <dialog id="budgets-dialog">
   <div class="bd-head2">
-    <h2>Capital Budgets</h2>
+    <div><h2>Capital &amp; risk limits</h2><div class="dialog-subtitle" id="budgetsSubtitle">Saved privately to your account.</div></div>
     <button class="bd-close" onclick="document.getElementById('budgets-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
   <div class="bd-body2" id="budgets-body">Loading…</div>
@@ -1280,16 +1304,65 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   </div>
 </dialog>
 
-<!-- Owner authentication: raw token is exchanged once for an HttpOnly cookie. -->
+<!-- Database-backed account sign-in and personal preferences. -->
 <dialog id="owner-dialog">
   <div class="bd-head2">
-    <div><h2>Owner session</h2><div class="dialog-subtitle">Unlock watchlists, budgets, automation controls, and live updates.</div></div>
+    <div><h2>Your account</h2><div class="dialog-subtitle">Personal watchlists, limits, preferences, and live updates.</div></div>
     <button class="bd-close" onclick="document.getElementById('owner-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
   <div class="owner-body">
-    <p>The token is sent once over HTTPS and exchanged for a secure, HttpOnly session cookie. It is never stored in browser JavaScript or local storage.</p>
-    <label class="auto-field"><span>Owner token</span><input type="password" id="ownerToken" autocomplete="current-password" placeholder="INTELLIDHAN_OWNER_TOKEN"></label>
-    <div class="owner-actions"><button class="bd-save" type="button" onclick="signInOwner()">Sign in</button><button class="secondary-action" id="ownerSignOut" type="button" onclick="signOutOwner()">Sign out</button><span class="bd-status" id="ownerStatus" role="status"></span></div>
+    <div id="accountSignedOut">
+      <div class="account-tabs" role="tablist" aria-label="Account access">
+        <button class="account-tab active" id="accountSignInTab" type="button" onclick="showAccountTab('signin')" role="tab" aria-selected="true" aria-controls="accountSignInForm" tabindex="0">Sign in</button>
+        <button class="account-tab" id="accountRegisterTab" type="button" onclick="showAccountTab('register')" role="tab" aria-selected="false" aria-controls="accountRegisterForm" tabindex="-1">Create account</button>
+      </div>
+      <form class="account-form" id="accountSignInForm" role="tabpanel" aria-labelledby="accountSignInTab" onsubmit="signInAccount();return false">
+        <label class="auto-field"><span>Email</span><input type="email" id="accountEmail" autocomplete="email" placeholder="you@example.com" required></label>
+        <label class="auto-field"><span>Password</span><input type="password" id="accountPassword" autocomplete="current-password" minlength="12" maxlength="128" required></label>
+        <button class="bd-save" type="submit">Sign in</button>
+      </form>
+      <form class="account-form" id="accountRegisterForm" role="tabpanel" aria-labelledby="accountRegisterTab" onsubmit="registerAccount();return false" hidden>
+        <label class="auto-field"><span>Name</span><input type="text" id="registerName" autocomplete="name" maxlength="80" required></label>
+        <label class="auto-field"><span>Email</span><input type="email" id="registerEmail" autocomplete="email" required></label>
+        <label class="auto-field"><span>Password (12+ characters)</span><input type="password" id="registerPassword" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+        <label class="auto-field"><span>Invite or admin setup code</span><input type="password" id="registerInvite" autocomplete="one-time-code" required></label>
+        <button class="bd-save" type="submit">Create account</button>
+        <div class="account-helper">The first account becomes an administrator. Later accounts require an invite code or can be added by an administrator.</div>
+      </form>
+      <details class="account-admin">
+        <summary>Use the legacy admin setup code</summary>
+        <p>This compatibility option does not save personal preferences. Create an account for the full experience.</p>
+        <form class="account-form" onsubmit="signInOwner();return false">
+          <label class="auto-field"><span>Admin setup code</span><input type="password" id="ownerToken" autocomplete="current-password" required></label>
+          <button class="secondary-action" type="submit">Continue as administrator</button>
+        </form>
+      </details>
+    </div>
+    <div id="accountSignedIn" hidden>
+      <div class="account-card account-identity"><span class="account-avatar" id="accountAvatar">ID</span><span><b id="accountName">Account</b><small id="accountEmailLabel"></small></span><span class="account-role" id="accountRole">TRADER</span></div>
+      <div class="account-card" id="accountPreferences">
+        <b>Display preferences</b>
+        <div class="preference-grid">
+          <label class="auto-field"><span>Theme</span><select id="preferenceTheme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Use device setting</option></select></label>
+          <label class="auto-field"><span>Start page</span><select id="preferenceView"><option value="signals">Signals</option><option value="discover">Discover</option><option value="analysis">Analyze</option></select></label>
+          <label class="auto-check"><input type="checkbox" id="preferenceCompact">Use denser signal cards</label>
+          <label class="auto-check" aria-disabled="true"><input type="checkbox" id="preferenceSound" disabled>Alert sounds (coming soon)</label>
+          <label class="auto-check"><input type="checkbox" id="preferenceMotion">Reduce interface motion</label>
+        </div>
+        <div class="owner-actions"><button class="bd-save" type="button" onclick="savePreferences()">Save preferences</button></div>
+      </div>
+      <details class="account-admin" id="accountAdminCreate" hidden>
+        <summary>Add another account</summary>
+        <form class="account-form" style="margin-top:12px" onsubmit="adminCreateAccount();return false">
+          <label class="auto-field"><span>Name</span><input type="text" id="adminCreateName" maxlength="80" required></label>
+          <label class="auto-field"><span>Email</span><input type="email" id="adminCreateEmail" required></label>
+          <label class="auto-field"><span>Initial password (12+ characters)</span><input type="password" id="adminCreatePassword" minlength="12" maxlength="128" required></label>
+          <label class="auto-field"><span>Access level</span><select id="adminCreateRole"><option value="TRADER">Trader</option><option value="VIEWER">Viewer</option><option value="ADMIN">Administrator</option></select></label>
+          <button class="secondary-action" type="submit">Add account</button>
+        </form>
+      </details>
+    </div>
+    <div class="owner-actions"><button class="secondary-action" id="ownerSignOut" type="button" onclick="signOutOwner()" hidden>Sign out</button><span class="bd-status" id="ownerStatus" role="status"></span></div>
   </div>
 </dialog>
 
@@ -1300,7 +1373,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
     <button class="bd-close" onclick="document.getElementById('autotrade-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
   <div class="auto-form">
-    <div class="auto-agent auto-wide"><span class="stat-bubble"><svg class="icon"><use href="#i-user"/></svg></span><span><b>Protected by owner session</b><small>The browser never retains the automation control token.</small></span></div>
+    <div class="auto-agent auto-wide"><span class="stat-bubble"><svg class="icon"><use href="#i-user"/></svg></span><span><b>Shared automation policy</b><small>Changes affect every user and the connected Robinhood agent. The browser never retains the automation control token.</small></span></div>
     <label class="auto-field"><span>Mode</span><select id="autoMode"><option>OFF</option><option>SHADOW</option><option>SUPERVISED</option><option>ARMED</option></select></label>
     <label class="auto-field"><span>Arm for minutes</span><input type="number" id="autoMinutes" min="1" max="480" value="30"></label>
     <label class="auto-field"><span>Minimum confidence (%)</span><input type="number" id="autoConfidence" min="50" max="95" value="75"></label>
@@ -1311,7 +1384,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
     <label class="auto-field auto-wide"><span>Allowed strategies</span><input type="text" id="autoStrategies" placeholder="ORB_BREAKOUT"></label>
     <label class="auto-field auto-wide"><span>Allowed modules</span><input type="text" id="autoModules" placeholder="0DTE, SWING"></label>
     <label class="auto-check auto-wide"><input type="checkbox" id="autoOptions"><span>Allow long option purchases</span></label>
-    <div class="auto-warning auto-wide"><svg class="icon"><use href="#i-alert"/></svg><span><b>ARMED mode can place real orders without per-order approval.</b> It is time-limited and still requires every evidence, allowlist, risk, price-zone, MCP review, and protection gate to pass.</span></div>
+    <div class="auto-warning auto-wide"><svg class="icon"><use href="#i-alert"/></svg><span><b>This policy is shared across the deployment. ARMED mode can place real orders without per-order approval.</b> It is time-limited and still requires historical reliability, allowed-symbol, risk, price-zone, agent-review, and protection checks to pass.</span></div>
   </div>
   <div class="bd-foot2">
     <button class="bd-save" onclick="saveAutotrade()">Save policy</button>
@@ -1328,6 +1401,7 @@ let lastState = null, calibration = {}, briefing = null;
 let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
+let accountUser = null, preferencesCache = null, preferencesApplied = false;
 let selectedDiscoverPreset = "trend_leaders", currentDossier = null;
 let discoverPresets = {
   trend_leaders:{above_sma200:true,min_return_6m:5},
@@ -1407,7 +1481,7 @@ async function fetchJSON(url, options){
   const r = await fetch(url, options);
   const payload = await r.json().catch(()=>({}));
   if(!r.ok){
-    if(r.status===401 && url!=="/api/auth/session") clearPersonalState("Owner session expired.");
+    if(r.status===401 && url!=="/api/auth/session") clearPersonalState("Your session expired.");
     const error = new Error(typeof payload.detail==="string"?payload.detail:`${url} ${r.status}`);
     error.status = r.status;
     throw error;
@@ -1457,8 +1531,9 @@ function setHealth(mode){
   else { el.lastChild.textContent = " Connecting…"; }
 }
 
-function clearPersonalState(reason="Owner sign-in required."){
+function clearPersonalState(reason="Sign in required."){
   ownerAuthenticated=false;
+  accountUser=null; preferencesCache=null; preferencesApplied=false;
   lastState=null; briefing=null; watchlistsCache=[]; savedScreensCache=[];
   symbolOrder=[]; selectedSymbol=null; selectedAlertId=null; selectedSwingSymbol=null;
   currentDossier=null; selectionTouched=false;
@@ -1473,7 +1548,7 @@ function clearPersonalState(reason="Owner sign-in required."){
   document.querySelectorAll('[id^="summary"]').forEach(el=>{ el.textContent="—"; });
   document.querySelectorAll('[id^="qCount"]').forEach(el=>{ el.textContent="(0)"; });
   ["queueTracking","queueSuppressed","queue0dteTracking","queue0dteSuppressed","queueSwingTracking","queueSwingSuppressed","matrix","decisionGrid","drawerInner","riskUsage","contextMeta","bdSuppression","bdEvidence","bdPerformance","profile0dteInner","marketChart","chartLegend","dailyChart","swingTrendInner","swingSymbols"].forEach(id=>{ const el=document.getElementById(id); if(el) el.replaceChildren(); });
-  document.getElementById("queueTracking").innerHTML=`<div class="empty"><b>${esc(reason)}</b>Sign in to load personal signals, performance, and risk state.</div>`;
+  document.getElementById("queueTracking").innerHTML=`<div class="empty"><b>${esc(reason)}</b>Sign in to load shared signals and your personal research settings.</div>`;
   document.getElementById("contextSymbol").textContent="—";
   document.getElementById("contextPrice").textContent="—";
   document.getElementById("contextBanner").replaceChildren();
@@ -1487,7 +1562,7 @@ function clearPersonalState(reason="Owner sign-in required."){
   document.getElementById("autotradeReady").textContent="0";
   document.getElementById("autotradeApproval").textContent="0";
   document.getElementById("autotradeExpiry").textContent="—";
-  document.getElementById("budgets-body").textContent="Sign in to load budgets.";
+  document.getElementById("budgets-body").textContent="Sign in to load your capital limits.";
   document.getElementById("budgets-status").textContent="";
   document.getElementById("autoMode").value="OFF";
   ["autoConfidence","autoOrderRisk","autoDailyRisk","autoOpenIntents","autoSymbols","autoStrategies","autoModules"].forEach(id=>{ document.getElementById(id).value=""; });
@@ -1495,8 +1570,8 @@ function clearPersonalState(reason="Owner sign-in required."){
   document.getElementById("autotrade-status").textContent="";
   document.getElementById("analysisResults").hidden=true;
   const ownerButton=document.getElementById("ownerButton");
-  ownerButton.style.color=""; ownerButton.title="Owner sign in";
-  ownerButton.setAttribute("aria-label","Owner sign in");
+  ownerButton.style.color=""; ownerButton.title="Account";
+  ownerButton.setAttribute("aria-label","Sign in");
   document.getElementById("ownerSignOut").hidden=true;
   renderWatchlists(); renderSavedScreens(); renderBriefing(); setHealth("auth");
   // Reload is the final privacy boundary: it discards every closure, event
@@ -1662,16 +1737,16 @@ function renderContext(s){
   const banner=document.getElementById("contextBanner");
   if(alert && ev?.status==="none"){
     banner.className="context-banner neutral";
-    banner.innerHTML=`<svg class="icon"><use href="#i-alert"/></svg><span><strong>Evidence state unavailable.</strong> Treat this signal as non-executable until calibration and live-eligibility data load.</span>`;
+    banner.innerHTML=`<svg class="icon"><use href="#i-alert"/></svg><span><strong>Historical reliability is unavailable.</strong> Treat this signal as research-only until validation data loads.</span>`;
   }else if(alert && ev?.blocked){
     banner.className="context-banner blocked";
-    banner.innerHTML=`<svg class="icon"><use href="#i-alert"/></svg><span><strong>Research only — blocked from live delivery.</strong> Historical evidence is not production-parity validated; confidence is context, not permission to trade.</span>`;
+    banner.innerHTML=`<svg class="icon"><use href="#i-alert"/></svg><span><strong>Research only — not eligible for live delivery.</strong> Historical results have not passed live-quality checks; confidence is context, not permission to trade.</span>`;
   }else if(alert){
     banner.className="context-banner ready";
-    banner.innerHTML=`<svg class="icon"><use href="#i-activity"/></svg><span><strong>${esc(alert.status||"ACTIVE")} signal selected.</strong> Validate price, expiry, evidence, and portfolio risk before any decision.</span>`;
+    banner.innerHTML=`<svg class="icon"><use href="#i-activity"/></svg><span><strong>${esc(alert.status||"ACTIVE")} signal selected.</strong> Check price, expiry, historical reliability, and total risk before deciding.</span>`;
   }else{
     banner.className="context-banner neutral";
-    banner.innerHTML=`<svg class="icon"><use href="#i-activity"/></svg><span><strong>Market context only.</strong> Open a signal card to see its entry, stop, targets, evidence, and invalidation.</span>`;
+    banner.innerHTML=`<svg class="icon"><use href="#i-activity"/></svg><span><strong>Market context only.</strong> Open a signal card to see its entry, stop, targets, historical reliability, and exit condition.</span>`;
   }
   renderMarketChart(d,alert);
   document.getElementById("chartLegend").innerHTML=`
@@ -1685,13 +1760,13 @@ function renderContext(s){
     const up=trendKeys.filter(tf=>["UP","STRONG_UP"].includes(d.matrix[tf])).length;
     const down=trendKeys.filter(tf=>["DOWN","STRONG_DOWN"].includes(d.matrix[tf])).length;
     grid.innerHTML=`
-      <div class="decision-cell"><div class="decision-label">Decision state</div><div class="decision-value"><strong>No executable signal selected.</strong><br>Use trend as context only; do not infer an entry from direction alone.</div></div>
+      <div class="decision-cell"><div class="decision-label">Decision state</div><div class="decision-value"><strong>No ready signal selected.</strong><br>Use trend as context only; do not infer an entry from direction alone.</div></div>
       <div class="decision-cell"><div class="decision-label">Trend alignment</div><div class="decision-value"><strong>${up} bullish · ${down} bearish</strong><br>${trendKeys.length-up-down} neutral across visible decision timeframes.</div></div>
       <div class="decision-cell"><div class="decision-label">Next evaluation</div><div class="decision-value"><strong>${s.session==="RTH"?"Next 5-minute close":"Next market open"}</strong><br>Suppressed candidates remain available for audit below.</div></div>`;
     return;
   }
   const targets=(alert.take_profits||[]).filter(t=>t.underlying!=null);
-  const evidenceLabel=ev?.blocked?"BLOCKED FROM LIVE":ev?.status==="none"?"EVIDENCE PENDING":(ev?.status||"NO EVIDENCE");
+  const evidenceLabel=ev?.blocked?"RESEARCH ONLY":ev?.status==="none"?"RELIABILITY PENDING":plainReliabilityStatus(ev?.status);
   const ci=ev?.meta?.interval_95_test;
   grid.innerHTML=`
     <div class="decision-cell"><div class="decision-label">Trade plan</div><div class="decision-value plan-levels">
@@ -1701,8 +1776,8 @@ function renderContext(s){
       <span>Risk <b>$${Number(alert.dollar_risk||0).toLocaleString()}</b></span>
       <span>Valid <b>${fmtCountdown(alert.valid_until)}</b></span>
     </div></div>
-    <div class="decision-cell"><div class="decision-label">Why now · invalidates when</div><div class="decision-value"><strong>${esc(alert.thesis)}</strong><br><span style="color:var(--red)">${esc(alert.invalidation)}</span></div></div>
-    <div class="decision-cell"><div class="decision-label">Evidence · risk context</div><div class="decision-value"><strong style="color:${ev?.blocked?'var(--red)':'var(--gold)'}">${esc(evidenceLabel)}</strong><br>Model confidence ${(Number(alert.confidence)*100).toFixed(0)}%${ci?` · 95% CI ${(ci[0]*100).toFixed(0)}–${(ci[1]*100).toFixed(0)}%`:""}<br>R:R ${esc(alert.reward_risk)} · ${esc(alert.budget_note||"")}</div></div>`;
+    <div class="decision-cell"><div class="decision-label">Why now · exit condition</div><div class="decision-value"><strong>${esc(alert.thesis)}</strong><br><span style="color:var(--red)">${esc(alert.invalidation)}</span></div></div>
+    <div class="decision-cell"><div class="decision-label">Historical reliability · risk</div><div class="decision-value"><strong style="color:${ev?.blocked?'var(--red)':'var(--gold)'}">${esc(evidenceLabel)}</strong><br>Model confidence ${(Number(alert.confidence)*100).toFixed(0)}%${ci?` · likely range ${(ci[0]*100).toFixed(0)}–${(ci[1]*100).toFixed(0)}%`:""}<br>Reward vs risk ${esc(alert.reward_risk)} · ${esc(alert.budget_note||"")}</div></div>`;
 }
 
 function renderMatrix(s){
@@ -1723,20 +1798,26 @@ function renderBriefing(){
   const biasColor = briefing.bias === "RISK-ON" ? "var(--teal)" : briefing.bias === "RISK-OFF" ? "var(--red)" : "var(--text-dim)";
   document.getElementById("briefBody").innerHTML = `
     <div class="brief-bias"><b style="color:${biasColor}">${briefing.bias}</b><span class="num" style="color:var(--text-faint)">D-trend ${briefing.bias_score>0?'+':''}${briefing.bias_score}</span></div>
-    <ul class="brief-plan">${(briefing.game_plan||[]).map(p=>`<li>${p}</li>`).join("")}</ul>
-    <div style="margin-top:8px;color:var(--gold);font-size:11.5px">${briefing.discipline_card||""}</div>`;
+    <ul class="brief-plan">${(briefing.game_plan||[]).map(p=>`<li>${esc(plainBriefingText(p))}</li>`).join("")}</ul>
+    <div style="margin-top:8px;color:var(--gold);font-size:11.5px">${esc(briefing.discipline_card||"")}</div>`;
+}
+function plainBriefingText(value){
+  return String(value||"").replaceAll("calibrated","historically validated").replaceAll("calibration","historical reliability").replaceAll("auction","market balance");
 }
 
 function profileRowsHTML(profiles){
   return Object.entries(profiles).map(([sym,p])=>{
     if(!p) return "";
     return `<div class="profile-row"><b>${sym}</b>
-      POC <b class="num">${p.poc?p.poc.toFixed(2):'—'}</b>
-      · VA <b class="num">${p.va_low?p.va_low.toFixed(2):'—'}–${p.va_high?p.va_high.toFixed(2):'—'}</b>
-      · Open <b>${(p.open_type||'—').replace(/_/g,' ')}</b>
-      · Shape <b>${(p.shape||'—').replace(/_/g,' ')}</b>
-      · 1TF <b>${p.one_timeframing||'NONE'}</b></div>`;
+      Key level <b class="num">${p.poc?p.poc.toFixed(2):'—'}</b>
+      · Fair-value range <b class="num">${p.va_low?p.va_low.toFixed(2):'—'}–${p.va_high?p.va_high.toFixed(2):'—'}</b>
+      · Open <b>${plainOpenType(p.open_type)}</b>
+      · Pattern <b>${(p.shape||'—').replace(/_/g,' ')}</b>
+      · Directional trend <b>${p.one_timeframing==='UP'?'UPWARD':p.one_timeframing==='DOWN'?'DOWNWARD':'BALANCED'}</b></div>`;
   }).join("");
+}
+function plainOpenType(value){
+  return ({OPEN_AUCTION:"BALANCED OPEN",OPEN_DRIVE:"STRONG DIRECTIONAL OPEN",OPEN_TEST_DRIVE:"DIRECTIONAL OPEN TEST",OPEN_REJECTION_REVERSE:"REJECTION AND REVERSAL"})[value]||(value||"—").replaceAll("_"," ").replaceAll("AUCTION","BALANCE");
 }
 function renderDrawer(s){
   document.getElementById("drawerInner").innerHTML =
@@ -1759,11 +1840,14 @@ document.getElementById("chartToggle").addEventListener("click",()=>{
 
 function evidenceFor(strategy){
   const cal = calibration[strategy];
-  if(!cal) return {status:"none", label:"No calibration on file", n:0};
+  if(!cal) return {status:"none", label:"No historical reliability data", n:0};
   const meta = cal.meta || {};
   const blocked = meta.live_eligible === false;
   const status = meta.evidence_status || (Object.keys(cal.buckets||{}).length ? "CALIBRATED" : "none");
   return {status, blocked, meta, buckets: cal.buckets};
+}
+function plainReliabilityStatus(status){
+  return ({HISTORICAL_OOS:"HISTORICALLY TESTED",FORWARD_PAPER:"FORWARD TESTING",LIVE_VALIDATED:"LIVE VALIDATED",CALIBRATED:"HISTORICALLY TESTED"})[status]||String(status||"NOT VALIDATED").replaceAll("_"," ");
 }
 
 function characterChip(strategy, ev){
@@ -1794,7 +1878,7 @@ function renderAlertCard(a){
   const ev = evidenceFor(a.strategy);
   const badgeCls = (a.action||"").includes("SELL") ? "sell" : "buy";
   const evBadgeCls = ev.blocked ? "blocked" : ev.status === "HISTORICAL_OOS" ? "oos" : ev.status === "none" ? "none" : "oos";
-  const evLabel = ev.blocked ? "BLOCKED FROM LIVE" : ev.status === "none" ? "EVIDENCE PENDING" : ev.status;
+  const evLabel = ev.blocked ? "RESEARCH ONLY" : ev.status === "none" ? "RELIABILITY PENDING" : plainReliabilityStatus(ev.status);
   const interval = ev.meta && ev.meta.interval_95_test ? `95% CI ${(ev.meta.interval_95_test[0]*100).toFixed(0)}–${(ev.meta.interval_95_test[1]*100).toFixed(0)}%` : "";
   const n = ev.buckets ? Object.values(ev.buckets).reduce((s,b)=>s+(b.n||0),0) : 0;
   const confidence=Math.round(Number(a.confidence||0)*100);
@@ -1822,7 +1906,7 @@ function renderAlertCard(a){
     </div>
     <div class="evidence-line">
       <span class="evidence-badge ${evBadgeCls}">${evLabel}</span>
-      <span>${interval}${n?`${interval?' · ':''}n=${n}`:""}${(interval||n)?' · ':''}R:R ${esc(a.reward_risk)}</span>
+      <span>${interval}${n?`${interval?' · ':''}${n} past signals`:""}${(interval||n)?' · ':''}Reward vs risk ${esc(a.reward_risk)}</span>
     </div>
     <div class="ac-foot"><span class="validity">Valid · ${fmtCountdown(a.valid_until)}</span><span class="open-detail">Open plan <svg class="icon"><use href="#i-chevron-right"/></svg></span></div>
   </div>`;
@@ -1833,7 +1917,7 @@ function renderTracking(s){
   document.getElementById("qCountTracking").textContent = "("+active.length+")";
   const el = document.getElementById("queueTracking");
   el.innerHTML = active.length ? active.map(renderAlertCard).join("") :
-    `<div class="empty"><b>No executable signal.</b>The engine is still evaluating. Candidates may be suppressed by setup, evidence, data-quality, or portfolio-risk gates.</div>`;
+    `<div class="empty"><b>No ready signal.</b>The engine is still evaluating. Candidates may be held back by setup quality, historical reliability, data quality, or total-risk limits.</div>`;
   el.querySelectorAll("[data-alert-id]").forEach(card=>{
     const activate=()=>selectAlert(card.dataset.alertId);
     card.addEventListener("click",activate);
@@ -1847,6 +1931,22 @@ function gateCounts(suppressed){
   return Object.entries(counts).sort((a,b)=>b[1]-a[1]);
 }
 
+const PLAIN_GATE={one_timeframing:"trend conflict",confidence:"reliability too low",reward_risk:"reward too small",extension:"price too extended",profile_shape:"market pattern mismatch",warmup:"not enough data",lockout:"outside trading window",correlation:"similar-position limit",duplicate:"already tracking",concurrency:"position limit",data_quality:"data quality"};
+function plainGate(gate){ return PLAIN_GATE[gate]||String(gate||"rule").replaceAll("_"," "); }
+function plainSuppressionDetail(detail,gate){
+  const raw=String(detail||"");
+  if(gate==="confidence"){
+    const values=raw.match(/([0-9.]+)\s*<\s*([0-9.]+)/);
+    if(values) return `Reliability score ${(Number(values[1])*100).toFixed(0)}% is below the required ${(Number(values[2])*100).toFixed(0)}%`;
+  }
+  return raw
+    .replace(/auction one-timeframing UP\s*[—-]\s*no shorts/i,"Strong upward trend — short setup held back")
+    .replace(/auction one-timeframing DOWN\s*[—-]\s*no longs/i,"Strong downward trend — long setup held back")
+    .replaceAll("reward/risk","reward versus risk")
+    .replaceAll("R:R","reward versus risk")
+    .replaceAll("calibration","historical reliability");
+}
+
 function noTradeSummary(s){
   const sup = s.suppressed||[];
   const evaluated = (s.alerts||[]).length + sup.length;
@@ -1856,7 +1956,7 @@ function noTradeSummary(s){
   const nextEval = s.session === "RTH" ? "next 5-minute bar close" : "market closed — resumes at next open";
   return `<div class="notrade-summary">
     <div class="headline"><b>${evaluated}</b> candidates evaluated this session · <b>${sup.length}</b> suppressed · <b>${symbols.length}</b> symbols affected</div>
-    ${top.map(([gate,n])=>`<div class="reason-bar"><span class="label">${gate}</span><span class="fill" style="width:${(n/maxN)*120}px"></span><span class="n">${n}</span></div>`).join("")}
+    ${top.map(([gate,n])=>`<div class="reason-bar"><span class="label">${esc(plainGate(gate))}</span><span class="fill" style="width:${(n/maxN)*120}px"></span><span class="n">${n}</span></div>`).join("")}
     <div class="risk-note" style="margin-top:8px">Next evaluation: ${nextEval}</div>
   </div>`;
 }
@@ -1866,14 +1966,14 @@ function renderSuppressedTab(s){
   document.getElementById("qCountSuppressed").textContent = "("+sup.length+")";
   document.getElementById("queueSuppressed").innerHTML = noTradeSummary(s) +
     sup.slice().reverse().slice(0,8).map(x=>
-      `<div class="suppressed-item"><span class="gate">${x.gate}</span> ${x.symbol} ${x.strategy.replace(/_/g,' ')}${x.composite?` <span class="num">c${x.composite.toFixed(0)}</span>`:""} — ${x.detail}</div>`
+      `<div class="suppressed-item"><span class="gate">${esc(plainGate(x.gate))}</span> ${x.symbol} ${x.strategy.replace(/_/g,' ')}${x.composite?` <span class="num">score ${x.composite.toFixed(0)}</span>`:""} — ${esc(plainSuppressionDetail(x.detail,x.gate))}</div>`
     ).join("");
 }
 
 function renderSuppressionTape(s){
   const sup = (s.suppressed||[]).slice().reverse();
   document.getElementById("bdSuppression").innerHTML = sup.length ? sup.map(x=>
-    `<div class="suppressed-item"><span class="gate">${x.gate}</span> ${x.symbol} ${x.strategy.replace(/_/g,' ')}${x.composite?` <span class="num">c${x.composite.toFixed(0)}</span>`:""} — ${x.detail}</div>`
+    `<div class="suppressed-item"><span class="gate">${esc(plainGate(x.gate))}</span> ${x.symbol} ${x.strategy.replace(/_/g,' ')}${x.composite?` <span class="num">score ${x.composite.toFixed(0)}</span>`:""} — ${esc(plainSuppressionDetail(x.detail,x.gate))}</div>`
   ).join("") : `<div class="empty">Nothing evaluated yet.</div>`;
 }
 
@@ -1889,7 +1989,7 @@ function renderPerformance(s){
 }
 
 function renderRisk(s){
-  // Committed = sum of dollar_risk on active alerts, grouped by module.
+  // Compare shared signal-plan risk with the signed-in user's review ceiling.
   const committed = {};
   activeAlerts(s).forEach(a=>{
     committed[a.module] = (committed[a.module]||0) + a.dollar_risk;
@@ -1897,10 +1997,17 @@ function renderRisk(s){
   const modules = ["0DTE","SWING","LEAPS","HODL"];
   document.getElementById("riskUsage").innerHTML = modules.map(m=>{
     const used = committed[m]||0;
+    const cfg=budgetsCache?.[m]||{};
+    const capital=Number(cfg[CAP_KEY?.[m]]||0);
+    const perSignal=capital*Number(cfg.risk_cap_pct||0);
+    const usage=capital>0?Math.min((used/capital)*100,100):0;
+    const limitCopy=accountUser?.legacy
+      ? `Shared engine setting: $${capital.toLocaleString()} capital · $${perSignal.toLocaleString()} risk per signal.`
+      : `Your review ceiling: $${capital.toLocaleString()} capital · $${perSignal.toLocaleString()} risk per signal.`;
     return `<div class="risk-row">
-      <div class="rr-head"><span>${m}</span><b class="num">$${used.toLocaleString()} committed</b></div>
-      <div class="risk-bar"><div style="width:${used>0?Math.min(used/50,100):0}%"></div></div>
-      <div class="risk-note">Configured in Budgets — hot-reloads on save</div>
+      <div class="rr-head"><span>${m}</span><b class="num">$${used.toLocaleString()} signal risk</b></div>
+      <div class="risk-bar"><div style="width:${usage}%"></div></div>
+      <div class="risk-note">${capital?limitCopy:(accountUser?.legacy?"Open Capital &amp; risk limits to set the shared engine limit.":"Open Capital &amp; risk limits to set your review ceiling.")}</div>
     </div>`;
   }).join("");
 }
@@ -1908,7 +2015,7 @@ function renderRisk(s){
 function renderEvidencePanel(){
   const entries = Object.entries(calibration);
   const el = document.getElementById("bdEvidence");
-  if(!entries.length){ el.innerHTML = `<div class="empty">No strategies have calibration evidence on file yet.</div>`; return; }
+  if(!entries.length){ el.innerHTML = `<div class="empty">No historical reliability data is available yet.</div>`; return; }
   el.innerHTML = entries.map(([strategy, cal])=>{
     const meta = cal.meta || {};
     const buckets = Object.values(cal.buckets||{});
@@ -1919,18 +2026,18 @@ function renderEvidencePanel(){
     return `<div class="evidence-card">
       <div class="eh">
         <span class="name">${strategy.replace(/_/g,' ')}</span>
-        <span class="evidence-badge ${blocked?'blocked':'oos'}">${blocked?'BLOCKED FROM LIVE':(meta.evidence_status||'CALIBRATED')}</span>
+        <span class="evidence-badge ${blocked?'blocked':'oos'}">${blocked?'RESEARCH ONLY':plainReliabilityStatus(meta.evidence_status||'CALIBRATED')}</span>
       </div>
       ${wr!=null?`<div class="bullet-chart"><div class="fill" style="width:${wr*100}%"></div><div class="target" style="left:75%" title="75% product bar"></div></div>
       <div class="bullet-legend"><span>0%</span><span>Bar: 75%</span><span>100%</span></div>`:""}
       <div class="evidence-metrics">
         <div class="em"><div class="v num">${wr!=null?(wr*100).toFixed(1)+'%':'—'}</div><div class="k">Win rate</div></div>
-        <div class="em"><div class="v num">${n||'—'}</div><div class="k">Sample n</div></div>
-        <div class="em"><div class="v num">${ci?`${(ci[0]*100).toFixed(0)}–${(ci[1]*100).toFixed(0)}%`:'—'}</div><div class="k">95% CI</div></div>
+        <div class="em"><div class="v num">${n||'—'}</div><div class="k">Past signals</div></div>
+        <div class="em"><div class="v num">${ci?`${(ci[0]*100).toFixed(0)}–${(ci[1]*100).toFixed(0)}%`:'—'}</div><div class="k">Likely range</div></div>
         <div class="em"><div class="v num" style="font-size:12px">${meta.analytics_version||'—'}</div><div class="k">Version</div></div>
       </div>
-      ${meta.evidence_note?`<div class="caveats"><b style="color:var(--gold)">Evidence note:</b> ${meta.evidence_note}</div>`:""}
-      ${meta.caveats?`<div class="caveats"><b style="color:var(--text-dim)">Caveats:</b> ${meta.caveats}</div>`:""}
+      ${meta.evidence_note?`<div class="caveats"><b style="color:var(--gold)">Reliability note:</b> ${meta.evidence_note}</div>`:""}
+      ${meta.caveats?`<div class="caveats"><b style="color:var(--text-dim)">Limitations:</b> ${meta.caveats}</div>`:""}
     </div>`;
   }).join("");
 }
@@ -1994,17 +2101,56 @@ function wireQtabPair(aId, bId, aPanel, bPanel){
 wireQtabPair("qtab0dteTracking","qtab0dteSuppressed","queue0dteTracking","queue0dteSuppressed");
 wireQtabPair("qtabSwingTracking","qtabSwingSuppressed","queueSwingTracking","queueSwingSuppressed");
 
-// Owner session + durable watchlists
+// Account session + durable personal settings
+function showAccountTab(tab){
+  const signIn=tab==="signin";
+  document.getElementById("accountSignInForm").hidden=!signIn;
+  document.getElementById("accountRegisterForm").hidden=signIn;
+  document.getElementById("accountSignInTab").classList.toggle("active",signIn);
+  document.getElementById("accountRegisterTab").classList.toggle("active",!signIn);
+  document.getElementById("accountSignInTab").setAttribute("aria-selected",String(signIn));
+  document.getElementById("accountRegisterTab").setAttribute("aria-selected",String(!signIn));
+  document.getElementById("accountSignInTab").tabIndex=signIn?0:-1;
+  document.getElementById("accountRegisterTab").tabIndex=signIn?-1:0;
+}
+document.querySelectorAll(".account-tab").forEach(tab=>tab.addEventListener("keydown",event=>{
+  if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;
+  const tabs=[...document.querySelectorAll(".account-tab:not([hidden])")];
+  if(!tabs.length) return;
+  event.preventDefault();
+  const current=tabs.indexOf(tab);
+  const next=event.key==="Home"?0:event.key==="End"?tabs.length-1:(current+(event.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length;
+  tabs[next].click(); tabs[next].focus();
+}));
+function renderAccountSession(session){
+  const signedIn=Boolean(session.authenticated), user=session.user||null;
+  accountUser=user;
+  document.getElementById("accountSignedOut").hidden=signedIn;
+  document.getElementById("accountSignedIn").hidden=!signedIn;
+  document.getElementById("ownerSignOut").hidden=!signedIn;
+  const registerTab=document.getElementById("accountRegisterTab");
+  registerTab.hidden=!session.registration_enabled;
+  if(!signedIn) return;
+  const name=user?.display_name||"Administrator";
+  document.getElementById("accountName").textContent=name;
+  document.getElementById("accountEmailLabel").textContent=user?.email||"Legacy admin setup session";
+  document.getElementById("accountRole").textContent=user?.role||"ADMIN";
+  document.getElementById("accountAvatar").textContent=name.split(/\s+/).slice(0,2).map(part=>part[0]).join("").toUpperCase();
+  const legacy=Boolean(user?.legacy);
+  document.getElementById("accountPreferences").hidden=legacy;
+  document.getElementById("accountAdminCreate").hidden=(user?.role!=="ADMIN");
+  document.getElementById("autotradeConfigure").hidden=(user?.role!=="ADMIN");
+}
 async function refreshOwnerSession(){
   try{
     const session=await fetchJSON("/api/auth/session");
     ownerAuthenticated=Boolean(session.authenticated);
     const button=document.getElementById("ownerButton");
     button.style.color=ownerAuthenticated?"var(--teal)":"";
-    button.title=ownerAuthenticated?"Owner signed in":"Owner sign in";
-    button.setAttribute("aria-label",ownerAuthenticated?"Owner account, signed in":"Owner sign in");
-    document.getElementById("ownerSignOut").hidden=!ownerAuthenticated;
-    if(ownerAuthenticated) await Promise.all([loadWatchlists(),loadSavedScreens()]);
+    button.title=ownerAuthenticated?"Account signed in":"Account";
+    button.setAttribute("aria-label",ownerAuthenticated?"Account, signed in":"Sign in");
+    renderAccountSession(session);
+    if(ownerAuthenticated) await Promise.all([loadWatchlists(),loadSavedScreens(),loadPreferences(),loadCapitalLimits()]);
     else renderWatchlists();
     return session;
   }catch(e){ ownerAuthenticated=false; renderWatchlists(); return {configured:false,authenticated:false}; }
@@ -2015,20 +2161,56 @@ async function openOwnerDialog(){
   document.getElementById("ownerToken").value="";
   dialog.showModal();
   const session=await refreshOwnerSession();
-  if(!session.configured){ status.textContent="Owner authentication is not configured on the server."; status.className="bd-status err"; }
-  else if(session.authenticated){ status.textContent="Signed in."; status.className="bd-status ok"; }
+  if(!session.configured){ status.textContent="Account access is not configured on the server."; status.className="bd-status err"; }
+  else if(session.authenticated){ status.textContent="Your account is ready."; status.className="bd-status ok"; }
+}
+async function completeAccountSignIn(message){
+  await refreshOwnerSession();
+  connectWS();
+  await Promise.all([refresh(),refreshBriefing(),refreshAutotrade()]);
+  const status=document.getElementById("ownerStatus");
+  status.textContent=message; status.className="bd-status ok";
+}
+async function signInAccount(){
+  const status=document.getElementById("ownerStatus");
+  const email=document.getElementById("accountEmail").value;
+  const password=document.getElementById("accountPassword").value;
+  if(!email||!password){ status.textContent="Enter your email and password."; status.className="bd-status err"; return; }
+  status.textContent="Signing in…"; status.className="bd-status";
+  try{
+    await fetchJSON("/api/auth/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})});
+    document.getElementById("accountPassword").value="";
+    await completeAccountSignIn("Signed in. Your personal settings are loaded.");
+  }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
+}
+async function registerAccount(){
+  const status=document.getElementById("ownerStatus");
+  const payload={display_name:document.getElementById("registerName").value,email:document.getElementById("registerEmail").value,password:document.getElementById("registerPassword").value,invite_code:document.getElementById("registerInvite").value};
+  status.textContent="Creating account…"; status.className="bd-status";
+  try{
+    await fetchJSON("/api/auth/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    document.getElementById("registerPassword").value=""; document.getElementById("registerInvite").value="";
+    await completeAccountSignIn("Account created. Your limits and preferences are saved privately.");
+  }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
+}
+async function adminCreateAccount(){
+  const status=document.getElementById("ownerStatus");
+  const payload={display_name:document.getElementById("adminCreateName").value,email:document.getElementById("adminCreateEmail").value,password:document.getElementById("adminCreatePassword").value,role:document.getElementById("adminCreateRole").value};
+  status.textContent="Adding account…"; status.className="bd-status";
+  try{
+    const user=await fetchJSON("/api/accounts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    document.getElementById("adminCreatePassword").value="";
+    status.textContent=`${user.display_name} can now sign in.`; status.className="bd-status ok";
+  }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
 }
 async function signInOwner(){
   const status=document.getElementById("ownerStatus"), token=document.getElementById("ownerToken").value;
-  if(!token){ status.textContent="Enter the owner token."; status.className="bd-status err"; return; }
+  if(!token){ status.textContent="Enter the admin setup code."; status.className="bd-status err"; return; }
   status.textContent="Signing in…"; status.className="bd-status";
   try{
     await fetchJSON("/api/auth/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token})});
     document.getElementById("ownerToken").value="";
-    await refreshOwnerSession();
-    connectWS();
-    await Promise.all([refresh(),refreshBriefing(),refreshAutotrade()]);
-    status.textContent="Signed in. Protected controls are unlocked."; status.className="bd-status ok";
+    await completeAccountSignIn("Administrator access is active. Create an account to save personal preferences.");
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
 }
 async function signOutOwner(){
@@ -2036,6 +2218,44 @@ async function signOutOwner(){
   clearPersonalState("Signed out.");
   document.getElementById("ownerStatus").textContent="Signed out.";
   document.getElementById("ownerStatus").className="bd-status ok";
+}
+async function loadPreferences(){
+  if(!ownerAuthenticated||accountUser?.legacy){ preferencesCache=null; return; }
+  try{
+    preferencesCache=await fetchJSON("/api/account/preferences");
+    document.getElementById("preferenceTheme").value=preferencesCache.theme||"dark";
+    document.getElementById("preferenceView").value=preferencesCache.default_view||"signals";
+    document.getElementById("preferenceCompact").checked=Boolean(preferencesCache.compact_cards);
+    document.getElementById("preferenceSound").checked=Boolean(preferencesCache.alert_sound);
+    document.getElementById("preferenceMotion").checked=Boolean(preferencesCache.reduced_motion);
+    applyAccountPreferences(preferencesCache);
+  }catch(e){}
+}
+function applyAccountPreferences(preferences){
+  const theme=preferences.theme==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):preferences.theme;
+  applyTheme(theme||"dark",false);
+  document.documentElement.dataset.compact=String(Boolean(preferences.compact_cards));
+  document.documentElement.dataset.reduceMotion=String(Boolean(preferences.reduced_motion));
+  if(!preferencesApplied && preferences.default_view && typeof switchView==="function"){
+    preferencesApplied=true; switchView(preferences.default_view);
+  }
+}
+async function savePreferences(){
+  const status=document.getElementById("ownerStatus");
+  const preferences={theme:document.getElementById("preferenceTheme").value,default_view:document.getElementById("preferenceView").value,compact_cards:document.getElementById("preferenceCompact").checked,alert_sound:Boolean(preferencesCache?.alert_sound),reduced_motion:document.getElementById("preferenceMotion").checked};
+  status.textContent="Saving…"; status.className="bd-status";
+  try{
+    preferencesCache=await fetchJSON("/api/account/preferences",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(preferences)});
+    applyAccountPreferences(preferencesCache);
+    status.textContent="Preferences saved to your account."; status.className="bd-status ok";
+  }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
+}
+async function loadCapitalLimits(){
+  if(!ownerAuthenticated){ budgetsCache=null; return; }
+  try{
+    budgetsCache=await fetchJSON("/api/budgets");
+    if(lastState) renderRisk(lastState);
+  }catch(e){ budgetsCache=null; }
 }
 async function loadWatchlists(){
   if(!ownerAuthenticated){ watchlistsCache=[]; renderWatchlists(); return; }
@@ -2115,7 +2335,7 @@ function renderWatchlists(error=""){
   document.getElementById("watchCount").textContent=symbols.length;
   document.getElementById("discoverWatched").textContent=ownerAuthenticated?symbols.length:"—";
   status.textContent=error; status.className=`watch-status${error?" err":""}`;
-  if(!ownerAuthenticated){ list.innerHTML=`<div class="watch-empty">Sign in as owner to save and reopen candidates.</div>`; return; }
+  if(!ownerAuthenticated){ list.innerHTML=`<div class="watch-empty">Sign in to save and reopen candidates.</div>`; return; }
   list.innerHTML=symbols.length?symbols.map(symbol=>`<button class="watch-row" type="button" data-watch-open="${esc(symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg><b>${esc(symbol)}</b><small>Analyze</small></button>`).join(""):`<div class="watch-empty">No candidates saved yet. Add a ranked name to create your research queue.</div>`;
   list.querySelectorAll("[data-watch-open]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.watchOpen)));
 }
@@ -2163,7 +2383,7 @@ function renderDiscovery(data){
         <span class="discover-metric"><b>${esc(compactDollar(row.average_dollar_volume_20d))}</b><small>Dollar volume</small></span>
         <span class="discover-metric"><b class="analysis-negative">${esc(fmtSignedPct(row.max_drawdown_1y_pct))}</b><small>1y drawdown</small></span>
       </div>
-      <div class="coverage-strip"><span class="coverage-dots" aria-label="2 of 6 evidence pillars available">${[0,1,2,3,4,5].map(i=>`<i class="${i<2?"on":""}"></i>`).join("")}</span><span>2/6 pillars · technical-only evidence</span></div>
+      <div class="coverage-strip"><span class="coverage-dots" aria-label="2 of 6 data pillars available">${[0,1,2,3,4,5].map(i=>`<i class="${i<2?"on":""}"></i>`).join("")}</span><span>2/6 data pillars · technical-only</span></div>
       <div class="discover-actions"><button class="primary-action" type="button" data-analyze="${esc(row.symbol)}"><svg class="icon"><use href="#i-search"/></svg>Open dossier</button><button class="secondary-action" type="button" data-watch="${esc(row.symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg>${watched?"Saved":"Watch"}</button></div>
     </article>`;
   }).join("");
@@ -2295,7 +2515,7 @@ function renderAnalysisForecast(forecast){
       <div class="forecast-foot"><span class="chip">95% range ${esc(interval.length===2?`${fmtPercent(interval[0])}–${fmtPercent(interval[1])}`:"—")}</span><span>${esc(item.matched_state_samples??0)} matched non-overlapping samples</span><span>Walk-forward skill ${esc(skill)}</span></div>
     </article>`;
   }).join("");
-  document.getElementById("analysisForecastNote").textContent=`${forecast?.interpretation||"Forecast evidence is unavailable."} Historical conditional odds are not a price target or guarantee.`;
+  document.getElementById("analysisForecastNote").textContent=`${forecast?.interpretation||"Historical reliability data is unavailable."} Historical conditional odds are not a price target or guarantee.`;
 }
 function renderStockAnalysis(data){
   const consensus=data.consensus||{}, tone=analysisTone(consensus.label);
@@ -2373,7 +2593,7 @@ function renderModuleTracking(s, mod, listId, countId){
   document.getElementById(countId).textContent = "("+active.length+")";
   const el = document.getElementById(listId);
   el.innerHTML = active.length ? active.map(renderAlertCard).join("") :
-    `<div class="empty"><b>No executable ${mod} signal.</b>Candidates may be suppressed by setup, evidence, data-quality, or portfolio-risk gates.</div>`;
+    `<div class="empty"><b>No ready ${mod} signal.</b>Candidates may be held back by setup quality, historical reliability, data quality, or total-risk limits.</div>`;
   el.querySelectorAll("[data-alert-id]").forEach(card=>{
     const activate=()=>selectAlertFromModule(card.dataset.alertId);
     card.addEventListener("click",activate);
@@ -2481,11 +2701,11 @@ function renderSwingTrendChips(d){
   document.getElementById("swingTrendInner").innerHTML =
     rows.join(`<span style="flex-basis:100%"></span>`);
 }
-// ── Theme toggle (dark is default; choice persists in localStorage) ──
-function applyTheme(theme){
+// ── Theme toggle (account preference wins after sign-in) ────────────
+function applyTheme(theme,persist=true){
   if(theme === "light") document.documentElement.dataset.theme = "light";
   else delete document.documentElement.dataset.theme;
-  try{ localStorage.setItem("id-theme", theme); }catch(e){}
+  if(persist){ try{ localStorage.setItem("id-theme", theme); }catch(e){} }
   const btn = document.getElementById("themeToggle");
   btn.setAttribute("aria-label", theme==="light" ? "Switch to dark theme" : "Switch to light theme");
   btn.querySelector("use").setAttribute("href", theme==="light" ? "#i-moon" : "#i-sun");
@@ -2527,8 +2747,8 @@ function renderPaletteResults(q){
       closePalette(); switchView("analysis");
       requestAnimationFrame(()=>document.getElementById("analysisSymbol").focus());
     }},
-    {label:ownerAuthenticated?"Owner session":"Owner sign in", type:"Action", action:()=>{ closePalette(); openOwnerDialog(); }},
-    {label:"Open Budgets", type:"Action", action:()=>{ closePalette(); openBudgets(); }},
+    {label:ownerAuthenticated?"Account":"Sign in", type:"Action", action:()=>{ closePalette(); openOwnerDialog(); }},
+    {label:"Capital & risk limits", type:"Action", action:()=>{ closePalette(); openBudgets(); }},
   ];
   const filtered = q ? items.filter(i=>i.label.toLowerCase().includes(q.toLowerCase())) : items;
   const res = document.getElementById("cmdkResults");
@@ -2572,6 +2792,7 @@ function listValue(values){ return (values||[]).join(", "); }
 function parseList(value){ return [...new Set(value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean))]; }
 async function openAutotrade(){
   if(!ownerAuthenticated){ openOwnerDialog(); return; }
+  if(accountUser?.role!=="ADMIN"){ openOwnerDialog(); document.getElementById("ownerStatus").textContent="Administrator access is required to change automation."; document.getElementById("ownerStatus").className="bd-status err"; return; }
   const dlg=document.getElementById("autotrade-dialog");
   const status=document.getElementById("autotrade-status");
   status.textContent=""; status.className="bd-status";
@@ -2626,7 +2847,7 @@ async function disarmAutotrade(){
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; if(e.status===401) openOwnerDialog(); }
 }
 
-// ── Budgets dialog (hot-reload API) ─────────────────────────────────
+// ── Personal capital and risk limits ────────────────────────────────
 let budgetsCache = null;
 const CAP_LABEL = {"0DTE":"Daily capital","SWING":"Daily capital","LEAPS":"Standing capital","HODL":"Standing capital"};
 const CAP_KEY = {"0DTE":"daily_capital","SWING":"daily_capital","LEAPS":"standing_capital","HODL":"standing_capital"};
@@ -2638,10 +2859,13 @@ async function openBudgets(){
   const status = document.getElementById("budgets-status");
   status.textContent = ""; status.className = "bd-status";
   body.textContent = "Loading…";
+  const legacy=Boolean(accountUser?.legacy);
+  document.getElementById("budgetsSubtitle").textContent=legacy?"Legacy shared-engine settings.":"Saved privately to your account.";
   dlg.showModal();
   try{
     budgetsCache = await fetchJSON("/api/budgets");
-    body.innerHTML = Object.entries(budgetsCache).map(([mod, cfg]) => `
+    const boundaryCopy=legacy?"These legacy settings change shared engine sizing for every user. Create a durable account before relying on personal limits.":"These account-specific limits guide your risk review. The current shared signal plans and automation policy are not automatically resized per account.";
+    body.innerHTML = `<div class="account-helper" style="margin:0 0 12px">${boundaryCopy}</div>`+Object.entries(budgetsCache).map(([mod, cfg]) => `
       <div class="bd-module">
         <h3>${mod}</h3>
         <div class="bd-row2">
@@ -2649,13 +2873,13 @@ async function openBudgets(){
           <input type="number" min="1" step="1" id="cap-${mod}" value="${cfg[CAP_KEY[mod]] ?? ""}">
         </div>
         <div class="bd-row2">
-          <label for="risk-${mod}">Risk cap per alert (%)</label>
+          <label for="risk-${mod}">Maximum risk per signal (%)</label>
           <input type="number" min="1" max="100" step="1" id="risk-${mod}" value="${Math.round((cfg.risk_cap_pct ?? 0) * 100)}">
         </div>
-        <div class="bd-hint">Every ${mod} alert risks at most this % of the capital above.</div>
+        <div class="bd-hint">${legacy?'Shared engine limit for '+mod+'; changing it affects every user.':'Your review ceiling for '+mod+'; signals above it need manual resizing or should be skipped.'}</div>
       </div>`).join("");
   }catch(e){
-    body.innerHTML = `<div class="empty">${esc(e.message||"Could not load budgets")}</div>`;
+    body.innerHTML = `<div class="empty">${esc(e.message||"Could not load capital limits")}</div>`;
     if(e.status===401){ dlg.close(); openOwnerDialog(); }
   }
 }
@@ -2678,7 +2902,7 @@ async function saveBudgets(){
   status.textContent = "Saving…"; status.className = "bd-status";
   try{
     budgetsCache = await fetchJSON("/api/budgets", {method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(updated)});
-    status.textContent = "Saved — new alerts will size from these budgets immediately.";
+    status.textContent = accountUser?.legacy?"Saved to the shared engine defaults.":"Saved privately to your account.";
     status.className = "bd-status ok";
     renderRisk(lastState);
   }catch(e){
@@ -2699,7 +2923,7 @@ function connectWS(){
     ws.onmessage = () => refresh();
     ws.onclose = event => {
       wsConnection=null;
-      if(event.code===4401){ clearPersonalState("Owner session expired."); return; }
+      if(event.code===4401){ clearPersonalState("Your session expired."); return; }
       if(ownerAuthenticated) setTimeout(connectWS, Math.min(wsRetry*=1.6, 15000));
     };
     ws.onerror = () => ws.close();

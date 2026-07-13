@@ -49,7 +49,11 @@ Three-zone cockpit:
 ### 2.3 Trade Log — views per doc 10 §3 (ledger/performance/calibration/discipline/journal as tabs).
 
 ### 2.4 Settings
-Budgets (per-module daily/standing capital — the sizing inputs), risk caps, confidence threshold (raise-only), Telegram pairing (QR), Robinhood MCP connection + order-staging toggle (off by default), universe editor, alert sounds, theme.
+Account, per-user capital and risk limits, confidence threshold (raise-only),
+Telegram pairing (QR), Robinhood MCP connection + order-staging toggle (off by
+default), universe editor, alert sounds, and theme. Use the plain-language UI
+vocabulary in `docs/21-accounts-and-personal-settings.md`; keep research terms
+in methodology details only.
 
 ## 3. Interaction Principles
 

@@ -399,6 +399,21 @@ def test_frontend_clears_personal_state_on_logout_401_and_ws_expiry():
     assert 'fetchJSON("/api/discover/presets")' in source
 
 
+def test_account_frontend_uses_accessible_forms_and_honest_capability_labels():
+    source = Path("web/index.html").read_text()
+    assert '<form class="account-form" id="accountSignInForm" role="tabpanel"' in source
+    assert '<form class="account-form" id="accountRegisterForm" role="tabpanel"' in source
+    assert 'aria-controls="accountSignInForm"' in source
+    assert 'aria-controls="accountRegisterForm"' in source
+    assert '["ArrowLeft","ArrowRight","Home","End"]' in source
+    assert "Alert sounds (coming soon)" in source
+    assert "Initial password (12+ characters)" in source
+    assert "Shared automation policy" in source
+    assert "Changes affect every user and the connected Robinhood agent" in source
+    assert "Play sound for new alerts" not in source
+    assert "Temporary password" not in source
+
+
 def test_missing_factor_weights_are_renormalized_not_rewarded():
     # Only the explicitly available 22% + 18% factors participate.
     assert composite({"F1_trend": 100.0, "F2_setup": 0.0}) == 55.0

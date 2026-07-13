@@ -8,12 +8,15 @@
 #
 # ── Secrets to set in Koyeb dashboard → Service → Settings → Environment ──
 #   DATABASE_URL           # required PostgreSQL DSN for deploy-durable state
-#   INTELLIDHAN_OWNER_TOKEN # required, random value of at least 24 characters
+#   INTELLIDHAN_OWNER_TOKEN # initial-admin/emergency code, random 24+ characters
+#   INTELLIDHAN_INVITE_CODE # optional separate code for invited account signup
 #   AUTOTRADE_CONTROL_TOKEN # required only for agent/operator control endpoints
 #   AUTOTRADE_AGENT_TOKEN   # required only for Claude intent claim/receipt endpoints
 #   TELEGRAM_BOT_TOKEN     # optional — alerts print to Koyeb logs if unset
 #   TELEGRAM_CHAT_ID       # optional — required alongside the token above
 #
+# Account passwords (scrypt hashes), session digests, preferences, capital
+# limits, watchlists, and saved screens live in the operational database.
 # PostgreSQL (or a separately configured mounted persistent path) is a release
 # requirement. The default SQLite file is suitable for local work only and is
 # lost when Koyeb replaces an ephemeral container. The production durability
