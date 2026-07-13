@@ -26,6 +26,7 @@ from intellidhan_schemas.signals import (
     Setup,
     TakeProfit,
     Vehicle,
+    stable_plan_key,
 )
 
 TRANCHES = (0.33, 0.33, 0.34)
@@ -92,11 +93,10 @@ class Composer:
         self.budgets = budgets
         self.options = option_selector
         self.drawdown_multiplier = 1.0  # behavior plane will drive this (doc 17 §5)
-        self._seq = 0
 
     def compose(self, setup: Setup) -> Alert | None:
-        self._seq += 1
-        alert_id = f"alr_{setup.ts.strftime('%Y%m%d_%H%M')}_{setup.symbol.lower()}_{self._seq}"
+        plan_key = stable_plan_key(setup.ts, setup.symbol, setup.module, setup.strategy)
+        alert_id = plan_key.replace("pln_", "alr_", 1).lower()
         risk_budget = (self.budgets.capital(setup.module) * self.budgets.risk_cap(setup.module)
                        * self.drawdown_multiplier)
 
@@ -200,7 +200,9 @@ class Composer:
         thesis = f"{setup.explain} {complement_line(setup.confidence)}"
         risks = [self._evidence_risk_line(setup.strategy)]
         return Alert(
-            alert_id=alert_id, created_at=setup.ts, module=setup.module,
+            alert_id=alert_id, plan_key=stable_plan_key(
+                setup.ts, setup.symbol, setup.module, setup.strategy
+            ), created_at=setup.ts, module=setup.module,
             strategy=setup.strategy, action=action, symbol=setup.symbol,
             underlying_price=setup.entry_underlying, vehicle=vehicle, legs=legs,
             equity_qty=qty, entry_limit=entry_limit, entry_zone=entry_zone,

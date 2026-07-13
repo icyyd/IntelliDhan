@@ -7,17 +7,20 @@
 # this repo (icyyd/IntelliDhan) and this Dockerfile.
 #
 # ── Secrets to set in Koyeb dashboard → Service → Settings → Environment ──
+#   DATABASE_URL           # required PostgreSQL DSN for deploy-durable state
+#   INTELLIDHAN_OWNER_TOKEN # required, random value of at least 24 characters
+#   AUTOTRADE_CONTROL_TOKEN # required only for agent/operator control endpoints
+#   AUTOTRADE_AGENT_TOKEN   # required only for Claude intent claim/receipt endpoints
 #   TELEGRAM_BOT_TOKEN     # optional — alerts print to Koyeb logs if unset
 #   TELEGRAM_CHAT_ID       # optional — required alongside the token above
 #
-# No database/Redis required: the live loop runs entirely in-memory and
-# does not depend on deploy/docker-compose.yml's persistence layer.
-#
-# KNOWN LIMITATION: config/budgets.yaml lives on the container's ephemeral
-# filesystem. Edits made via the dashboard's Budgets dialog persist only
-# until the next redeploy/restart, which resets it to the git-committed
-# defaults. Edit config/budgets.yaml in the repo for changes that should
-# survive a restart.
+# PostgreSQL (or a separately configured mounted persistent path) is a release
+# requirement. The default SQLite file is suitable for local work only and is
+# lost when Koyeb replaces an ephemeral container. The production durability
+# gate below accepts PostgreSQL automatically. Set INTELLIDHAN_PERSISTENT_STATE
+# only for a SQLite path that is genuinely mounted and deployment-durable. Keep
+# the service single-instance until the in-process signal orchestrator and rate
+# limits move to shared coordination.
 
 name: intellidhan
 type: WEB
@@ -55,3 +58,7 @@ definition:
   env:
     - key: PORT
       value: "8000"
+    - key: INTELLIDHAN_SECURE_COOKIE
+      value: "true"
+    - key: INTELLIDHAN_REQUIRE_DURABLE_STATE
+      value: "true"

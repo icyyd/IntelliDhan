@@ -64,6 +64,9 @@ class SymbolState:
         self.recent_5m: list[Bar] = []
         # completed daily bars (seed + live closes) for swing-view charting
         self.recent_daily: list[Bar] = []
+        # Session identity, not timestamp, is the D1 uniqueness contract. Yahoo
+        # seed bars and replayed 5m rollups use different close timestamps.
+        self._daily_sessions: set[str] = set()
 
     def seed_daily(self, daily_bars: list[Bar]) -> None:
         """Warm-start higher-TF context from backfilled daily history — exactly
@@ -73,8 +76,12 @@ class SymbolState:
         for b in sorted(daily_bars, key=lambda x: x.ts_close):
             if b.timeframe != Timeframe.D1 or b.symbol != self.symbol:
                 raise ValueError("seed_daily takes this symbol's D1 bars only")
-            eng.update(b, self.clock.session_id(b.ts_close))
+            session = self.clock.session_id(b.ts_close)
+            if session in self._daily_sessions:
+                continue
+            eng.update(b, session)
             self.recent_daily.append(b)
+            self._daily_sessions.add(session)
         del self.recent_daily[:-250]
         self._on_daily(eng)
 
@@ -93,10 +100,17 @@ class SymbolState:
         self.trend[Timeframe.M5].update(bar, session)
         for rolled in self.roller.update(bar):
             if rolled.timeframe in self.trend:
+                rolled_session = self.clock.session_id(rolled.ts_close)
+                if (
+                    rolled.timeframe == Timeframe.D1
+                    and rolled_session in self._daily_sessions
+                ):
+                    continue
                 eng = self.trend[rolled.timeframe]
-                eng.update(rolled, self.clock.session_id(rolled.ts_close))
+                eng.update(rolled, rolled_session)
                 if rolled.timeframe == Timeframe.D1:
                     self.recent_daily.append(rolled)
+                    self._daily_sessions.add(rolled_session)
                     if len(self.recent_daily) > 250:
                         self.recent_daily.pop(0)
                     self._on_daily(eng)

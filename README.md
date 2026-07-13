@@ -1,8 +1,32 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.1 (Draft Spec) · **Date:** 2026-07-10 · **Status:** Pre-implementation
+**Version:** 0.2 alpha · **Date:** 2026-07-13 · **Status:** Working personal-terminal foundation
 
-IntelliDhan is a high-performance, graphically rich web platform that generates high-confidence trading alerts across four time horizons — **0DTE**, **Swings**, **LEAPS**, and **Buy & Hold (HODL)** — grounded in the principles of great investors (Munger, Buffett, Ackman, Lynch) and disciplined technical analysis (multi-timeframe trend, VWAP, ORB, EMA structure, RSI zones).
+IntelliDhan is a working personal stock-picking and signal terminal. Today it
+provides a configured-universe market monitor, research-stage 0DTE/Swing signal
+engine, durable alert/paper audit state, a compact technical screener, saved
+screens/watchlists, and on-demand forward trend analysis. LEAPS, HODL,
+fundamentals, estimates, events, and portfolio reconciliation remain planned and
+must not be presented as implemented.
+
+## Current implementation
+
+- Card-first web terminal with Signals, Discover, Analyze, 0DTE, and Swing tasks.
+- Server-expiring owner sessions protecting personal signal state, briefings,
+  budgets, watchlists, saved screens, automation controls, and the WebSocket;
+  broker credentials never enter this app.
+- SQLite local operational state or PostgreSQL via `DATABASE_URL`; production
+  deployments require PostgreSQL or a mounted persistent volume, enforced by a
+  readiness gate when `INTELLIDHAN_REQUIRE_DURABLE_STATE=true`.
+- Live data-quality quarantine and readiness-aware `/api/health`.
+- Adjusted, settled-session technical EOD ranking with partial-scan failures and
+  missing fundamental pillars shown explicitly.
+- Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
+  forward evidence and fixed-rule backtests.
+
+Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
+Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
+least 24 characters, and configure durable state before production deployment.
 
 ## Document Index
 
@@ -39,4 +63,9 @@ IntelliDhan is a high-performance, graphically rich web platform that generates 
 
 ## Honest Framing (read first)
 
-"75% chance of profitability" is implemented as a **calibrated confidence score**: a blend of model-estimated probability of profit (POP), historical win rate of the identical setup class in backtests, and live forward-tracked accuracy. The platform continuously reports its *realized* hit rate next to its *claimed* confidence so drift is visible. No market prediction is guaranteed; the system is an analysis and alerting tool, **not financial advice and not an auto-trader** — order execution always requires explicit human confirmation.
+"75% chance of profitability" is a gated calibration claim, not a marketing
+label. Unvalidated evidence is capped below the live threshold, and no strategy
+is currently assumed qualified. The platform is not financial advice. It can
+create supervised, credential-free execution intents for a primary agent using
+Robinhood MCP; real execution remains fail-closed behind explicit evidence,
+allowlist, risk, owner, agent-review, protection, and reconciliation controls.

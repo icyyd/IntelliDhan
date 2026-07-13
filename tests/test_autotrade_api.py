@@ -93,10 +93,15 @@ def test_agent_endpoints_503_when_token_unset(client):
     assert client.post("/api/autotrade/intents/x/receipt", json={"status": "EXECUTED"}).status_code == 503
 
 
-def test_public_status_endpoint_needs_no_auth_and_hides_no_secrets(client, monkeypatch):
+def test_status_endpoint_requires_owner_and_hides_secrets(client, monkeypatch):
     monkeypatch.setenv("AUTOTRADE_CONTROL_TOKEN", "ctrl-secret-value")
     monkeypatch.setenv("AUTOTRADE_AGENT_TOKEN", "agent-secret-value")
-    r = client.get("/api/autotrade")
+    monkeypatch.setenv("INTELLIDHAN_OWNER_TOKEN", "owner-token-that-is-long-enough")
+    assert client.get("/api/autotrade").status_code == 401
+    r = client.get(
+        "/api/autotrade",
+        headers={"Authorization": "Bearer owner-token-that-is-long-enough"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["credentials_in_app"] is False
@@ -187,6 +192,7 @@ def test_from_alert_endpoint_404_for_unknown_alert(client, monkeypatch):
 
 def test_reject_and_disarm_via_api(client, monkeypatch, calibrated):
     monkeypatch.setenv("AUTOTRADE_CONTROL_TOKEN", "ctrl")
+    monkeypatch.setenv("INTELLIDHAN_OWNER_TOKEN", "owner-token-that-is-long-enough")
     ctrl = {CONTROL_HEADER: "ctrl"}
     client.put("/api/autotrade/policy", json=live_policy("SUPERVISED"), headers=ctrl)
     intent = loop.autotrade.on_alert(make_alert())
@@ -196,7 +202,11 @@ def test_reject_and_disarm_via_api(client, monkeypatch, calibrated):
 
     r = client.post("/api/autotrade/disarm", headers=ctrl)
     assert r.status_code == 200 and r.json()["mode"] == "OFF"
-    assert client.get("/api/autotrade").json()["effective_mode"] == "OFF"
+    status = client.get(
+        "/api/autotrade",
+        headers={"Authorization": "Bearer owner-token-that-is-long-enough"},
+    )
+    assert status.json()["effective_mode"] == "OFF"
 
 
 def test_bad_policy_returns_422_not_500(client, monkeypatch):

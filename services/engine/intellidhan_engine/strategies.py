@@ -55,7 +55,7 @@ class OrbBreakout:
     trigger_tf = Timeframe.M5
 
     def __init__(self, key: str = "ORB_BREAKOUT", *, stop_frac: float = 0.35,
-                 t_mults=(0.5, 1.0, 1.75), min_relvol: float = 0.0,
+                 t_mults=(0.5, 1.0, 1.75), min_relvol: float = 1.5,
                  h1_min: float = 0.0) -> None:
         self.key = key
         self.stop_frac = stop_frac
@@ -350,7 +350,17 @@ class DailyBreakout:
         if not highs:
             return None
         pivot_high = max(highs[-3:]) if len(highs) >= 1 else None
-        if pivot_high is None or d.close <= pivot_high:
+        recent_daily = state.recent_daily
+        if pivot_high is None or len(recent_daily) < 2:
+            return None
+        two_above = all(bar.close > pivot_high for bar in recent_daily[-2:])
+        # Emit only when the second confirming daily close completes.
+        already_confirmed = (
+            len(recent_daily) >= 3
+            and recent_daily[-3].close > pivot_high
+            and recent_daily[-2].close > pivot_high
+        )
+        if not two_above or already_confirmed:
             return None
         rel_vol = d.rel_volume or 0.0
         if rel_vol < 1.5 or td.score < 20:  # RULE-T9 + trend gate
@@ -363,8 +373,8 @@ class DailyBreakout:
             strategy=self.key, module=self.module, direction=Direction.LONG,
             trigger_tf=self.trigger_tf, entry=entry, stop=stop, targets=targets,
             f2_quality=round(min(f2, 100.0), 1),
-            explain=(f"Daily close above pivot resistance {pivot_high:.2f} on {rel_vol:.1f}x "
-                     f"volume with D trend {td.state.value}."),
+            explain=(f"Two daily closes above pivot resistance {pivot_high:.2f}; latest "
+                     f"volume {rel_vol:.1f}x with D trend {td.state.value}."),
             invalidation=f"Daily close back below the breakout pivot ({pivot_high:.2f}).",
         )
 

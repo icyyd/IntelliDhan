@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from intellidhan_ingestor.market_clock import ET
 from intellidhan_schemas import Bar
-from intellidhan_schemas.signals import Alert, Direction, Module, Setup
+from intellidhan_schemas.signals import Alert, Direction, Module, Setup, stable_plan_key
 
 
 class Outcome(str, Enum):
@@ -31,12 +31,17 @@ class Outcome(str, Enum):
 
 class PaperTrade(BaseModel):
     alert_id: str
+    plan_key: str | None = None
     symbol: str
     module: Module
     strategy: str
     direction: Direction
     confidence: float
     composite: float | None = None
+    # Durable lower bound for replay/catch-up.  Older ledger rows did not carry
+    # this field, so it remains optional and the live boot path backfills it
+    # from the corresponding alert (or the restart time as a fail-safe).
+    created_at: datetime | None = None
     entry: float
     initial_stop: float
     targets: list[float]
@@ -52,9 +57,14 @@ class PaperTrade(BaseModel):
     @classmethod
     def from_alert(cls, alert: Alert, setup: Setup) -> "PaperTrade":
         return cls(
-            alert_id=alert.alert_id, symbol=alert.symbol, module=alert.module,
+            alert_id=alert.alert_id,
+            plan_key=alert.plan_key or stable_plan_key(
+                alert.created_at, alert.symbol, alert.module, alert.strategy
+            ),
+            symbol=alert.symbol, module=alert.module,
             strategy=alert.strategy, direction=setup.direction,
-            confidence=alert.confidence, composite=setup.composite, entry=setup.entry_underlying,
+            confidence=alert.confidence, composite=setup.composite, created_at=alert.created_at,
+            entry=setup.entry_underlying,
             initial_stop=setup.stop_underlying, targets=setup.targets_underlying,
             valid_until=alert.valid_until,
         )
@@ -70,10 +80,58 @@ class PaperExecutor:
     def __init__(self) -> None:
         self.trades: list[PaperTrade] = []
         self._active: dict[str, list[PaperTrade]] = {}
+        self._by_alert_id: dict[str, PaperTrade] = {}
+        self._by_plan_key: dict[str, PaperTrade] = {}
 
-    def track(self, trade: PaperTrade) -> None:
+    @staticmethod
+    def _identity(trade: PaperTrade) -> str:
+        if trade.plan_key:
+            return trade.plan_key
+        if trade.created_at is not None:
+            return stable_plan_key(
+                trade.created_at, trade.symbol, trade.module, trade.strategy
+            )
+        return f"legacy_alert:{trade.alert_id}"
+
+    @staticmethod
+    def _progress_rank(trade: PaperTrade) -> int:
+        if trade.outcome not in {Outcome.PENDING, Outcome.OPEN}:
+            return 3
+        return 2 if trade.outcome == Outcome.OPEN else 1
+
+    def restore(self, trades: list[PaperTrade]) -> None:
+        """Rebuild the executor after a process restart from its durable ledger."""
+        # The natural plan key is the durable identity.  Prefer the most
+        # advanced representation if malformed/legacy rows contain duplicates;
+        # replay must never regress a settled plan back to PENDING.
+        deduped: dict[str, PaperTrade] = {}
+        for trade in trades:
+            identity = self._identity(trade)
+            current = deduped.get(identity)
+            if current is None or self._progress_rank(trade) >= self._progress_rank(current):
+                deduped[identity] = trade
+        self.trades = list(deduped.values())
+        self._by_alert_id = {trade.alert_id: trade for trade in trades}
+        self._by_plan_key = dict(deduped)
+        self._active = {}
+        for trade in self.trades:
+            if trade.outcome in {Outcome.PENDING, Outcome.OPEN}:
+                self._active.setdefault(trade.symbol, []).append(trade)
+
+    def track(self, trade: PaperTrade) -> bool:
+        """Track a new plan once; return False for replay-regenerated duplicates."""
+        identity = self._identity(trade)
+        if trade.alert_id in self._by_alert_id or identity in self._by_plan_key:
+            return False
         self.trades.append(trade)
+        self._by_alert_id[trade.alert_id] = trade
+        self._by_plan_key[identity] = trade
         self._active.setdefault(trade.symbol, []).append(trade)
+        return True
+
+    def active_trades(self) -> list[PaperTrade]:
+        """Return each unresolved durable plan exactly once."""
+        return [trade for trades in self._active.values() for trade in trades]
 
     def on_bar(self, bar: Bar) -> list[PaperTrade]:
         active = self._active.get(bar.symbol)
@@ -88,6 +146,19 @@ class PaperExecutor:
         return settled
 
     def _advance(self, t: PaperTrade, bar: Bar) -> bool:
+        # Boot catch-up replays bars from before a restored plan existed.  A
+        # pending plan can only fill on a bar strictly after alert creation;
+        # an open plan can only advance on a bar strictly after its recorded
+        # fill.  Without these guards a restart can create impossible fills or
+        # exits whose timestamps predate the trade itself.
+        not_before = (
+            t.created_at
+            if t.outcome == Outcome.PENDING
+            else (t.filled_at or t.created_at)
+        )
+        if not_before is not None and bar.ts_close <= not_before:
+            return False
+
         sign = 1.0 if t.direction == Direction.LONG else -1.0
         risk = abs(t.entry - t.initial_stop)
 

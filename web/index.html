@@ -782,6 +782,89 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
 }
 
 /* ── Light theme (toggle in topbar; dark stays the default) ───────────── */
+/* ── Discover, watchlists, and owner session ─────────────────────── */
+.mobile-nav{display:none}
+.discover-presets{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 4px; scrollbar-width:none}
+.discover-presets::-webkit-scrollbar{display:none}
+.preset-chip{flex:none; padding:8px 12px; border:1px solid var(--border); border-radius:99px; background:var(--tint-c); color:var(--text-dim); cursor:pointer; font:650 11px var(--sans); transition:border-color 180ms ease,background-color 180ms ease,color 180ms ease}
+.preset-chip:hover,.preset-chip.active{border-color:rgba(145,164,255,.48); background:rgba(145,164,255,.11); color:var(--cyan)}
+.discover-filter-panel{padding:16px}
+.discover-form{display:grid; grid-template-columns:repeat(4,minmax(110px,1fr)) auto; gap:10px; align-items:end; margin-top:13px}
+.discover-check{height:43px; display:flex; align-items:center; gap:8px; padding:0 12px; border:1px solid var(--border); border-radius:14px; background:var(--input-bg); color:var(--text-dim); font-size:11px}
+.discover-check input{accent-color:var(--cyan)}
+.discover-layout{display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:18px; align-items:start}
+.discover-results{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px}
+.discover-results>.empty{grid-column:1/-1}
+.discover-card{position:relative; overflow:hidden; padding:18px; border:1px solid var(--border); border-radius:22px; background:var(--card-gradient); box-shadow:inset 0 1px 0 rgba(255,255,255,.035); transition:border-color 180ms ease,box-shadow 180ms ease}
+.discover-card:hover{border-color:rgba(145,164,255,.43); box-shadow:0 16px 34px rgba(0,0,0,.18)}
+.discover-card::after{content:""; position:absolute; width:130px; height:130px; right:-58px; top:-70px; border-radius:50%; background:rgba(145,164,255,.08); pointer-events:none}
+.discover-card-head{position:relative; z-index:1; display:flex; align-items:flex-start; gap:12px}
+.discover-symbol{font-size:24px; line-height:1; font-weight:800; letter-spacing:-.035em}
+.discover-price{display:block; margin-top:5px; color:var(--text-dim); font:600 12px var(--mono)}
+.score-bubble{display:grid; place-items:center; width:58px; height:58px; margin-left:auto; border-radius:19px; background:rgba(145,164,255,.12); color:var(--cyan)}
+.score-bubble b{display:block; font:800 17px var(--mono); line-height:1; text-align:center}
+.score-bubble small{display:block; margin-top:3px; color:var(--text-faint); font-size:7.5px; text-transform:uppercase; letter-spacing:.06em}
+.discover-state{display:inline-flex; align-items:center; gap:6px; margin-top:12px; padding:5px 9px; border-radius:99px; background:rgba(94,234,212,.10); color:var(--teal); font-size:9.5px; font-weight:800; letter-spacing:.04em}
+.discover-state::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor}
+.discover-state.below{background:rgba(251,113,133,.10); color:var(--red)}
+.discover-metrics{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-top:13px}
+.discover-metric{padding:9px; border-radius:14px; background:var(--tint-d); min-width:0}
+.discover-metric b{display:block; overflow:hidden; text-overflow:ellipsis; font:650 11.5px var(--mono)}
+.discover-metric small{display:block; margin-top:2px; color:var(--text-faint); font-size:8px; text-transform:uppercase; letter-spacing:.04em}
+.coverage-strip{display:flex; align-items:center; gap:7px; margin-top:12px; color:var(--text-faint); font-size:9.5px}
+.coverage-dots{display:flex; gap:3px}
+.coverage-dots i{display:block; width:13px; height:5px; border-radius:99px; background:var(--border)}
+.coverage-dots i.on{background:var(--gold)}
+.discover-actions{display:flex; gap:8px; margin-top:14px; padding-top:13px; border-top:1px solid var(--border-soft)}
+.secondary-action,.primary-action{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; padding:7px 11px; border-radius:12px; cursor:pointer; font:700 10.5px var(--sans)}
+.primary-action{border:0; background:var(--cyan); color:var(--on-accent)}
+.secondary-action{border:1px solid var(--border); background:var(--tint-c); color:var(--text-dim)}
+.secondary-action:hover{border-color:rgba(145,164,255,.43); color:var(--cyan)}
+.watch-panel{position:sticky; top:88px}
+.watch-status{min-height:18px; margin:8px 0; color:var(--text-faint); font-size:10px}
+.watch-status.err{color:var(--red)}
+.watch-status.ok{color:var(--teal)}
+.watch-list{display:flex; flex-direction:column; gap:7px}
+.watch-row{display:flex; align-items:center; gap:8px; width:100%; padding:10px 11px; border:1px solid var(--border); border-radius:15px; background:var(--tint-c); color:var(--text); cursor:pointer; text-align:left}
+.watch-row:hover{border-color:rgba(145,164,255,.38)}
+.watch-row b{font:750 11.5px var(--mono)}
+.watch-row small{margin-left:auto; color:var(--text-faint)}
+.watch-empty{padding:13px; border:1px dashed var(--border); border-radius:15px; color:var(--text-faint); font-size:10.5px; line-height:1.5}
+.discover-note{display:flex; align-items:flex-start; gap:8px; margin-top:13px; color:var(--text-faint); font-size:10px; line-height:1.5}
+.discover-note svg{width:14px; height:14px; flex:none; color:var(--gold); margin-top:1px}
+.screen-tools{display:flex; align-items:end; gap:8px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft)}
+.screen-tools .analysis-field{flex:1}
+.screen-tools select{max-width:190px}
+.screen-tools>.watch-status{align-self:center; flex:1; margin:0}
+.analysis-watch{margin-left:auto}
+.owner-state{position:relative}
+dialog#owner-dialog{background:var(--panel-elevated); color:var(--text); border:1px solid var(--border); border-radius:24px; padding:0; width:420px; max-width:92vw; box-shadow:0 24px 80px rgba(0,0,0,.48)}
+dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(4px)}
+.owner-body{padding:20px}
+.owner-body p{margin:0 0 15px; color:var(--text-dim); font-size:11.5px; line-height:1.6}
+.owner-body .auto-field input{height:43px}
+.owner-actions{display:flex; align-items:center; gap:10px; margin-top:14px}
+@media (max-width:1100px){
+  .discover-layout{grid-template-columns:1fr}
+  .watch-panel{position:static}
+  .discover-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .discover-form .analysis-run{grid-column:2}
+}
+@media (max-width:900px){
+  .mobile-nav{display:flex; gap:5px; margin:0 12px 14px; padding:5px; overflow-x:auto; border:1px solid var(--border); border-radius:18px; background:var(--glass-b); backdrop-filter:blur(16px); scrollbar-width:none}
+  .mobile-nav::-webkit-scrollbar{display:none}
+  .mobile-nav-item{flex:1 0 auto; min-width:72px; padding:8px 10px; border:0; border-radius:13px; background:transparent; color:var(--text-faint); cursor:pointer; font:700 10.5px var(--sans)}
+  .mobile-nav-item.active{background:var(--cyan); color:var(--on-accent)}
+}
+@media (max-width:700px){.discover-results{grid-template-columns:1fr}}
+@media (max-width:480px){
+  .mobile-nav{margin:0 8px 10px}
+  .discover-form{grid-template-columns:1fr}
+  .discover-form .analysis-run{grid-column:1}
+  .screen-tools{align-items:stretch; flex-direction:column}
+  .screen-tools select{max-width:none}
+}
+
 :root[data-theme="light"]{
   --bg:#EEF1F7;
   --panel:#FFFFFF;
@@ -851,6 +934,9 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4V3Z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
 </svg>
 
 <header class="topbar">
@@ -861,12 +947,22 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   <span class="chip" id="dataHealth" role="status"><span class="dot"></span> Connecting…</span>
   <span class="chip" id="session" role="status">—</span>
   <button class="icon-btn" id="themeToggle" aria-label="Switch to light theme" title="Theme"><svg class="icon"><use href="#i-sun"/></svg></button>
+  <button class="icon-btn owner-state" id="ownerButton" onclick="openOwnerDialog()" aria-label="Owner sign in" title="Owner session"><svg class="icon"><use href="#i-user"/></svg></button>
   <button class="icon-btn" onclick="openBudgets()" aria-label="Open capital budget settings" title="Budgets"><svg class="icon"><use href="#i-gear"/></svg></button>
 </header>
+
+<nav class="mobile-nav" aria-label="Primary tasks">
+  <button class="mobile-nav-item active" data-view="signals" aria-pressed="true">Signals</button>
+  <button class="mobile-nav-item" data-view="discover" aria-pressed="false">Discover</button>
+  <button class="mobile-nav-item" data-view="analysis" aria-pressed="false">Analyze</button>
+  <button class="mobile-nav-item" data-view="0dte" aria-pressed="false">0DTE</button>
+  <button class="mobile-nav-item" data-view="swings" aria-pressed="false">Swings</button>
+</nav>
 
 <div class="shell">
   <nav class="navrail" aria-label="Primary">
     <button class="nav-item active" data-view="signals" title="Signals" aria-label="Signals" aria-pressed="true"><svg class="icon"><use href="#i-activity"/></svg></button>
+    <button class="nav-item" data-view="discover" title="Discover stocks" aria-label="Discover stocks" aria-pressed="false"><svg class="icon"><use href="#i-grid"/></svg></button>
     <button class="nav-item" data-view="0dte" title="0DTE desk" aria-label="0DTE desk" aria-pressed="false">0D</button>
     <button class="nav-item" data-view="swings" title="Swing desk" aria-label="Swing desk" aria-pressed="false">SW</button>
     <button class="nav-item" data-view="analysis" title="Analyze a stock" aria-label="Analyze a stock" aria-pressed="false"><svg class="icon"><use href="#i-search"/></svg></button>
@@ -1012,6 +1108,58 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
     </section>
    </div>
 
+   <div id="view-discover" hidden>
+    <section class="desk-hero" aria-labelledby="discoverTitle">
+      <div class="desk-copy">
+        <div class="desk-eyebrow">Find candidates worth researching</div>
+        <h1 id="discoverTitle">Discover</h1>
+        <p>Rank the configured universe by transparent trend, liquidity, and risk evidence. No hidden stock-picking probability.</p>
+      </div>
+      <div class="desk-stats" aria-label="Discovery summary">
+        <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-grid"/></svg></span><span><b id="discoverMatches">—</b><small>Current matches</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble mint"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="discoverUniverse">—</b><small>Universe scanned</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-bookmark"/></svg></span><span><b id="discoverWatched">—</b><small>Research watchlist</small></span></div>
+      </div>
+    </section>
+
+    <section class="panel discover-filter-panel" aria-label="Discovery filters">
+      <div class="discover-presets" id="discoverPresets">
+        <button class="preset-chip active" type="button" data-preset="trend_leaders">Trend leaders</button>
+        <button class="preset-chip" type="button" data-preset="pullback_uptrend">Pullback in uptrend</button>
+        <button class="preset-chip" type="button" data-preset="fresh_breakouts">Fresh breakouts</button>
+        <button class="preset-chip" type="button" data-preset="defensive_trend">Defensive trend</button>
+        <button class="preset-chip" type="button" data-preset="">All names</button>
+      </div>
+      <form class="discover-form" id="discoverForm">
+        <label class="analysis-field"><span>Minimum price</span><input id="discoverPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="Any"></label>
+        <label class="analysis-field"><span>Minimum 6m return</span><input id="discoverMomentum" type="number" min="-100" max="1000" step="1" inputmode="decimal" placeholder="Preset"></label>
+        <label class="analysis-field"><span>Max 20d volatility</span><input id="discoverVolatility" type="number" min="1" max="500" step="1" inputmode="decimal" placeholder="Any %"></label>
+        <label class="discover-check"><input id="discoverAbove200" type="checkbox"> Above 200-day average</label>
+        <button class="analysis-run" id="discoverRun" type="submit"><span class="analysis-spinner" aria-hidden="true"></span><svg class="icon"><use href="#i-search"/></svg><span>Run screen</span></button>
+      </form>
+      <div class="discover-note"><svg class="icon"><use href="#i-check"/></svg><span id="discoverEffectiveFilters">Loading effective preset rules…</span></div>
+      <div class="discover-note"><svg class="icon"><use href="#i-alert"/></svg><span>V1 ranks Trend and Risk only. Quality, Growth, Valuation, and Catalyst stay visibly unavailable until point-in-time feeds are connected.</span></div>
+      <div class="screen-tools">
+        <label class="analysis-field"><span>Save current screen</span><input id="discoverScreenName" type="text" maxlength="60" placeholder="My momentum screen"></label>
+        <button class="secondary-action" id="saveScreenButton" type="button" onclick="saveCurrentScreen()"><svg class="icon"><use href="#i-bookmark"/></svg>Save screen</button>
+        <label class="analysis-field"><span>Saved screens</span><select id="savedScreens" onchange="applySavedScreen(this.value)"><option value="">None yet</option></select></label>
+        <span class="watch-status" id="discoverScreenStatus" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <div class="discover-layout">
+      <section aria-labelledby="discoverResultsTitle">
+        <div class="analysis-section-head"><div><h2 id="discoverResultsTitle">Ranked candidates</h2><p id="discoverAsOf">Select a preset to scan completed daily data.</p></div></div>
+        <div class="discover-results" id="discoverResults" aria-live="polite"><div class="empty">Open Discover to load the current ranking.</div></div>
+      </section>
+      <aside class="panel watch-panel" aria-labelledby="watchTitle">
+        <div class="panel-head"><h2 id="watchTitle">Research watchlist</h2><span class="count" id="watchCount">0</span></div>
+        <div class="watch-status" id="watchStatus" role="status" aria-live="polite"></div>
+        <div class="watch-list" id="watchList"><div class="watch-empty">Sign in as owner to save and reopen candidates.</div></div>
+      </aside>
+    </div>
+   </div>
+
    <div id="view-analysis" hidden>
     <section class="desk-hero" aria-labelledby="analysisTitle">
       <div class="desk-copy">
@@ -1132,6 +1280,19 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   </div>
 </dialog>
 
+<!-- Owner authentication: raw token is exchanged once for an HttpOnly cookie. -->
+<dialog id="owner-dialog">
+  <div class="bd-head2">
+    <div><h2>Owner session</h2><div class="dialog-subtitle">Unlock watchlists, budgets, automation controls, and live updates.</div></div>
+    <button class="bd-close" onclick="document.getElementById('owner-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="owner-body">
+    <p>The token is sent once over HTTPS and exchanged for a secure, HttpOnly session cookie. It is never stored in browser JavaScript or local storage.</p>
+    <label class="auto-field"><span>Owner token</span><input type="password" id="ownerToken" autocomplete="current-password" placeholder="INTELLIDHAN_OWNER_TOKEN"></label>
+    <div class="owner-actions"><button class="bd-save" type="button" onclick="signInOwner()">Sign in</button><button class="secondary-action" id="ownerSignOut" type="button" onclick="signOutOwner()">Sign out</button><span class="bd-status" id="ownerStatus" role="status"></span></div>
+  </div>
+</dialog>
+
 <!-- Agent-mediated auto-trade policy; Robinhood credentials never enter this form. -->
 <dialog id="autotrade-dialog">
   <div class="bd-head2">
@@ -1139,7 +1300,7 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
     <button class="bd-close" onclick="document.getElementById('autotrade-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
   <div class="auto-form">
-    <label class="auto-field auto-wide"><span>Control token</span><input type="password" id="autoToken" autocomplete="off" placeholder="AUTOTRADE_CONTROL_TOKEN"></label>
+    <div class="auto-agent auto-wide"><span class="stat-bubble"><svg class="icon"><use href="#i-user"/></svg></span><span><b>Protected by owner session</b><small>The browser never retains the automation control token.</small></span></div>
     <label class="auto-field"><span>Mode</span><select id="autoMode"><option>OFF</option><option>SHADOW</option><option>SUPERVISED</option><option>ARMED</option></select></label>
     <label class="auto-field"><span>Arm for minutes</span><input type="number" id="autoMinutes" min="1" max="480" value="30"></label>
     <label class="auto-field"><span>Minimum confidence (%)</span><input type="number" id="autoConfidence" min="50" max="95" value="75"></label>
@@ -1166,6 +1327,15 @@ const tfOrder = ["M","W","D","4H","1H","15m","5m"];
 let lastState = null, calibration = {}, briefing = null;
 let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
+let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
+let selectedDiscoverPreset = "trend_leaders", currentDossier = null;
+let discoverPresets = {
+  trend_leaders:{above_sma200:true,min_return_6m:5},
+  pullback_uptrend:{above_sma200:true,min_return_6m:0,max_distance_from_high_pct:12},
+  fresh_breakouts:{above_sma200:true,max_distance_from_high_pct:3},
+  defensive_trend:{above_sma200:true,max_volatility_pct:35},
+  "":{above_sma200:false},
+};
 
 function esc(value){
   return String(value ?? "").replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
@@ -1233,19 +1403,25 @@ function fmtCountdown(iso){
   return Math.floor(m/60)+"h "+(m%60)+"m left";
 }
 
-async function fetchJSON(url){
-  const r = await fetch(url);
-  if(!r.ok) throw new Error(url+" "+r.status);
-  return r.json();
+async function fetchJSON(url, options){
+  const r = await fetch(url, options);
+  const payload = await r.json().catch(()=>({}));
+  if(!r.ok){
+    if(r.status===401 && url!=="/api/auth/session") clearPersonalState("Owner session expired.");
+    const error = new Error(typeof payload.detail==="string"?payload.detail:`${url} ${r.status}`);
+    error.status = r.status;
+    throw error;
+  }
+  return payload;
 }
 
 async function refresh(){
+  if(!ownerAuthenticated){ setHealth("auth"); return; }
   try{
     lastState = await fetchJSON("/api/state");
     renderAll();
-    setHealth("live");
   }catch(e){
-    setHealth("down");
+    setHealth(e.status===401?"auth":"down");
   }
 }
 async function refreshCalibration(){
@@ -1262,6 +1438,7 @@ async function refreshCalibration(){
   }catch(e){}
 }
 async function refreshBriefing(){
+  if(!ownerAuthenticated){ briefing=null; renderBriefing(); return; }
   try{
     const b = await fetchJSON("/api/briefing");
     briefing = b && b.bias ? b : null;
@@ -1276,7 +1453,55 @@ function setHealth(mode){
   if(mode === "live"){ dot.classList.add("live"); el.lastChild.textContent = " Live"; }
   else if(mode === "warn"){ dot.classList.add("warn"); el.lastChild.textContent = " Stale"; }
   else if(mode === "down"){ dot.classList.add("down"); el.lastChild.textContent = " Reconnecting…"; }
+  else if(mode === "auth"){ dot.classList.add("warn"); el.lastChild.textContent = " Sign in"; }
   else { el.lastChild.textContent = " Connecting…"; }
+}
+
+function clearPersonalState(reason="Owner sign-in required."){
+  ownerAuthenticated=false;
+  lastState=null; briefing=null; watchlistsCache=[]; savedScreensCache=[];
+  symbolOrder=[]; selectedSymbol=null; selectedAlertId=null; selectedSwingSymbol=null;
+  currentDossier=null; selectionTouched=false;
+  if(typeof autotradeCache!=="undefined") autotradeCache=null;
+  if(typeof budgetsCache!=="undefined") budgetsCache=null;
+  if(typeof wsConnection!=="undefined"&&wsConnection){
+    const socket=wsConnection; wsConnection=null; socket.onclose=null; socket.close();
+  }
+  ["owner-dialog","budgets-dialog","autotrade-dialog"].forEach(id=>{
+    const dialog=document.getElementById(id); if(dialog?.open) dialog.close();
+  });
+  document.querySelectorAll('[id^="summary"]').forEach(el=>{ el.textContent="—"; });
+  document.querySelectorAll('[id^="qCount"]').forEach(el=>{ el.textContent="(0)"; });
+  ["queueTracking","queueSuppressed","queue0dteTracking","queue0dteSuppressed","queueSwingTracking","queueSwingSuppressed","matrix","decisionGrid","drawerInner","riskUsage","contextMeta","bdSuppression","bdEvidence","bdPerformance","profile0dteInner","marketChart","chartLegend","dailyChart","swingTrendInner","swingSymbols"].forEach(id=>{ const el=document.getElementById(id); if(el) el.replaceChildren(); });
+  document.getElementById("queueTracking").innerHTML=`<div class="empty"><b>${esc(reason)}</b>Sign in to load personal signals, performance, and risk state.</div>`;
+  document.getElementById("contextSymbol").textContent="—";
+  document.getElementById("contextPrice").textContent="—";
+  document.getElementById("contextBanner").replaceChildren();
+  document.getElementById("tape").replaceChildren();
+  document.getElementById("symCount").textContent="—";
+  document.getElementById("session").textContent="—";
+  document.getElementById("briefPanel").hidden=true;
+  document.getElementById("briefBody").replaceChildren();
+  document.getElementById("autotradeMode").textContent="OFF";
+  document.getElementById("autotradeMode").className="auto-mode off";
+  document.getElementById("autotradeReady").textContent="0";
+  document.getElementById("autotradeApproval").textContent="0";
+  document.getElementById("autotradeExpiry").textContent="—";
+  document.getElementById("budgets-body").textContent="Sign in to load budgets.";
+  document.getElementById("budgets-status").textContent="";
+  document.getElementById("autoMode").value="OFF";
+  ["autoConfidence","autoOrderRisk","autoDailyRisk","autoOpenIntents","autoSymbols","autoStrategies","autoModules"].forEach(id=>{ document.getElementById(id).value=""; });
+  document.getElementById("autoOptions").checked=false;
+  document.getElementById("autotrade-status").textContent="";
+  document.getElementById("analysisResults").hidden=true;
+  const ownerButton=document.getElementById("ownerButton");
+  ownerButton.style.color=""; ownerButton.title="Owner sign in";
+  ownerButton.setAttribute("aria-label","Owner sign in");
+  document.getElementById("ownerSignOut").hidden=true;
+  renderWatchlists(); renderSavedScreens(); renderBriefing(); setHealth("auth");
+  // Reload is the final privacy boundary: it discards every closure, event
+  // handler, SVG node, and DOM fragment rather than relying on a partial list.
+  window.location.reload();
 }
 
 function renderAll(){
@@ -1288,8 +1513,12 @@ function renderAll(){
   const sess = document.getElementById("session");
   sess.innerHTML = `<span class="dot ${s.session==='RTH'?'rth':''}"></span> ${s.session}`;
 
-  // data health from last_poll, session-aware (doc 18 §7.12)
-  if(s.session === "RTH"){
+  // Honest readiness first; market-closed is healthy only after boot + DQ + store pass.
+  if(s.readiness && !s.readiness.ok){
+    setHealth(s.readiness.boot_state==="FAILED"?"down":"warn");
+    const plane=s.readiness.loop_state!=="RUNNING"?s.readiness.loop_state:s.readiness.provider_state||s.readiness.boot_state;
+    document.getElementById("dataHealth").lastChild.textContent = ` ${String(plane||"NOT READY").replaceAll("_"," ")}`;
+  } else if(s.session === "RTH"){
     if(!s.last_poll) setHealth("connecting");
     else {
       const age = (Date.now() - new Date(s.last_poll).getTime())/1000;
@@ -1736,17 +1965,18 @@ document.getElementById("qtabSuppressed").addEventListener("click", ()=>{
 let activeView = "signals", selectedSwingSymbol = null;
 function switchView(view){
   activeView = view;
-  document.body.classList.toggle("analysis-view",view==="analysis");
-  document.querySelectorAll(".nav-item[data-view]").forEach(b=>{
+  document.body.classList.toggle("analysis-view",view==="analysis"||view==="discover");
+  document.querySelectorAll("[data-view]").forEach(b=>{
     const on = b.dataset.view === view;
     b.classList.toggle("active", on);
     b.setAttribute("aria-pressed", String(on));
   });
-  ["signals","0dte","swings","analysis"].forEach(v=>{
+  ["signals","0dte","swings","discover","analysis"].forEach(v=>{
     document.getElementById("view-"+v).hidden = v !== view;
   });
+  if(view==="discover"&&!discoverLoaded) runDiscovery();
 }
-document.querySelectorAll(".nav-item[data-view]").forEach(b=>
+document.querySelectorAll("[data-view]").forEach(b=>
   b.addEventListener("click", ()=>switchView(b.dataset.view)));
 
 function wireQtabPair(aId, bId, aPanel, bPanel){
@@ -1763,6 +1993,204 @@ function wireQtabPair(aId, bId, aPanel, bPanel){
 }
 wireQtabPair("qtab0dteTracking","qtab0dteSuppressed","queue0dteTracking","queue0dteSuppressed");
 wireQtabPair("qtabSwingTracking","qtabSwingSuppressed","queueSwingTracking","queueSwingSuppressed");
+
+// Owner session + durable watchlists
+async function refreshOwnerSession(){
+  try{
+    const session=await fetchJSON("/api/auth/session");
+    ownerAuthenticated=Boolean(session.authenticated);
+    const button=document.getElementById("ownerButton");
+    button.style.color=ownerAuthenticated?"var(--teal)":"";
+    button.title=ownerAuthenticated?"Owner signed in":"Owner sign in";
+    button.setAttribute("aria-label",ownerAuthenticated?"Owner account, signed in":"Owner sign in");
+    document.getElementById("ownerSignOut").hidden=!ownerAuthenticated;
+    if(ownerAuthenticated) await Promise.all([loadWatchlists(),loadSavedScreens()]);
+    else renderWatchlists();
+    return session;
+  }catch(e){ ownerAuthenticated=false; renderWatchlists(); return {configured:false,authenticated:false}; }
+}
+async function openOwnerDialog(){
+  const dialog=document.getElementById("owner-dialog"), status=document.getElementById("ownerStatus");
+  status.textContent=""; status.className="bd-status";
+  document.getElementById("ownerToken").value="";
+  dialog.showModal();
+  const session=await refreshOwnerSession();
+  if(!session.configured){ status.textContent="Owner authentication is not configured on the server."; status.className="bd-status err"; }
+  else if(session.authenticated){ status.textContent="Signed in."; status.className="bd-status ok"; }
+}
+async function signInOwner(){
+  const status=document.getElementById("ownerStatus"), token=document.getElementById("ownerToken").value;
+  if(!token){ status.textContent="Enter the owner token."; status.className="bd-status err"; return; }
+  status.textContent="Signing in…"; status.className="bd-status";
+  try{
+    await fetchJSON("/api/auth/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token})});
+    document.getElementById("ownerToken").value="";
+    await refreshOwnerSession();
+    connectWS();
+    await Promise.all([refresh(),refreshBriefing(),refreshAutotrade()]);
+    status.textContent="Signed in. Protected controls are unlocked."; status.className="bd-status ok";
+  }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
+}
+async function signOutOwner(){
+  await fetchJSON("/api/auth/session",{method:"DELETE"}).catch(()=>{});
+  clearPersonalState("Signed out.");
+  document.getElementById("ownerStatus").textContent="Signed out.";
+  document.getElementById("ownerStatus").className="bd-status ok";
+}
+async function loadWatchlists(){
+  if(!ownerAuthenticated){ watchlistsCache=[]; renderWatchlists(); return; }
+  try{
+    const data=await fetchJSON("/api/watchlists");
+    watchlistsCache=data.watchlists||[];
+    renderWatchlists();
+  }catch(e){ if(e.status===401) ownerAuthenticated=false; renderWatchlists(e.message); }
+}
+async function loadSavedScreens(){
+  if(!ownerAuthenticated){ savedScreensCache=[]; renderSavedScreens(); return; }
+  try{
+    const data=await fetchJSON("/api/screens");
+    savedScreensCache=data.screens||[]; renderSavedScreens();
+  }catch(e){ savedScreensCache=[]; renderSavedScreens(); }
+}
+function renderSavedScreens(){
+  const select=document.getElementById("savedScreens");
+  if(!select) return;
+  select.innerHTML=`<option value="">${ownerAuthenticated?"Choose a saved screen":"Sign in to load screens"}</option>`+savedScreensCache.map(screen=>`<option value="${esc(screen.screen_id)}">${esc(screen.name)}</option>`).join("");
+}
+function currentDiscoverFilters(){
+  const filters={};
+  if(selectedDiscoverPreset) filters.preset=selectedDiscoverPreset;
+  const values={min_price:"discoverPrice",min_return_6m:"discoverMomentum",max_volatility_pct:"discoverVolatility"};
+  Object.entries(values).forEach(([key,id])=>{ const value=document.getElementById(id).value; if(value!=="") filters[key]=Number(value); });
+  filters.above_sma200=document.getElementById("discoverAbove200").checked;
+  return filters;
+}
+function applyPresetControls(preset){
+  const filters=discoverPresets[preset]||discoverPresets[""];
+  document.getElementById("discoverPrice").value=filters.min_price??"";
+  document.getElementById("discoverMomentum").value=filters.min_return_6m??"";
+  document.getElementById("discoverVolatility").value=filters.max_volatility_pct??"";
+  document.getElementById("discoverAbove200").checked=Boolean(filters.above_sma200);
+  const rules=[];
+  if(filters.above_sma200) rules.push("above the 200-day average");
+  if(filters.min_return_6m!=null) rules.push(`6m return ≥ ${filters.min_return_6m}%`);
+  if(filters.max_volatility_pct!=null) rules.push(`20d volatility ≤ ${filters.max_volatility_pct}%`);
+  if(filters.max_distance_from_high_pct!=null) rules.push(`within ${filters.max_distance_from_high_pct}% of the 52-week high`);
+  document.getElementById("discoverEffectiveFilters").textContent=rules.length?`Effective preset: ${rules.join(" · ")}`:"No preset constraints; form fields still apply.";
+}
+async function loadDiscoveryPresets(){
+  try{
+    const data=await fetchJSON("/api/discover/presets");
+    discoverPresets=Object.fromEntries((data.presets||[]).map(item=>[item.key,item.filters||{}]));
+    discoverPresets[""]={above_sma200:false};
+  }catch(e){}
+  applyPresetControls(selectedDiscoverPreset);
+}
+async function saveCurrentScreen(){
+  if(!ownerAuthenticated){ openOwnerDialog(); return; }
+  const name=document.getElementById("discoverScreenName").value.trim(), status=document.getElementById("discoverScreenStatus");
+  if(!name){ status.textContent="Name the screen before saving it."; status.className="watch-status err"; return; }
+  try{
+    const saved=await fetchJSON("/api/screens",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,filters:currentDiscoverFilters()})});
+    await loadSavedScreens(); document.getElementById("savedScreens").value=saved.screen_id;
+    status.textContent=`Saved screen “${saved.name}”.`; status.className="watch-status ok";
+  }catch(e){ status.textContent=e.message; status.className="watch-status err"; }
+}
+function applySavedScreen(screenId){
+  const screen=savedScreensCache.find(item=>item.screen_id===screenId); if(!screen) return;
+  const stored=screen.filters||{}; selectedDiscoverPreset=stored.preset||"";
+  const filters={...(discoverPresets[selectedDiscoverPreset]||{}),...stored};
+  document.querySelectorAll("[data-preset]").forEach(item=>item.classList.toggle("active",item.dataset.preset===selectedDiscoverPreset));
+  document.getElementById("discoverPrice").value=filters.min_price??"";
+  document.getElementById("discoverMomentum").value=filters.min_return_6m??"";
+  document.getElementById("discoverVolatility").value=filters.max_volatility_pct??"";
+  document.getElementById("discoverAbove200").checked=Boolean(filters.above_sma200);
+  runDiscovery();
+}
+function researchWatchlist(){ return watchlistsCache.find(item=>item.watchlist_id==="research")||watchlistsCache[0]||null; }
+function renderWatchlists(error=""){
+  const list=document.getElementById("watchList"), status=document.getElementById("watchStatus");
+  if(!list) return;
+  const research=researchWatchlist(), symbols=research?.symbols||[];
+  document.getElementById("watchCount").textContent=symbols.length;
+  document.getElementById("discoverWatched").textContent=ownerAuthenticated?symbols.length:"—";
+  status.textContent=error; status.className=`watch-status${error?" err":""}`;
+  if(!ownerAuthenticated){ list.innerHTML=`<div class="watch-empty">Sign in as owner to save and reopen candidates.</div>`; return; }
+  list.innerHTML=symbols.length?symbols.map(symbol=>`<button class="watch-row" type="button" data-watch-open="${esc(symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg><b>${esc(symbol)}</b><small>Analyze</small></button>`).join(""):`<div class="watch-empty">No candidates saved yet. Add a ranked name to create your research queue.</div>`;
+  list.querySelectorAll("[data-watch-open]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.watchOpen)));
+}
+async function addToResearch(symbol){
+  if(!ownerAuthenticated){ openOwnerDialog(); return; }
+  const status=document.getElementById("watchStatus");
+  status.textContent=`Saving ${symbol}…`; status.className="watch-status";
+  try{
+    let watchlist=researchWatchlist();
+    if(!watchlist){
+      await fetchJSON("/api/watchlists",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:"Research"})});
+      await loadWatchlists(); watchlist=researchWatchlist();
+    }
+    await fetchJSON(`/api/watchlists/${encodeURIComponent(watchlist.watchlist_id)}/symbols/${encodeURIComponent(symbol)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+    await loadWatchlists();
+    status.textContent=`${symbol} added to Research.`; status.className="watch-status ok";
+  }catch(e){ status.textContent=e.message; status.className="watch-status err"; if(e.status===401) openOwnerDialog(); }
+}
+
+// Compact end-of-day discovery
+function compactDollar(value){
+  const n=Number(value); if(!Number.isFinite(n)) return "—";
+  return n>=1e9?`$${(n/1e9).toFixed(1)}B`:n>=1e6?`$${(n/1e6).toFixed(0)}M`:`$${n.toLocaleString()}`;
+}
+function renderDiscovery(data){
+  discoverLoaded=true;
+  document.getElementById("discoverMatches").textContent=data.match_count??0;
+  document.getElementById("discoverUniverse").textContent=data.complete===false?`${data.succeeded_count}/${data.universe_size}`:(data.universe_size??0);
+  const failed=Object.keys(data.errors||{});
+  document.getElementById("discoverAsOf").textContent=data.as_of
+    ? `${data.complete===false?`Partial scan (${data.succeeded_count}/${data.universe_size}; failed: ${failed.join(", ")}) · `:""}Completed data through ${fmtAnalysisDate(data.as_of)} · ${data.ranking}`
+    : `No completed data available${failed.length?`; failed: ${failed.join(", ")}`:"."}`;
+  const rows=data.results||[], output=document.getElementById("discoverResults");
+  if(!rows.length){ output.innerHTML=`<div class="empty"><b>No names match this screen.</b>Loosen one filter or choose All names. A zero-result screen is a valid outcome.</div>`; return; }
+  output.innerHTML=rows.map(row=>{
+    const below=row.trend_state==="BELOW_200D", watched=researchWatchlist()?.symbols?.includes(row.symbol);
+    return `<article class="discover-card">
+      <div class="discover-card-head"><div><div class="discover-symbol">${esc(row.symbol)}</div><span class="discover-price">$${esc(fmtPx(row.price))}</span></div><div class="score-bubble"><span><b>${esc(Math.round(row.technical_score))}</b><small>Technical</small></span></div></div>
+      <span class="discover-state ${below?"below":""}">${esc(String(row.trend_state||"UNCONFIRMED").replaceAll("_"," "))}</span>
+      <div class="discover-metrics">
+        <span class="discover-metric"><b class="${Number(row.return_6m_pct)>=0?"analysis-positive":"analysis-negative"}">${esc(fmtSignedPct(row.return_6m_pct))}</b><small>6m return</small></span>
+        <span class="discover-metric"><b>${esc(fmtPercent(row.percent_of_52w_high))}</b><small>Of 52w high</small></span>
+        <span class="discover-metric"><b>${esc(fmtPercent(row.realized_volatility_20d_pct))}</b><small>20d vol</small></span>
+        <span class="discover-metric"><b>${esc(fmtSignedPct(row.distance_from_sma_200_pct))}</b><small>Vs 200d</small></span>
+        <span class="discover-metric"><b>${esc(compactDollar(row.average_dollar_volume_20d))}</b><small>Dollar volume</small></span>
+        <span class="discover-metric"><b class="analysis-negative">${esc(fmtSignedPct(row.max_drawdown_1y_pct))}</b><small>1y drawdown</small></span>
+      </div>
+      <div class="coverage-strip"><span class="coverage-dots" aria-label="2 of 6 evidence pillars available">${[0,1,2,3,4,5].map(i=>`<i class="${i<2?"on":""}"></i>`).join("")}</span><span>2/6 pillars · technical-only evidence</span></div>
+      <div class="discover-actions"><button class="primary-action" type="button" data-analyze="${esc(row.symbol)}"><svg class="icon"><use href="#i-search"/></svg>Open dossier</button><button class="secondary-action" type="button" data-watch="${esc(row.symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg>${watched?"Saved":"Watch"}</button></div>
+    </article>`;
+  }).join("");
+  output.querySelectorAll("[data-analyze]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.analyze)));
+  output.querySelectorAll("[data-watch]").forEach(button=>button.addEventListener("click",()=>addToResearch(button.dataset.watch)));
+}
+async function runDiscovery(event){
+  event?.preventDefault();
+  const params=new URLSearchParams(currentDiscoverFilters());
+  const button=document.getElementById("discoverRun"), output=document.getElementById("discoverResults");
+  button.disabled=true; button.classList.add("loading"); output.innerHTML=`<div class="empty">Scanning completed daily history…</div>`;
+  try{ renderDiscovery(await fetchJSON(`/api/discover?${params}`)); }
+  catch(e){ output.innerHTML=`<div class="empty"><b>Discovery is unavailable.</b>${esc(e.message)}</div>`; }
+  finally{ button.disabled=false; button.classList.remove("loading"); }
+}
+function analyzeCandidate(symbol){
+  switchView("analysis");
+  document.getElementById("analysisSymbol").value=symbol;
+  document.getElementById("stockAnalysisForm").requestSubmit();
+}
+document.getElementById("discoverForm").addEventListener("submit",runDiscovery);
+document.querySelectorAll("[data-preset]").forEach(button=>button.addEventListener("click",()=>{
+  selectedDiscoverPreset=button.dataset.preset;
+  document.querySelectorAll("[data-preset]").forEach(item=>item.classList.toggle("active",item===button));
+  applyPresetControls(selectedDiscoverPreset);
+  runDiscovery();
+}));
 
 // ── On-demand stock analysis ─────────────────────────────────────
 function analysisTone(value){
@@ -1874,7 +2302,7 @@ function renderStockAnalysis(data){
   const summary=document.getElementById("analysisSummary");
   summary.className=`analysis-verdict ${tone==="neutral"?"mixed":tone}`;
   summary.innerHTML=`<div class="analysis-verdict-main">
-    <div class="analysis-verdict-top"><span class="analysis-signal ${tone}">${esc(String(consensus.label||"MIXED").replaceAll("_"," "))}</span><span class="analysis-asof">As of ${esc(fmtAnalysisDate(data.as_of))} · ${esc(data.source||"adjusted daily data")}</span></div>
+    <div class="analysis-verdict-top"><span class="analysis-signal ${tone}">${esc(String(consensus.label||"MIXED").replaceAll("_"," "))}</span><span class="analysis-asof">As of ${esc(fmtAnalysisDate(data.as_of))} · ${esc(data.source||"adjusted daily data")}</span><button class="secondary-action analysis-watch" type="button" data-analysis-watch="${esc(data.symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg>Watch</button></div>
     <div class="analysis-symbol-line"><h2>${esc(data.symbol)}</h2><span class="analysis-price">$${esc(fmtPx(data.price))}</span></div>
     <p class="analysis-interpretation">${esc(data.interpretation||"")}</p>
   </div><div class="analysis-votes" aria-label="Method vote count">
@@ -1882,6 +2310,7 @@ function renderStockAnalysis(data){
     <span class="analysis-vote"><b>${esc(consensus.neutral_votes??0)}</b><small>Neutral</small></span>
     <span class="analysis-vote down"><b>${esc(consensus.bearish_votes??0)}</b><small>Bearish</small></span>
   </div>`;
+  summary.querySelector("[data-analysis-watch]").addEventListener("click",event=>addToResearch(event.currentTarget.dataset.analysisWatch));
   renderAnalysisForecast(data.forecast);
   renderAnalysisMethods(data.methods);
   const risk=data.risk||{};
@@ -1917,11 +2346,10 @@ async function analyzeStock(event){
   button.querySelector(".analysis-run-label").textContent="Analyzing…";
   status.textContent=`Loading completed daily history for ${symbol}…`; status.className="analysis-status";
   try{
-    const response=await fetch(`/api/analyze/${encodeURIComponent(symbol)}?${params}`);
-    const payload=await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(typeof payload.detail==="string"?payload.detail:`Analysis failed (${response.status})`);
-    renderStockAnalysis(payload);
-    status.textContent=`Updated ${fmtAnalysisDate(payload.as_of)} · ${payload.daily_bars} daily bars`; status.className="analysis-status ok";
+    currentDossier=await fetchJSON(`/api/dossier/${encodeURIComponent(symbol)}?${params}`);
+    const analysis=currentDossier.analysis;
+    renderStockAnalysis(analysis);
+    status.textContent=`Updated ${fmtAnalysisDate(analysis.as_of)} · ${analysis.daily_bars} daily bars · fundamentals ${currentDossier.coverage.fundamentals.replaceAll("_"," ").toLowerCase()}`; status.className="analysis-status ok";
   }catch(error){
     status.textContent=error.message||"Unable to analyze that ticker"; status.className="analysis-status err";
   }finally{
@@ -2091,13 +2519,15 @@ function closePalette(){ document.getElementById("cmdkOverlay").classList.remove
 function renderPaletteResults(q){
   const items = [
     ...symbolOrder.map(s=>({label:s, type:"Symbol", action:()=>{
-      closePalette();
+      closePalette(); switchView("signals");
       selectSymbol(s);
     }})),
+    {label:"Discover stocks", type:"Action", action:()=>{ closePalette(); switchView("discover"); }},
     {label:"Analyze a stock", type:"Action", action:()=>{
       closePalette(); switchView("analysis");
       requestAnimationFrame(()=>document.getElementById("analysisSymbol").focus());
     }},
+    {label:ownerAuthenticated?"Owner session":"Owner sign in", type:"Action", action:()=>{ closePalette(); openOwnerDialog(); }},
     {label:"Open Budgets", type:"Action", action:()=>{ closePalette(); openBudgets(); }},
   ];
   const filtered = q ? items.filter(i=>i.label.toLowerCase().includes(q.toLowerCase())) : items;
@@ -2135,15 +2565,16 @@ function renderAutotrade(data){
     ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "—";
 }
 async function refreshAutotrade(){
+  if(!ownerAuthenticated){ autotradeCache=null; return; }
   try{ renderAutotrade(await fetchJSON("/api/autotrade")); }catch(e){}
 }
 function listValue(values){ return (values||[]).join(", "); }
 function parseList(value){ return [...new Set(value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean))]; }
 async function openAutotrade(){
+  if(!ownerAuthenticated){ openOwnerDialog(); return; }
   const dlg=document.getElementById("autotrade-dialog");
   const status=document.getElementById("autotrade-status");
   status.textContent=""; status.className="bd-status";
-  document.getElementById("autoToken").value="";
   dlg.showModal();
   await refreshAutotrade();
   const p=autotradeCache?.policy||{};
@@ -2158,11 +2589,7 @@ async function openAutotrade(){
   document.getElementById("autoOptions").checked=Boolean(p.allow_options);
 }
 async function autotradeRequest(path,method,payload){
-  const token=document.getElementById("autoToken").value;
-  if(!token) throw new Error("Enter the local control token");
-  const r=await fetch(path,{method,headers:{"Content-Type":"application/json","X-Autotrade-Token":token},body:payload?JSON.stringify(payload):undefined});
-  if(!r.ok){ const err=await r.json().catch(()=>({detail:"request failed"})); throw new Error(err.detail||"request failed"); }
-  return r.json();
+  return fetchJSON(path,{method,headers:{"Content-Type":"application/json"},body:payload?JSON.stringify(payload):undefined});
 }
 async function saveAutotrade(){
   const status=document.getElementById("autotrade-status");
@@ -2185,7 +2612,7 @@ async function saveAutotrade(){
     await refreshAutotrade();
     status.textContent=mode==="ARMED"?"Armed for the requested window.":"Policy saved.";
     status.className="bd-status ok";
-  }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
+  }catch(e){ status.textContent=e.message; status.className="bd-status err"; if(e.status===401) openOwnerDialog(); }
 }
 async function disarmAutotrade(){
   const status=document.getElementById("autotrade-status");
@@ -2196,7 +2623,7 @@ async function disarmAutotrade(){
     await refreshAutotrade();
     status.textContent="Disarmed. New alerts will not create execution intents.";
     status.className="bd-status ok";
-  }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
+  }catch(e){ status.textContent=e.message; status.className="bd-status err"; if(e.status===401) openOwnerDialog(); }
 }
 
 // ── Budgets dialog (hot-reload API) ─────────────────────────────────
@@ -2205,6 +2632,7 @@ const CAP_LABEL = {"0DTE":"Daily capital","SWING":"Daily capital","LEAPS":"Stand
 const CAP_KEY = {"0DTE":"daily_capital","SWING":"daily_capital","LEAPS":"standing_capital","HODL":"standing_capital"};
 
 async function openBudgets(){
+  if(!ownerAuthenticated){ openOwnerDialog(); return; }
   const dlg = document.getElementById("budgets-dialog");
   const body = document.getElementById("budgets-body");
   const status = document.getElementById("budgets-status");
@@ -2227,7 +2655,8 @@ async function openBudgets(){
         <div class="bd-hint">Every ${mod} alert risks at most this % of the capital above.</div>
       </div>`).join("");
   }catch(e){
-    body.innerHTML = '<div class="empty">Could not load budgets — is the gateway running?</div>';
+    body.innerHTML = `<div class="empty">${esc(e.message||"Could not load budgets")}</div>`;
+    if(e.status===401){ dlg.close(); openOwnerDialog(); }
   }
 }
 async function saveBudgets(){
@@ -2248,26 +2677,31 @@ async function saveBudgets(){
   }
   status.textContent = "Saving…"; status.className = "bd-status";
   try{
-    const r = await fetch("/api/budgets", {method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(updated)});
-    if (!r.ok){ const err = await r.json().catch(()=>({detail:"save failed"})); throw new Error(err.detail || "save failed"); }
-    budgetsCache = await r.json();
+    budgetsCache = await fetchJSON("/api/budgets", {method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(updated)});
     status.textContent = "Saved — new alerts will size from these budgets immediately.";
     status.className = "bd-status ok";
     renderRisk(lastState);
   }catch(e){
     status.textContent = "Error: " + e.message;
     status.className = "bd-status err";
+    if(e.status===401) openOwnerDialog();
   }
 }
 
 // ── WebSocket with reconnect-with-backoff (doc 18 §7.10/§7.12) ──────
-let wsRetry = 1000;
+let wsRetry = 1000, wsConnection = null;
 function connectWS(){
+  if(!ownerAuthenticated||wsConnection) return;
   try{
     const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws`);
+    wsConnection=ws;
     ws.onopen = () => { wsRetry = 1000; };
     ws.onmessage = () => refresh();
-    ws.onclose = () => { setHealth("down"); setTimeout(connectWS, Math.min(wsRetry*=1.6, 15000)); };
+    ws.onclose = event => {
+      wsConnection=null;
+      if(event.code===4401){ clearPersonalState("Owner session expired."); return; }
+      if(ownerAuthenticated) setTimeout(connectWS, Math.min(wsRetry*=1.6, 15000));
+    };
     ws.onerror = () => ws.close();
   }catch(e){ setTimeout(connectWS, 5000); }
 }
@@ -2278,12 +2712,16 @@ window.addEventListener("resize",()=>{
   resizeTimer=setTimeout(()=>{ if(lastState) renderContext(lastState); },120);
 });
 
-refresh(); refreshCalibration(); refreshBriefing(); refreshAutotrade();
+loadDiscoveryPresets();
+refreshCalibration();
+refreshOwnerSession().then(session=>{
+  if(session.authenticated){ connectWS(); refresh(); refreshBriefing(); refreshAutotrade(); }
+  else setHealth("auth");
+});
 setInterval(refresh, 15000);
 setInterval(refreshCalibration, 60000);
 setInterval(refreshBriefing, 60000);
 setInterval(refreshAutotrade, 15000);
-connectWS();
 </script>
 </body>
 </html>

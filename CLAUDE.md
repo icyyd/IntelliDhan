@@ -85,7 +85,9 @@ and `EXECUTED → CLOSED|FAILED`.
 
 ## Operator endpoints
 
-Control endpoints require `X-Autotrade-Token: $AUTOTRADE_CONTROL_TOKEN`:
+Agent/operator API calls may use
+`X-Autotrade-Token: $AUTOTRADE_CONTROL_TOKEN`; the browser uses the separate
+HttpOnly owner session and never handles this token:
 
 - `PUT /api/autotrade/policy`
 - `POST /api/autotrade/disarm`
@@ -93,8 +95,8 @@ Control endpoints require `X-Autotrade-Token: $AUTOTRADE_CONTROL_TOKEN`:
 - `POST /api/autotrade/intents/{intent_id}/approve`
 - `POST /api/autotrade/intents/{intent_id}/reject`
 
-The dashboard uses these endpoints for explicit configuration and supervised
-approval. Do not expose either token to browser logs, URLs, or version control.
+Do not expose owner, control, or agent tokens to browser logs, URLs, prompts,
+tool output, or version control.
 
 ## On-demand stock trend analysis
 
@@ -118,8 +120,52 @@ conditional probability for a strategy-specific calibrated win rate. Strategy
 confidence is capped below the live gate until its calibration metadata declares
 `HISTORICAL_OOS`, `FORWARD_PAPER`, or `LIVE_VALIDATED` evidence.
 
+## Terminal discovery and durable state
+
+- Prefer `GET /api/dossier/{symbol}` for the UI-facing Analyze workflow; it
+  wraps the trend analysis with normalized security, coverage, and watch state.
+- `GET /api/discover` is a technical-only EOD ranker. Never describe its
+  `technical_score_v1` as a probability, fundamental score, or recommendation.
+- Personal `/api/state`, briefing, automation status, watchlist/screen/budget
+  access, and `/ws` require a server-expiring owner session. Health,
+  calibration metadata, Discover, and on-demand research remain non-personal
+  read surfaces.
+- PostgreSQL via `DATABASE_URL` is the production operational store. SQLite is
+  acceptable for local work and only deployment-durable on a mounted path.
+- A 503 from `/api/health` means the signal plane is not ready even if the HTTP
+  process is reachable. Never bypass boot, provider, persistence, or DQ status.
+
 ## Product expansion priority
 
 Use `docs/20-one-stop-terminal-gap-analysis.md` as the prioritized implementation
 brief. Build the durable Discover -> Analyze -> Decide -> Track loop before
 adding more indicators, strategies, or dashboards.
+
+## GitOps and multi-agent workflow
+
+Treat the repository as a shared worktree. Before editing, committing, reviewing,
+or deploying:
+
+1. Run `git fetch --prune`, inspect `git status -sb`, recent local/remote commits,
+   the complete diff, and open pull requests. New collaborator changes are input,
+   never something to reset, overwrite, or silently reformat.
+2. Work on a narrowly scoped feature branch, never directly on `main`. Codex
+   branches use `codex/<description>`; another agent may use its documented
+   prefix. If an existing branch/PR already owns the cohesive change set, update
+   it instead of opening a competing PR.
+3. Stage explicit in-scope paths, run proportionate tests/lint/type/UI checks,
+   commit tersely, push with upstream tracking, and open or update a pull request
+   against `main`. Default new PRs to draft until checks and independent review
+   are complete.
+4. Request review from another agent or contributor. The reviewer must inspect
+   the actual patch, security/data-integrity implications, UX regressions, test
+   coverage, documentation truth, and CI results. Address blocking findings and
+   rerun checks before requesting approval.
+5. Review other contributors' open PRs with the same standard. Never approve an
+   unreviewed or failing PR, never approve your own PR, and leave concrete
+   findings instead of a ceremonial approval. Approve only when no blocking
+   issues remain and the platform supports a valid reviewer identity.
+6. Never merge, delete another branch, discard another agent's work, or deploy a
+   revision without the user's explicit confirmation. Merge only a reviewed,
+   green PR; deploy from the merged default branch and verify Koyeb health plus a
+   non-mutating application smoke test. Preserve a rollback target.

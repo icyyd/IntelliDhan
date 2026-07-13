@@ -2,9 +2,9 @@
 
 Real factors: F1 trend alignment, F2 setup quality (strategy-owned), F3 level
 confluence, F4 momentum & volume, F5 volatility fit (target geometry vs ATR +
-auction context), F8 statistical POP (random-walk barrier baseline adjusted by
-trend). F7 macro = VIX-regime agreement (macro.py). Remaining stub awaiting
-data feeds: F6 options flow — named in the factor dict so the UI can label it.
+auction context), F7 macro = VIX-regime agreement, and F8 a statistical POP
+baseline. Missing factors are omitted and weights are renormalized; unavailable
+data can never contribute a favorable score.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from intellidhan_engine.strategies import RawSignal
 from intellidhan_schemas import Timeframe
 from intellidhan_schemas.signals import Direction
 
-NEUTRAL_STUB = 60.0
+NEUTRAL_SCORE = 50.0
 CALIBRATION_VERSION = "uncalibrated-v0"
 
 WEIGHTS = {  # doc 03 §3 defaults
@@ -33,7 +33,7 @@ def score_factors(state: SymbolState, sig: RawSignal,
 
     f3 = state.levels.confluence_score(sig.entry)
 
-    f4 = 50.0
+    f4 = NEUTRAL_SCORE
     snap = state.indicators(sig.trigger_tf)
     if snap is not None:
         if snap.rel_volume is not None:
@@ -45,7 +45,7 @@ def score_factors(state: SymbolState, sig: RawSignal,
 
     # F5 — volatility fit (doc 03 §3): are the targets reachable within the
     # session's realistic range, and does the auction context support movement?
-    f5 = NEUTRAL_STUB
+    f5: float | None = None
     daily = state.indicators(Timeframe.D1)
     if daily is not None and daily.atr14 and sig.targets:
         t2 = sig.targets[1] if len(sig.targets) > 1 else sig.targets[0]
@@ -64,7 +64,7 @@ def score_factors(state: SymbolState, sig: RawSignal,
 
     # F8 — statistical POP baseline: random-walk odds of hitting T1 before the
     # stop = risk / (risk + reward_T1), shifted by trend agreement (drift term).
-    f8 = NEUTRAL_STUB
+    f8: float | None = None
     risk = abs(sig.entry - sig.stop)
     if risk > 0 and sig.targets:
         reward1 = abs(sig.targets[0] - sig.entry)
@@ -72,20 +72,28 @@ def score_factors(state: SymbolState, sig: RawSignal,
         drift = (f1 - 50.0) / 100.0 * 0.20  # ±0.10 max from alignment
         f8 = max(0.0, min((pop_rw + drift) * 100.0, 100.0))
 
-    return {
+    factors = {
         "F1_trend": round(f1, 1),
         "F2_setup": sig.f2_quality,
         "F3_levels": round(f3, 1),
         "F4_momentum": round(f4, 1),
-        "F5_volatility": round(f5, 1),
-        "F6_flow": NEUTRAL_STUB,
-        "F7_macro": round(f7_score(macro, direction), 1),
-        "F8_pop": round(f8, 1),
     }
+    if f5 is not None:
+        factors["F5_volatility"] = round(f5, 1)
+    # F6_flow remains unavailable until a point-in-time, licensed feed exists.
+    if macro is not None and macro.vix_pctl_1y is not None:
+        factors["F7_macro"] = round(f7_score(macro, direction), 1)
+    if f8 is not None:
+        factors["F8_pop"] = round(f8, 1)
+    return factors
 
 
 def composite(factors: dict[str, float]) -> float:
-    return round(sum(factors[k] * WEIGHTS[k] for k in WEIGHTS), 2)
+    available = {key: value for key, value in factors.items() if key in WEIGHTS}
+    weight = sum(WEIGHTS[key] for key in available)
+    if weight <= 0:
+        raise ValueError("at least one known factor is required")
+    return round(sum(value * WEIGHTS[key] for key, value in available.items()) / weight, 2)
 
 
 def calibrated_confidence(composite_score: float) -> float:

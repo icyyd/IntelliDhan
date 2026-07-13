@@ -66,6 +66,34 @@ def test_drawdown_multiplier_halves_size():
     assert half.dollar_risk <= full.dollar_risk * 0.55  # anti-martingale (RULE-C3)
 
 
+def test_plan_identity_is_stable_when_replay_sequence_shifts():
+    budgets = Budgets("config/budgets.yaml")
+    first_boot = Composer(budgets, option_selector=None)
+    first_alert = first_boot.compose(mk_setup())
+
+    shifted_boot = Composer(budgets, option_selector=None)
+    for index in range(7):
+        shifted_boot.compose(mk_setup().model_copy(update={
+            "ts": T0 - timedelta(minutes=5 * (index + 1)),
+            "symbol": "SPY",
+        }))
+    replayed_alert = shifted_boot.compose(mk_setup())
+
+    assert replayed_alert.alert_id == first_alert.alert_id
+    assert replayed_alert.plan_key == first_alert.plan_key
+    durable = PaperTrade.from_alert(first_alert, mk_setup())
+    durable.alert_id = "alr_legacy_process_sequence_1"
+    durable.plan_key = None
+    durable.outcome = Outcome.STOPPED
+    durable.realized_r = -1.0
+    durable.exit_ts = T0 + timedelta(minutes=5)
+    executor = PaperExecutor()
+    executor.restore([durable])
+    assert executor.track(PaperTrade.from_alert(replayed_alert, mk_setup())) is False
+    assert len(executor.trades) == 1
+    assert executor.trades[0].outcome == Outcome.STOPPED
+
+
 # ---------- paper executor ----------
 
 def bar(i, o, h, lo, c, sym="QQQ") -> Bar:

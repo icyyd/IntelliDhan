@@ -1,5 +1,8 @@
-# IntelliDhan universe config (doc 02 §6) — hot-reloadable, schema-validated
-# Placeholder: populated in Phase 0/1
+# IntelliDhan universe config (doc 02 §6).
+# `live.symbols` is the single source for the engine and compact EOD screener.
+live:
+  symbols: [QQQ, SPY, SMH, TQQQ, AAPL, NVDA, MSFT, AMZN, META, GOOGL, AMD, TSLA]
+
 modules:
   0dte:
     indexes: [SPX, NDX]
