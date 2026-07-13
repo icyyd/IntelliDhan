@@ -782,6 +782,83 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
 }
 
 /* ── Light theme (toggle in topbar; dark stays the default) ───────────── */
+/* ── Discover, watchlists, and owner session ─────────────────────── */
+.mobile-nav{display:none}
+.discover-presets{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 4px; scrollbar-width:none}
+.discover-presets::-webkit-scrollbar{display:none}
+.preset-chip{flex:none; padding:8px 12px; border:1px solid var(--border); border-radius:99px; background:var(--tint-c); color:var(--text-dim); cursor:pointer; font:650 11px var(--sans); transition:border-color 180ms ease,background-color 180ms ease,color 180ms ease}
+.preset-chip:hover,.preset-chip.active{border-color:rgba(145,164,255,.48); background:rgba(145,164,255,.11); color:var(--cyan)}
+.discover-filter-panel{padding:16px}
+.discover-form{display:grid; grid-template-columns:repeat(4,minmax(110px,1fr)) auto; gap:10px; align-items:end; margin-top:13px}
+.discover-check{height:43px; display:flex; align-items:center; gap:8px; padding:0 12px; border:1px solid var(--border); border-radius:14px; background:var(--input-bg); color:var(--text-dim); font-size:11px}
+.discover-check input{accent-color:var(--cyan)}
+.discover-layout{display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:18px; align-items:start}
+.discover-results{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px}
+.discover-results>.empty{grid-column:1/-1}
+.discover-card{position:relative; overflow:hidden; padding:18px; border:1px solid var(--border); border-radius:22px; background:var(--card-gradient); box-shadow:inset 0 1px 0 rgba(255,255,255,.035); transition:border-color 180ms ease,box-shadow 180ms ease}
+.discover-card:hover{border-color:rgba(145,164,255,.43); box-shadow:0 16px 34px rgba(0,0,0,.18)}
+.discover-card::after{content:""; position:absolute; width:130px; height:130px; right:-58px; top:-70px; border-radius:50%; background:rgba(145,164,255,.08); pointer-events:none}
+.discover-card-head{position:relative; z-index:1; display:flex; align-items:flex-start; gap:12px}
+.discover-symbol{font-size:24px; line-height:1; font-weight:800; letter-spacing:-.035em}
+.discover-price{display:block; margin-top:5px; color:var(--text-dim); font:600 12px var(--mono)}
+.score-bubble{display:grid; place-items:center; width:58px; height:58px; margin-left:auto; border-radius:19px; background:rgba(145,164,255,.12); color:var(--cyan)}
+.score-bubble b{display:block; font:800 17px var(--mono); line-height:1; text-align:center}
+.score-bubble small{display:block; margin-top:3px; color:var(--text-faint); font-size:7.5px; text-transform:uppercase; letter-spacing:.06em}
+.discover-state{display:inline-flex; align-items:center; gap:6px; margin-top:12px; padding:5px 9px; border-radius:99px; background:rgba(94,234,212,.10); color:var(--teal); font-size:9.5px; font-weight:800; letter-spacing:.04em}
+.discover-state::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor}
+.discover-state.below{background:rgba(251,113,133,.10); color:var(--red)}
+.discover-metrics{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-top:13px}
+.discover-metric{padding:9px; border-radius:14px; background:var(--tint-d); min-width:0}
+.discover-metric b{display:block; overflow:hidden; text-overflow:ellipsis; font:650 11.5px var(--mono)}
+.discover-metric small{display:block; margin-top:2px; color:var(--text-faint); font-size:8px; text-transform:uppercase; letter-spacing:.04em}
+.coverage-strip{display:flex; align-items:center; gap:7px; margin-top:12px; color:var(--text-faint); font-size:9.5px}
+.coverage-dots{display:flex; gap:3px}
+.coverage-dots i{display:block; width:13px; height:5px; border-radius:99px; background:var(--border)}
+.coverage-dots i.on{background:var(--gold)}
+.discover-actions{display:flex; gap:8px; margin-top:14px; padding-top:13px; border-top:1px solid var(--border-soft)}
+.secondary-action,.primary-action{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; padding:7px 11px; border-radius:12px; cursor:pointer; font:700 10.5px var(--sans)}
+.primary-action{border:0; background:var(--cyan); color:var(--on-accent)}
+.secondary-action{border:1px solid var(--border); background:var(--tint-c); color:var(--text-dim)}
+.secondary-action:hover{border-color:rgba(145,164,255,.43); color:var(--cyan)}
+.watch-panel{position:sticky; top:88px}
+.watch-status{min-height:18px; margin:8px 0; color:var(--text-faint); font-size:10px}
+.watch-status.err{color:var(--red)}
+.watch-status.ok{color:var(--teal)}
+.watch-list{display:flex; flex-direction:column; gap:7px}
+.watch-row{display:flex; align-items:center; gap:8px; width:100%; padding:10px 11px; border:1px solid var(--border); border-radius:15px; background:var(--tint-c); color:var(--text); cursor:pointer; text-align:left}
+.watch-row:hover{border-color:rgba(145,164,255,.38)}
+.watch-row b{font:750 11.5px var(--mono)}
+.watch-row small{margin-left:auto; color:var(--text-faint)}
+.watch-empty{padding:13px; border:1px dashed var(--border); border-radius:15px; color:var(--text-faint); font-size:10.5px; line-height:1.5}
+.discover-note{display:flex; align-items:flex-start; gap:8px; margin-top:13px; color:var(--text-faint); font-size:10px; line-height:1.5}
+.discover-note svg{width:14px; height:14px; flex:none; color:var(--gold); margin-top:1px}
+.analysis-watch{margin-left:auto}
+.owner-state{position:relative}
+dialog#owner-dialog{background:var(--panel-elevated); color:var(--text); border:1px solid var(--border); border-radius:24px; padding:0; width:420px; max-width:92vw; box-shadow:0 24px 80px rgba(0,0,0,.48)}
+dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(4px)}
+.owner-body{padding:20px}
+.owner-body p{margin:0 0 15px; color:var(--text-dim); font-size:11.5px; line-height:1.6}
+.owner-body .auto-field input{height:43px}
+.owner-actions{display:flex; align-items:center; gap:10px; margin-top:14px}
+@media (max-width:1100px){
+  .discover-layout{grid-template-columns:1fr}
+  .watch-panel{position:static}
+  .discover-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .discover-form .analysis-run{grid-column:2}
+}
+@media (max-width:900px){
+  .mobile-nav{display:flex; gap:5px; margin:0 12px 14px; padding:5px; overflow-x:auto; border:1px solid var(--border); border-radius:18px; background:var(--glass-b); backdrop-filter:blur(16px); scrollbar-width:none}
+  .mobile-nav::-webkit-scrollbar{display:none}
+  .mobile-nav-item{flex:1 0 auto; min-width:72px; padding:8px 10px; border:0; border-radius:13px; background:transparent; color:var(--text-faint); cursor:pointer; font:700 10.5px var(--sans)}
+  .mobile-nav-item.active{background:var(--cyan); color:var(--on-accent)}
+}
+@media (max-width:700px){.discover-results{grid-template-columns:1fr}}
+@media (max-width:480px){
+  .mobile-nav{margin:0 8px 10px}
+  .discover-form{grid-template-columns:1fr}
+  .discover-form .analysis-run{grid-column:1}
+}
+
 :root[data-theme="light"]{
   --bg:#EEF1F7;
   --panel:#FFFFFF;
@@ -851,6 +928,9 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4V3Z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
 </svg>
 
 <header class="topbar">
@@ -861,12 +941,22 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   <span class="chip" id="dataHealth" role="status"><span class="dot"></span> Connecting…</span>
   <span class="chip" id="session" role="status">—</span>
   <button class="icon-btn" id="themeToggle" aria-label="Switch to light theme" title="Theme"><svg class="icon"><use href="#i-sun"/></svg></button>
+  <button class="icon-btn owner-state" id="ownerButton" onclick="openOwnerDialog()" aria-label="Owner sign in" title="Owner session"><svg class="icon"><use href="#i-user"/></svg></button>
   <button class="icon-btn" onclick="openBudgets()" aria-label="Open capital budget settings" title="Budgets"><svg class="icon"><use href="#i-gear"/></svg></button>
 </header>
+
+<nav class="mobile-nav" aria-label="Primary tasks">
+  <button class="mobile-nav-item active" data-view="signals" aria-pressed="true">Signals</button>
+  <button class="mobile-nav-item" data-view="discover" aria-pressed="false">Discover</button>
+  <button class="mobile-nav-item" data-view="analysis" aria-pressed="false">Analyze</button>
+  <button class="mobile-nav-item" data-view="0dte" aria-pressed="false">0DTE</button>
+  <button class="mobile-nav-item" data-view="swings" aria-pressed="false">Swings</button>
+</nav>
 
 <div class="shell">
   <nav class="navrail" aria-label="Primary">
     <button class="nav-item active" data-view="signals" title="Signals" aria-label="Signals" aria-pressed="true"><svg class="icon"><use href="#i-activity"/></svg></button>
+    <button class="nav-item" data-view="discover" title="Discover stocks" aria-label="Discover stocks" aria-pressed="false"><svg class="icon"><use href="#i-grid"/></svg></button>
     <button class="nav-item" data-view="0dte" title="0DTE desk" aria-label="0DTE desk" aria-pressed="false">0D</button>
     <button class="nav-item" data-view="swings" title="Swing desk" aria-label="Swing desk" aria-pressed="false">SW</button>
     <button class="nav-item" data-view="analysis" title="Analyze a stock" aria-label="Analyze a stock" aria-pressed="false"><svg class="icon"><use href="#i-search"/></svg></button>
@@ -1012,6 +1102,51 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
     </section>
    </div>
 
+   <div id="view-discover" hidden>
+    <section class="desk-hero" aria-labelledby="discoverTitle">
+      <div class="desk-copy">
+        <div class="desk-eyebrow">Find candidates worth researching</div>
+        <h1 id="discoverTitle">Discover</h1>
+        <p>Rank the configured universe by transparent trend, liquidity, and risk evidence. No hidden stock-picking probability.</p>
+      </div>
+      <div class="desk-stats" aria-label="Discovery summary">
+        <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-grid"/></svg></span><span><b id="discoverMatches">—</b><small>Current matches</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble mint"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="discoverUniverse">—</b><small>Universe scanned</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-bookmark"/></svg></span><span><b id="discoverWatched">—</b><small>Research watchlist</small></span></div>
+      </div>
+    </section>
+
+    <section class="panel discover-filter-panel" aria-label="Discovery filters">
+      <div class="discover-presets" id="discoverPresets">
+        <button class="preset-chip active" type="button" data-preset="trend_leaders">Trend leaders</button>
+        <button class="preset-chip" type="button" data-preset="pullback_uptrend">Pullback in uptrend</button>
+        <button class="preset-chip" type="button" data-preset="fresh_breakouts">Fresh breakouts</button>
+        <button class="preset-chip" type="button" data-preset="defensive_trend">Defensive trend</button>
+        <button class="preset-chip" type="button" data-preset="">All names</button>
+      </div>
+      <form class="discover-form" id="discoverForm">
+        <label class="analysis-field"><span>Minimum price</span><input id="discoverPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="Any"></label>
+        <label class="analysis-field"><span>Minimum 6m return</span><input id="discoverMomentum" type="number" min="-100" max="1000" step="1" inputmode="decimal" placeholder="Preset"></label>
+        <label class="analysis-field"><span>Max 20d volatility</span><input id="discoverVolatility" type="number" min="1" max="500" step="1" inputmode="decimal" placeholder="Any %"></label>
+        <label class="discover-check"><input id="discoverAbove200" type="checkbox"> Above 200-day average</label>
+        <button class="analysis-run" id="discoverRun" type="submit"><span class="analysis-spinner" aria-hidden="true"></span><svg class="icon"><use href="#i-search"/></svg><span>Run screen</span></button>
+      </form>
+      <div class="discover-note"><svg class="icon"><use href="#i-alert"/></svg><span>V1 ranks Trend and Risk only. Quality, Growth, Valuation, and Catalyst stay visibly unavailable until point-in-time feeds are connected.</span></div>
+    </section>
+
+    <div class="discover-layout">
+      <section aria-labelledby="discoverResultsTitle">
+        <div class="analysis-section-head"><div><h2 id="discoverResultsTitle">Ranked candidates</h2><p id="discoverAsOf">Select a preset to scan completed daily data.</p></div></div>
+        <div class="discover-results" id="discoverResults" aria-live="polite"><div class="empty">Open Discover to load the current ranking.</div></div>
+      </section>
+      <aside class="panel watch-panel" aria-labelledby="watchTitle">
+        <div class="panel-head"><h2 id="watchTitle">Research watchlist</h2><span class="count" id="watchCount">0</span></div>
+        <div class="watch-status" id="watchStatus" role="status" aria-live="polite"></div>
+        <div class="watch-list" id="watchList"><div class="watch-empty">Sign in as owner to save and reopen candidates.</div></div>
+      </aside>
+    </div>
+   </div>
+
    <div id="view-analysis" hidden>
     <section class="desk-hero" aria-labelledby="analysisTitle">
       <div class="desk-copy">
@@ -1132,6 +1267,19 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   </div>
 </dialog>
 
+<!-- Owner authentication: raw token is exchanged once for an HttpOnly cookie. -->
+<dialog id="owner-dialog">
+  <div class="bd-head2">
+    <div><h2>Owner session</h2><div class="dialog-subtitle">Unlock watchlists, budgets, automation controls, and live updates.</div></div>
+    <button class="bd-close" onclick="document.getElementById('owner-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="owner-body">
+    <p>The token is sent once over HTTPS and exchanged for a secure, HttpOnly session cookie. It is never stored in browser JavaScript or local storage.</p>
+    <label class="auto-field"><span>Owner token</span><input type="password" id="ownerToken" autocomplete="current-password" placeholder="INTELLIDHAN_OWNER_TOKEN"></label>
+    <div class="owner-actions"><button class="bd-save" type="button" onclick="signInOwner()">Sign in</button><button class="secondary-action" id="ownerSignOut" type="button" onclick="signOutOwner()">Sign out</button><span class="bd-status" id="ownerStatus" role="status"></span></div>
+  </div>
+</dialog>
+
 <!-- Agent-mediated auto-trade policy; Robinhood credentials never enter this form. -->
 <dialog id="autotrade-dialog">
   <div class="bd-head2">
@@ -1139,7 +1287,7 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
     <button class="bd-close" onclick="document.getElementById('autotrade-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
   <div class="auto-form">
-    <label class="auto-field auto-wide"><span>Control token</span><input type="password" id="autoToken" autocomplete="off" placeholder="AUTOTRADE_CONTROL_TOKEN"></label>
+    <div class="auto-agent auto-wide"><span class="stat-bubble"><svg class="icon"><use href="#i-user"/></svg></span><span><b>Protected by owner session</b><small>The browser never retains the automation control token.</small></span></div>
     <label class="auto-field"><span>Mode</span><select id="autoMode"><option>OFF</option><option>SHADOW</option><option>SUPERVISED</option><option>ARMED</option></select></label>
     <label class="auto-field"><span>Arm for minutes</span><input type="number" id="autoMinutes" min="1" max="480" value="30"></label>
     <label class="auto-field"><span>Minimum confidence (%)</span><input type="number" id="autoConfidence" min="50" max="95" value="75"></label>

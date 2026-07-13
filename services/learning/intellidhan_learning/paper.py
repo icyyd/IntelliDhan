@@ -71,6 +71,14 @@ class PaperExecutor:
         self.trades: list[PaperTrade] = []
         self._active: dict[str, list[PaperTrade]] = {}
 
+    def restore(self, trades: list[PaperTrade]) -> None:
+        """Rebuild the executor after a process restart from its durable ledger."""
+        self.trades = list(trades)
+        self._active = {}
+        for trade in self.trades:
+            if trade.outcome in {Outcome.PENDING, Outcome.OPEN}:
+                self._active.setdefault(trade.symbol, []).append(trade)
+
     def track(self, trade: PaperTrade) -> None:
         self.trades.append(trade)
         self._active.setdefault(trade.symbol, []).append(trade)
