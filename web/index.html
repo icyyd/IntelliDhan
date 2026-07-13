@@ -52,7 +52,7 @@ button{font-family:inherit}
 
 /* Focus visibility (doc 18 §7.14) */
 :focus-visible{outline:2px solid var(--cyan); outline-offset:2px; border-radius:4px}
-.skip-link{position:absolute; left:-999px; top:0; background:var(--cyan); color:#04121c; padding:8px 14px; z-index:100; border-radius:0 0 8px 0}
+.skip-link{position:absolute; left:-999px; top:0; background:var(--cyan); color:var(--on-accent); padding:8px 14px; z-index:100; border-radius:0 0 8px 0}
 .skip-link:focus{left:0}
 
 /* ── Top bar ──────────────────────────────────────────────────────────── */
@@ -103,7 +103,7 @@ svg.icon{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2
   color:var(--text-faint); font:700 10.5px var(--sans); letter-spacing:.02em; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
 }
-.nav-item.active{color:#04121c; background:var(--cyan); border-color:var(--cyan)}
+.nav-item.active{color:var(--on-accent); background:var(--cyan); border-color:var(--cyan)}
 .nav-item[disabled]{cursor:default; opacity:.42}
 .nav-item[disabled]:hover{color:var(--text-faint)}
 .nav-item:not([disabled]):hover{color:var(--cyan); border-color:var(--border)}
@@ -124,15 +124,15 @@ svg.icon{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2
 .context-price{font:15px var(--mono); color:var(--text-dim); margin-left:7px}
 .context-kicker{font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--gold); font-weight:700; margin-bottom:4px}
 .context-meta{margin-left:auto; display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end}
-.context-stage{position:relative; min-height:330px; background:#0B101A}
+.context-stage{position:relative; min-height:330px; background:var(--chart-bg)}
 .context-chart{display:block; width:100%; height:auto; min-height:330px}
 .chart-empty{position:absolute; inset:0; display:grid; place-items:center; color:var(--text-faint); font-size:12px; pointer-events:none}
 .chart-legend{display:flex; gap:13px; flex-wrap:wrap; padding:8px 16px; border-top:1px solid var(--border-soft); color:var(--text-faint); font-size:10.5px}
 .legend-key{display:inline-flex; align-items:center; gap:5px}
 .legend-line{width:14px; height:2px; border-radius:2px; background:currentColor}
 .context-banner{display:flex; align-items:flex-start; gap:8px; padding:9px 16px; border-bottom:1px solid var(--border); color:var(--text-dim); font-size:11.5px}
-.context-banner.blocked{background:rgba(248,113,113,.075); color:#FCA5A5}
-.context-banner.ready{background:rgba(45,212,191,.065); color:#99F6E4}
+.context-banner.blocked{background:rgba(248,113,113,.075); color:var(--red-soft)}
+.context-banner.ready{background:rgba(45,212,191,.065); color:var(--teal-soft)}
 .context-banner.neutral{background:rgba(94,200,242,.045)}
 .context-banner svg{width:14px; height:14px; flex:none; margin-top:1px}
 .decision-grid{display:grid; grid-template-columns:1.15fr 1fr 1fr; border-top:1px solid var(--border)}
@@ -189,7 +189,7 @@ svg.icon{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2
   flex:1; background:none; border:1px solid var(--border); color:var(--text-dim);
   padding:6px 8px; border-radius:var(--radius-chip); font-size:11.5px; cursor:pointer; font-weight:600;
 }
-.qtab.active{color:#04121c; background:var(--cyan); border-color:var(--cyan)}
+.qtab.active{color:var(--on-accent); background:var(--cyan); border-color:var(--cyan)}
 
 /* Alert card (doc 18 §7.6) */
 .alert-card{
@@ -204,7 +204,7 @@ svg.icon{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2
 .ac-age{color:var(--text-faint); font-size:11px}
 .badge{font-size:10px; padding:2px 8px; border-radius:99px; font-weight:700; letter-spacing:.02em}
 .badge.buy{background:rgba(45,212,191,.14); color:var(--teal)}
-.badge.sell{background:rgba(167,139,250,.16); color:#C4B5FD}
+.badge.sell{background:rgba(167,139,250,.16); color:var(--violet)}
 .ac-sym{font-weight:700; font-size:14px}
 .ac-strat{color:var(--text-dim); font-size:11.5px}
 .character-chip{
@@ -370,26 +370,54 @@ footer.disclaimer{padding:10px 18px; color:var(--text-faint); font-size:10.5px; 
   --radius-card:24px;
   --radius-chip:999px;
   --shadow-card:0 18px 50px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
+  /* Lifted literals — same values as before, so the light theme can override them */
+  --on-accent:#11162A;
+  --body-glow:radial-gradient(circle at 8% 4%,rgba(96,110,220,.16),transparent 28rem),radial-gradient(circle at 92% 18%,rgba(45,212,191,.10),transparent 24rem),radial-gradient(circle at 55% 80%,rgba(251,191,104,.055),transparent 30rem);
+  --glass-a:rgba(15,20,34,.82);
+  --glass-b:rgba(15,20,34,.72);
+  --glass-c:rgba(15,20,34,.78);
+  --shadow-bar:0 14px 40px rgba(0,0,0,.24);
+  --panel-gradient:linear-gradient(145deg,rgba(25,32,52,.88),rgba(14,19,32,.88));
+  --card-gradient:linear-gradient(155deg,rgba(39,48,76,.68),rgba(15,21,36,.82));
+  --card-gradient-selected:linear-gradient(155deg,rgba(54,64,101,.76),rgba(16,22,38,.88));
+  --card-gradient-blocked:linear-gradient(155deg,rgba(75,39,58,.40),rgba(17,22,38,.90));
+  --tint-a:rgba(255,255,255,.025);
+  --tint-b:rgba(255,255,255,.03);
+  --tint-c:rgba(255,255,255,.035);
+  --tint-d:rgba(255,255,255,.045);
+  --tint-e:rgba(255,255,255,.05);
+  --well:rgba(3,7,16,.28);
+  --input-bg:rgba(3,7,16,.45);
+  --orb-track:rgba(255,255,255,.07);
+  --orb-inner:#171E31;
+  --red-soft:#FCA5A5;
+  --teal-soft:#99F6E4;
+  --violet:#C4B5FD;
+  --chart-bg:#0B101A;
+  --chart-grid:#1B2233;
+  --chart-axis:#5C6784;
+  --chart-up:#2DD4BF;
+  --chart-down:#F87171;
+  --chart-vwap:#D9B54A;
+  --chart-ema:#5EC8F2;
+  --chart-entry:#5EC8F2;
+  --chart-ref:#8D98B3;
 }
 body{
   min-height:100vh;
-  background:
-    radial-gradient(circle at 8% 4%,rgba(96,110,220,.16),transparent 28rem),
-    radial-gradient(circle at 92% 18%,rgba(45,212,191,.10),transparent 24rem),
-    radial-gradient(circle at 55% 80%,rgba(251,191,104,.055),transparent 30rem),
-    var(--bg);
+  background:var(--body-glow), var(--bg);
 }
 .topbar{
   height:60px; margin:12px 18px 18px; padding:0 16px; top:10px;
   border:1px solid var(--border); border-radius:20px;
-  background:rgba(15,20,34,.82); backdrop-filter:blur(18px);
-  box-shadow:0 14px 40px rgba(0,0,0,.24);
+  background:var(--glass-a); backdrop-filter:blur(18px);
+  box-shadow:var(--shadow-bar);
 }
 .brand{font-size:16px; letter-spacing:-.02em}
 .brand b{color:var(--cyan)}
 .tape{gap:9px}
-.tape .tk{padding:5px 9px; border-radius:99px; background:rgba(255,255,255,.035)}
-.cmdk-btn,.icon-btn,.chip{background:rgba(255,255,255,.045); border-color:var(--border)}
+.tape .tk{padding:5px 9px; border-radius:99px; background:var(--tint-c)}
+.cmdk-btn,.icon-btn,.chip{background:var(--tint-d); border-color:var(--border)}
 .cmdk-btn{padding:7px 12px}
 .icon-btn{width:34px; height:34px; border-radius:12px}
 .shell{
@@ -399,21 +427,21 @@ body{
 .navrail{
   align-self:start; position:sticky; top:88px; height:calc(100vh - 108px);
   border:1px solid var(--border); border-radius:24px; padding:11px 0;
-  background:rgba(15,20,34,.72); backdrop-filter:blur(16px); box-shadow:var(--shadow-card);
+  background:var(--glass-b); backdrop-filter:blur(16px); box-shadow:var(--shadow-card);
 }
 .nav-item{width:46px; height:46px; border-radius:16px; color:var(--text-faint)}
-.nav-item.active{background:var(--cyan); color:#11162A; border-color:transparent; box-shadow:0 8px 24px rgba(145,164,255,.24)}
+.nav-item.active{background:var(--cyan); color:var(--on-accent); border-color:transparent; box-shadow:0 8px 24px rgba(145,164,255,.24)}
 .nav-item[disabled]{display:none}
 .workspace{padding:0; gap:18px}
 .decision-rail{padding:0; border:0; background:none; gap:18px}
 .panel{
   border-color:var(--border); border-radius:var(--radius-card); padding:20px;
-  background:linear-gradient(145deg,rgba(25,32,52,.88),rgba(14,19,32,.88));
+  background:var(--panel-gradient);
   backdrop-filter:blur(18px); box-shadow:var(--shadow-card);
 }
 .panel-head{margin-bottom:15px}
 .panel-head h2{font-size:12px; color:var(--text); letter-spacing:.04em; text-transform:none}
-.panel-head .count{padding:4px 9px; border-radius:99px; background:rgba(255,255,255,.05); color:var(--text-dim)}
+.panel-head .count{padding:4px 9px; border-radius:99px; background:var(--tint-e); color:var(--text-dim)}
 
 .desk-hero{display:flex; align-items:flex-end; gap:22px; padding:8px 4px 2px}
 .desk-copy{min-width:250px}
@@ -608,6 +636,18 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   .auto-wide{grid-column:1}
   dialog#autotrade-dialog .bd-foot2{flex-wrap:wrap}
 }
+
+/* ── Module views (0DTE / Swings) ─────────────────────────────────────── */
+#queue0dteTracking,#queueSwingTracking{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
+#queue0dteTracking>.empty,#queueSwingTracking>.empty{grid-column:1/-1}
+.swing-picker{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px}
+.swing-picker .qtab{flex:0 0 auto; padding:6px 12px}
+#swingTrendInner{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px}
+#swingTrendInner .chip{cursor:default}
+.swing-chart-stage{position:relative; min-height:300px; background:var(--chart-bg); border-radius:14px; overflow:hidden}
+@media (max-width:900px){
+  #queue0dteTracking,#queueSwingTracking{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -640,9 +680,9 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
 
 <div class="shell">
   <nav class="navrail" aria-label="Primary">
-    <button class="nav-item active" title="Signals" aria-label="Signals"><svg class="icon"><use href="#i-activity"/></svg></button>
-    <button class="nav-item" disabled title="0DTE — not yet implemented">0D</button>
-    <button class="nav-item" disabled title="Swings — not yet implemented">SW</button>
+    <button class="nav-item active" data-view="signals" title="Signals" aria-label="Signals" aria-pressed="true"><svg class="icon"><use href="#i-activity"/></svg></button>
+    <button class="nav-item" data-view="0dte" title="0DTE desk" aria-label="0DTE desk" aria-pressed="false">0D</button>
+    <button class="nav-item" data-view="swings" title="Swing desk" aria-label="Swing desk" aria-pressed="false">SW</button>
     <button class="nav-item" disabled title="LEAPS — not yet implemented">LP</button>
     <button class="nav-item" disabled title="HODL — not yet implemented">HD</button>
     <button class="nav-item" disabled title="Trade Log — not yet implemented">TL</button>
@@ -653,6 +693,7 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   </nav>
 
   <main class="workspace" id="main">
+   <div id="view-signals">
     <section class="desk-hero" aria-labelledby="deskTitle">
       <div class="desk-copy">
         <div class="desk-eyebrow">Decision-ready insights</div>
@@ -709,6 +750,80 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
       <div class="panel-head"><h2>Market pulse</h2><span class="count" id="symCount"></span></div>
       <div id="matrix"></div>
     </section>
+   </div>
+
+   <div id="view-0dte" hidden>
+    <section class="desk-hero" aria-labelledby="deskTitle0dte">
+      <div class="desk-copy">
+        <div class="desk-eyebrow">Same-day options desk</div>
+        <h1 id="deskTitle0dte">0DTE</h1>
+        <p>Intraday signals with the day's auction, profile, and opening-range context.</p>
+      </div>
+      <div class="desk-stats" aria-label="0DTE summary">
+        <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="summary0dteSignals">—</b><small>Active 0DTE signals</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summary0dteSuppressed">—</b><small>Suppressed</small></span></div>
+      </div>
+    </section>
+
+    <section class="panel signal-board" aria-labelledby="board0dteTitle">
+      <div class="section-heading">
+        <div class="section-heading-copy">
+          <h2 id="board0dteTitle">0DTE signal cards</h2>
+          <p>Same-day module signals only. Open a card for the complete plan.</p>
+        </div>
+        <div class="queue-tabs" role="tablist">
+          <button class="qtab active" id="qtab0dteTracking" role="tab" aria-selected="true">Signals <span id="qCount0dteTracking">(0)</span></button>
+          <button class="qtab" id="qtab0dteSuppressed" role="tab" aria-selected="false">Suppressed <span id="qCount0dteSuppressed">(0)</span></button>
+        </div>
+      </div>
+      <div id="queue0dteTracking" aria-live="polite"></div>
+      <div id="queue0dteSuppressed" hidden></div>
+    </section>
+
+    <section class="panel" aria-labelledby="profile0dteTitle">
+      <div class="panel-head"><h2 id="profile0dteTitle">Auction &amp; profile state</h2><span class="count">POC · VA · Open · Shape · 1TF</span></div>
+      <div id="profile0dteInner"></div>
+    </section>
+   </div>
+
+   <div id="view-swings" hidden>
+    <section class="desk-hero" aria-labelledby="deskTitleSwings">
+      <div class="desk-copy">
+        <div class="desk-eyebrow">Multi-day positions desk</div>
+        <h1 id="deskTitleSwings">Swings</h1>
+        <p>Daily-structure signals with higher-timeframe trend and indicator context.</p>
+      </div>
+      <div class="desk-stats" aria-label="Swing summary">
+        <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="summarySwingSignals">—</b><small>Active swing signals</small></span></div>
+        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summarySwingSuppressed">—</b><small>Suppressed</small></span></div>
+      </div>
+    </section>
+
+    <section class="panel signal-board" aria-labelledby="boardSwingTitle">
+      <div class="section-heading">
+        <div class="section-heading-copy">
+          <h2 id="boardSwingTitle">Swing signal cards</h2>
+          <p>Swing module signals only. Open a card for the complete plan.</p>
+        </div>
+        <div class="queue-tabs" role="tablist">
+          <button class="qtab active" id="qtabSwingTracking" role="tab" aria-selected="true">Signals <span id="qCountSwingTracking">(0)</span></button>
+          <button class="qtab" id="qtabSwingSuppressed" role="tab" aria-selected="false">Suppressed <span id="qCountSwingSuppressed">(0)</span></button>
+        </div>
+      </div>
+      <div id="queueSwingTracking" aria-live="polite"></div>
+      <div id="queueSwingSuppressed" hidden></div>
+    </section>
+
+    <section class="panel" aria-labelledby="swingChartTitle">
+      <div class="panel-head"><h2 id="swingChartTitle">Daily structure</h2><span class="count" id="swingChartSymbol"></span></div>
+      <div class="swing-picker" id="swingSymbols" role="tablist" aria-label="Chart symbol"></div>
+      <div class="swing-chart-stage">
+        <svg class="context-chart" id="dailyChart" viewBox="0 0 920 300" preserveAspectRatio="none" role="img" aria-label="Daily price chart with EMA context"></svg>
+        <div class="chart-empty" id="dailyChartEmpty" hidden></div>
+      </div>
+      <div id="swingTrendInner" aria-label="Higher-timeframe indicators"></div>
+    </section>
+   </div>
   </main>
 
   <aside class="decision-rail" aria-label="Daily context">
@@ -961,6 +1076,8 @@ function renderAll(){
   renderSuppressionTape(s);
   renderPerformance(s);
   renderRisk(s);
+  render0dteView(s);
+  renderSwingView(s);
 }
 
 function renderOverview(s){
@@ -1138,9 +1255,8 @@ function renderBriefing(){
     <div style="margin-top:8px;color:var(--gold);font-size:11.5px">${briefing.discipline_card||""}</div>`;
 }
 
-function renderDrawer(s){
-  const profiles = s.profiles || {};
-  const rows = Object.entries(profiles).map(([sym,p])=>{
+function profileRowsHTML(profiles){
+  return Object.entries(profiles).map(([sym,p])=>{
     if(!p) return "";
     return `<div class="profile-row"><b>${sym}</b>
       POC <b class="num">${p.poc?p.poc.toFixed(2):'—'}</b>
@@ -1149,7 +1265,10 @@ function renderDrawer(s){
       · Shape <b>${(p.shape||'—').replace(/_/g,' ')}</b>
       · 1TF <b>${p.one_timeframing||'NONE'}</b></div>`;
   }).join("");
-  document.getElementById("drawerInner").innerHTML = rows || `<div class="empty">No profile state yet.</div>`;
+}
+function renderDrawer(s){
+  document.getElementById("drawerInner").innerHTML =
+    profileRowsHTML(s.profiles || {}) || `<div class="empty">No profile state yet.</div>`;
 }
 document.getElementById("drawerToggle").addEventListener("click", ()=>{
   const btn = document.getElementById("drawerToggle");
@@ -1369,6 +1488,167 @@ document.getElementById("qtabSuppressed").addEventListener("click", ()=>{
   document.getElementById("queueSuppressed").hidden = false;
   document.getElementById("queueTracking").hidden = true;
 });
+
+// ── Module views (0DTE / Swings) ─────────────────────────────────────
+let activeView = "signals", selectedSwingSymbol = null;
+function switchView(view){
+  activeView = view;
+  document.querySelectorAll(".nav-item[data-view]").forEach(b=>{
+    const on = b.dataset.view === view;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  ["signals","0dte","swings"].forEach(v=>{
+    document.getElementById("view-"+v).hidden = v !== view;
+  });
+}
+document.querySelectorAll(".nav-item[data-view]").forEach(b=>
+  b.addEventListener("click", ()=>switchView(b.dataset.view)));
+
+function wireQtabPair(aId, bId, aPanel, bPanel){
+  const wire=(onId,offId,onPanel,offPanel)=>document.getElementById(onId).addEventListener("click",()=>{
+    document.getElementById(onId).classList.add("active");
+    document.getElementById(offId).classList.remove("active");
+    document.getElementById(onId).setAttribute("aria-selected","true");
+    document.getElementById(offId).setAttribute("aria-selected","false");
+    document.getElementById(onPanel).hidden = false;
+    document.getElementById(offPanel).hidden = true;
+  });
+  wire(aId,bId,aPanel,bPanel);
+  wire(bId,aId,bPanel,aPanel);
+}
+wireQtabPair("qtab0dteTracking","qtab0dteSuppressed","queue0dteTracking","queue0dteSuppressed");
+wireQtabPair("qtabSwingTracking","qtabSwingSuppressed","queueSwingTracking","queueSwingSuppressed");
+
+function moduleAlerts(s, mod){ return orderedAlerts(s).filter(a=>a.module===mod); }
+function moduleSuppressed(s, mod){ return (s.suppressed||[]).filter(x=>x.module===mod); }
+function selectAlertFromModule(alertId){ switchView("signals"); selectAlert(alertId); }
+
+function renderModuleTracking(s, mod, listId, countId){
+  const active = moduleAlerts(s, mod);
+  document.getElementById(countId).textContent = "("+active.length+")";
+  const el = document.getElementById(listId);
+  el.innerHTML = active.length ? active.map(renderAlertCard).join("") :
+    `<div class="empty"><b>No executable ${mod} signal.</b>Candidates may be suppressed by setup, evidence, data-quality, or portfolio-risk gates.</div>`;
+  el.querySelectorAll("[data-alert-id]").forEach(card=>{
+    const activate=()=>selectAlertFromModule(card.dataset.alertId);
+    card.addEventListener("click",activate);
+    card.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); activate(); }});
+  });
+}
+function renderModuleSuppressed(s, mod, elId, countId){
+  const sup = moduleSuppressed(s, mod);
+  document.getElementById(countId).textContent = "("+sup.length+")";
+  const items = sup.slice().reverse().slice(0,8).map(x=>
+    `<div class="suppressed-item"><span class="gate">${x.gate}</span> ${x.symbol} ${x.strategy.replace(/_/g,' ')}${x.composite?` <span class="num">c${x.composite.toFixed(0)}</span>`:""} — ${x.detail}</div>`).join("");
+  document.getElementById(elId).innerHTML = items || `<div class="empty">Nothing suppressed for ${mod} yet.</div>`;
+}
+
+function render0dteView(s){
+  document.getElementById("summary0dteSignals").textContent = moduleAlerts(s,"0DTE").length;
+  document.getElementById("summary0dteSuppressed").textContent = moduleSuppressed(s,"0DTE").length;
+  renderModuleTracking(s,"0DTE","queue0dteTracking","qCount0dteTracking");
+  renderModuleSuppressed(s,"0DTE","queue0dteSuppressed","qCount0dteSuppressed");
+  document.getElementById("profile0dteInner").innerHTML =
+    profileRowsHTML(s.profiles || {}) || `<div class="empty">No profile state yet.</div>`;
+}
+
+function ensureSwingSelection(s){
+  if(selectedSwingSymbol && s.symbols[selectedSwingSymbol]) return;
+  selectedSwingSymbol = moduleAlerts(s,"SWING")[0]?.symbol || symbolOrder[0] || null;
+}
+function chartCssColor(name, fallback){
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+function renderDailyChart(d){
+  const svg = document.getElementById("dailyChart");
+  const empty = document.getElementById("dailyChartEmpty");
+  const compact = matchMedia("(max-width:520px)").matches;
+  const bars = (d?.daily_bars||[]).slice(-(compact?60:110)).filter(b=>
+    [b.open,b.high,b.low,b.close].every(v=>Number.isFinite(Number(v))));
+  if(!bars.length){
+    svg.innerHTML = "";
+    empty.hidden = false;
+    empty.textContent = "Daily bars will appear after the engine's next boot.";
+    return;
+  }
+  empty.hidden = true;
+  const up=chartCssColor("--chart-up","#2DD4BF"), down=chartCssColor("--chart-down","#F87171"),
+        grid=chartCssColor("--chart-grid","#1B2233"), axis=chartCssColor("--chart-axis","#5C6784"),
+        emaC=chartCssColor("--chart-ema","#5EC8F2"), refC=chartCssColor("--chart-ref","#8D98B3"),
+        bg=chartCssColor("--chart-bg","#0B101A");
+  const W=compact?360:920, H=300, left=12, right=compact?48:66, top=14, bottom=26;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  const ind = d.indicators?.["D"] || {};
+  const levels = [];
+  if(ind.ema21!=null) levels.push(chartLevel("EMA21",ind.ema21,emaC,"2 4"));
+  if(ind.ema50!=null) levels.push(chartLevel("EMA50",ind.ema50,refC,"3 5"));
+  const values = bars.flatMap(b=>[Number(b.high),Number(b.low)]).concat(levels.map(l=>l.value).filter(Number.isFinite));
+  let lo=Math.min(...values), hi=Math.max(...values);
+  const pad=Math.max((hi-lo)*.06, hi*.0005, .01); lo-=pad; hi+=pad;
+  const plotW=W-left-right, plotH=H-top-bottom;
+  const y=v=>top+(hi-Number(v))/(hi-lo)*plotH;
+  const step=plotW/bars.length, bodyW=Math.max(1.5,Math.min(7,step*.6));
+  const parts=[];
+  for(let i=0;i<5;i++){
+    const value=hi-(hi-lo)*i/4, yy=y(value);
+    parts.push(`<line x1="${left}" y1="${yy}" x2="${W-right}" y2="${yy}" stroke="${grid}" stroke-width="1"/>`);
+    parts.push(`<text x="${W-right+7}" y="${yy+3}" fill="${axis}" font-size="10" font-family="ui-monospace,monospace">${value.toFixed(2)}</text>`);
+  }
+  levels.forEach(l=>{
+    const yy=y(l.value);
+    parts.push(`<line x1="${left}" y1="${yy}" x2="${W-right}" y2="${yy}" stroke="${l.color}" stroke-width="1" stroke-dasharray="${l.dash}" opacity=".8"/>`);
+    parts.push(`<rect x="${W-right-84}" y="${yy-8}" width="80" height="12" rx="2" fill="${bg}" opacity=".88"/>`);
+    parts.push(`<text x="${W-right-4}" y="${yy+1}" text-anchor="end" fill="${l.color}" font-size="9.5" font-family="ui-sans-serif,system-ui">${l.label} ${l.value.toFixed(2)}</text>`);
+  });
+  bars.forEach((b,i)=>{
+    const x=left+(i+.5)*step, isUp=Number(b.close)>=Number(b.open), color=isUp?up:down;
+    parts.push(`<line x1="${x}" y1="${y(b.high)}" x2="${x}" y2="${y(b.low)}" stroke="${color}" stroke-width="1" opacity=".85"/>`);
+    parts.push(`<rect x="${x-bodyW/2}" y="${Math.min(y(b.open),y(b.close))}" width="${bodyW}" height="${Math.max(1.2,Math.abs(y(b.close)-y(b.open)))}" rx=".6" fill="${color}" opacity=".9"/>`);
+  });
+  [0,Math.floor((bars.length-1)/2),bars.length-1].forEach(i=>{
+    const x=left+(i+.5)*step;
+    const label=new Date(bars[i].ts_close).toLocaleDateString([], {month:"short",day:"numeric"});
+    parts.push(`<text x="${x}" y="${H-8}" text-anchor="middle" fill="${axis}" font-size="10" font-family="ui-sans-serif,system-ui">${label}</text>`);
+  });
+  svg.innerHTML=parts.join("");
+}
+function renderSwingSymbolPicker(s){
+  const el = document.getElementById("swingSymbols");
+  el.innerHTML = symbolOrder.map(sym=>
+    `<button class="qtab ${sym===selectedSwingSymbol?'active':''}" role="tab" aria-selected="${sym===selectedSwingSymbol}" data-swing-symbol="${sym}">${sym}</button>`).join("");
+  el.querySelectorAll("[data-swing-symbol]").forEach(b=>b.addEventListener("click",()=>{
+    selectedSwingSymbol = b.dataset.swingSymbol;
+    if(lastState) renderSwingView(lastState);
+  }));
+}
+function renderSwingTrendChips(d){
+  const fmtN=v=>v==null?"—":Number(v).toFixed(2);
+  const rows=["D","4H"].map(tf=>{
+    const ind=d.indicators?.[tf]||{};
+    return `<span class="chip"><b>${tf}</b></span>${tfBadge(d.matrix?.[tf])}
+      <span class="chip">EMA9 <b class="num">${fmtN(ind.ema9)}</b></span>
+      <span class="chip">EMA21 <b class="num">${fmtN(ind.ema21)}</b></span>
+      <span class="chip">EMA50 <b class="num">${fmtN(ind.ema50)}</b></span>
+      <span class="chip">RSI <b class="num">${ind.rsi14==null?"—":Number(ind.rsi14).toFixed(0)}</b></span>
+      <span class="chip">ATR <b class="num">${fmtN(ind.atr14)}</b></span>`;
+  });
+  document.getElementById("swingTrendInner").innerHTML =
+    rows.join(`<span style="flex-basis:100%"></span>`);
+}
+function renderSwingView(s){
+  ensureSwingSelection(s);
+  document.getElementById("summarySwingSignals").textContent = moduleAlerts(s,"SWING").length;
+  document.getElementById("summarySwingSuppressed").textContent = moduleSuppressed(s,"SWING").length;
+  renderModuleTracking(s,"SWING","queueSwingTracking","qCountSwingTracking");
+  renderModuleSuppressed(s,"SWING","queueSwingSuppressed","qCountSwingSuppressed");
+  renderSwingSymbolPicker(s);
+  document.getElementById("swingChartSymbol").textContent = selectedSwingSymbol || "";
+  const d = s.symbols[selectedSwingSymbol] || {};
+  renderDailyChart(d);
+  renderSwingTrendChips(d);
+}
 
 // ── Command palette (doc 18 §7.11) ──────────────────────────────────
 function openPalette(){
