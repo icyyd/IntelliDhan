@@ -70,7 +70,9 @@ def build_variants() -> tuple[list, dict[str, str]]:
         add(Ema9TrendPullback(key=f"EMA9_V{i:02d}", t_mults=t, trend_min=tr,
                               min_relvol=rv, require_h1=h1), "EMA9_TREND_PULLBACK")
 
-    # ORB_BREAKOUT — V00 is the production default
+    # ORB_BREAKOUT — V00 was the production default when this grid was frozen;
+    # production has since moved to min_relvol=1.5 (the {0.0, 1.3} axis here
+    # predates that change — keep for comparability, revisit next campaign)
     orb_grid = itertools.product(
         [(0.5, 1.0, 1.75), (0.35, 1.0, 1.75), (0.25, 1.0, 1.75)],  # T1 in range units
         [0.35, 0.5],                                                # stop fraction
