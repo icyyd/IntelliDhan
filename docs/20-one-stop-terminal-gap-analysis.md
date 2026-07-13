@@ -4,31 +4,32 @@
 **Review date:** 2026-07-13  
 **Scope:** Product, UX, data, analytics, strategy governance, portfolio workflow,
 execution, security, persistence, operations, and documentation  
-**Relationship to current work:** Preserves the uncommitted `trend-analysis-v2`
-forecast/calibration hardening. This document does not promote any strategy or
-change live eligibility.
+**Relationship to current work:** `trend-analysis-v2` and the first trustworthy
+terminal slice are now implemented on the active feature branch. This document
+does not promote any strategy or change live eligibility.
 
 ## 1. Executive conclusion
 
 IntelliDhan is currently strongest as a **personal technical signal cockpit**:
-it monitors a fixed 12-symbol universe, computes multi-timeframe technical and
-auction state, evaluates five strategies, shows signal/suppression cards, tracks
-paper outcomes in memory, and exposes a guarded Claude-to-Robinhood intent
-bridge. The on-demand stock module adds transparent trend state, fixed-rule
-backtests, and a conservative forward-outcome layer.
+it monitors a configured 12-symbol universe, computes multi-timeframe technical
+and auction state, evaluates five strategies, shows signal/suppression cards,
+persists operational and paper state, and exposes a guarded
+Claude-to-Robinhood intent bridge. The on-demand stock module adds transparent
+trend state, fixed-rule backtests, and a conservative forward-outcome layer.
 
 It is **not yet a one-stop stock-picking and analysis terminal**. The implemented
-workflow begins after a ticker is already known. It lacks the product loop that
-makes a research terminal complete:
+technical screener, Research watchlist, and symbol dossier now establish the
+start of the product loop, but comparison, fundamental/catalyst evidence,
+portfolio-aware decisions, and outcome review are not complete:
 
 ```text
 Discover candidates -> compare -> analyze a company -> form a thesis
 -> create a watch/alert -> size against the portfolio -> act -> review outcome
 ```
 
-The highest-value next step is not another indicator or strategy. It is a
-durable **Discover -> Analyze -> Decide -> Track** workflow backed by reliable
-fundamental/event data, portfolio state, and evidence-aware ranking.
+The highest-value next step is not another indicator or strategy. It is to
+complete the durable **Discover -> Analyze -> Decide -> Track** workflow with
+reliable fundamental/event data, portfolio state, and evidence-aware ranking.
 
 ## 2. Current-state reality versus the specification
 
@@ -38,18 +39,18 @@ than imply that specified modules already exist.
 
 | Capability | Implemented reality | Material gap | Priority |
 |---|---|---|---|
-| Market monitor | Yahoo daily/5m bars, 12 hard-coded symbols, MTF state, levels, profile | No provider routing, real-time entitlement, live DQ enforcement, dynamic universe, or broad-market coverage | P0 |
-| Signal engine | Five technical strategies, veto wall, calibration maps, suppression audit | Zero demonstrably live-qualified strategies; unimplemented factors distort research; production/research parity remains open | P0 |
+| Market monitor | Yahoo daily/5m bars, 12 configured symbols, MTF state, levels, profile, bar quarantine, readiness | No provider routing, real-time entitlement, dynamic broad universe, or broad-market coverage | P0 |
+| Signal engine | Five technical strategies, veto wall, calibration maps, suppression audit; missing factors are excluded and weights renormalized | Zero demonstrably live-qualified strategies; production/research parity and versioned evidence promotion remain open | P0 |
 | Stock analysis | Arbitrary ticker, 3/6/12m momentum, SMA200, channel, yearly-high context, risk, backtest, v2 forward validation | No company, valuation, peer, earnings, revisions, ownership, catalyst, or news analysis | P1 |
-| Discovery | Fixed universe and direct ticker input | No screener, ranked candidates, saved screens, watchlists, sector map, or explainable stock-picking score | P1 |
+| Discovery | Technical EOD screener over the configured universe, four presets, ranked evidence cards, saved screens, watchlists | No point-in-time broad universe, sector map, cohort-relative fundamentals, comparison, or catalyst ranking | P1 |
 | Fundamentals | Specified in docs only | No statements, normalized metrics, quality/growth/value pillars, estimates, filings, or source timestamps | P1 |
 | News and events | Template briefing and VIX macro state | No earnings/economic calendar, filings, headlines, transcript changes, analyst revisions, or event lockouts | P0/P1 |
 | Options | Yahoo selector exists but live composer sets `option_selector=None` | No live chains, spread/liquidity surface, IV history, expected move, payoff lab, or options P&L truth | P2 |
 | Portfolio | Capital budgets only | No holdings, lots, cash, realized/unrealized P&L, exposure, correlation, earnings concentration, or broker reconciliation | P1 |
-| Trade review | In-memory paper executor and aggregate performance | No durable ledger, taken/pass disposition, outcome evidence, calibration history, journal, exports, or post-deploy retention | P0/P1 |
-| Execution | Credential-free intent queue with allowlists, caps, approvals, receipts | No app-owned broker session by design; no durable intent store on Koyeb; no portfolio-aware pre-trade conflict check | P0/P2 |
-| Web app | Modern card-first single-page HTML, themes, command palette, signals/0DTE/swings/analysis | No URL routes, user/workspace state, screener, dossier, portfolio, log, saved layouts, or robust mobile navigation | P1 |
-| Operations | CI, Docker/Koyeb, health endpoint, tests | Health can report `ok` before data boot; runtime state is ephemeral; limited telemetry, alerting, backup, and deployment smoke tests | P0 |
+| Trade review | Durable paper records and aggregate performance | No taken/pass disposition, outcome evidence, calibration history, journal, exports, or confirmed post-deploy retention | P0/P1 |
+| Execution | Credential-free intent queue with allowlists, caps, approvals, receipts, and database-backed policy/intent support | No app-owned broker session by design; production durability is unconfirmed; no portfolio-aware pre-trade conflict check | P0/P2 |
+| Web app | Modern card-first tasks for signals, Discover, Analyze, 0DTE, and swings; responsive task navigation; saved research state | No URL routes, comparison, portfolio, decision journal, trade log, or complete workspace preferences | P1 |
+| Operations | CI, Docker/Koyeb, readiness-aware health, tests, SQLite/PostgreSQL operational store | Production persistence/backups are not configured or verified; telemetry, alerting, migrations, and deployment smoke tests remain limited | P0 |
 
 ## 3. What “one-stop” should mean
 
@@ -291,14 +292,16 @@ learning         paper trades, real trades, outcomes, calibration versions
 workspace        users, watchlists, notes, saved views, preferences
 ```
 
-### Immediate persistence gaps
+### Remaining persistence gaps
 
-- Live alerts, suppressions, paper trades, calibration observations, briefings,
-  watchlists, budgets, and execution intents must survive deploy/restart.
-- Koyeb's container filesystem is ephemeral; file writes to budgets and
-  `data/autotrade_state.json` are not durable.
-- `Storage` currently defines only bars and indicator snapshots and is not wired
-  into `LiveLoop`.
+- `TerminalStore` now persists alerts, paper trades, briefings, watchlists,
+  budgets, screens, universe metadata, automation policy, and execution intents;
+  suppression/calibration observations still need normalized durable records.
+- The SQLite fallback survives a local process restart but not an ephemeral
+  Koyeb replacement. Production requires PostgreSQL or a mounted path, backup
+  policy, and a deployment restore test.
+- Market bars and indicator snapshots still use the older storage abstraction;
+  consolidate migrations, ownership, and retention before broad-universe scale.
 - Add schema migrations and append-only audit records before expanding broker
   actions.
 
@@ -314,16 +317,17 @@ workspace        users, watchlists, notes, saved views, preferences
 
 These are release blockers for a public personal-finance terminal.
 
-1. **Authenticate the application.** The Koyeb dashboard and read APIs are
-   publicly reachable. Add an owner session or identity-aware proxy.
-2. **Protect budget mutation.** `PUT /api/budgets` currently has no token or
-   session check. A remote caller can alter sizing inputs.
-3. **Authenticate WebSockets** and enforce bounded queues, connection limits,
-   heartbeat/timeouts, and slow-consumer eviction.
+1. **Complete the authentication boundary.** Owner sessions now protect
+   mutations and `/ws`; decide whether production read APIs remain public or sit
+   behind an identity-aware proxy.
+2. **Add CSRF tokens and identity-aware limits.** SameSite cookies and
+   process-local IP limits are foundations, not a distributed control plane.
+3. **Finish WebSocket controls.** Authentication and bounded newest-event queues
+   are implemented; add connection caps, heartbeat/timeouts, and telemetry.
 4. **Rate-limit expensive analysis** per identity/IP in addition to process-wide
    provider concurrency.
-5. **Add CSRF protection** to browser mutations and never ask users to paste
-   long-lived control secrets into an ordinary page form.
+5. **Keep control secrets out of page state.** The browser exchanges the owner
+   token for an HttpOnly cookie; add CSRF tokens before multi-user expansion.
 6. **Run the container as a non-root user**, pin dependency versions, scan the
    image/dependencies, and enable secret scanning.
 7. **Make audit logs durable and tamper-evident** for policy, approvals, intents,
@@ -380,8 +384,8 @@ review.
 
 ## 11. Documentation and product-truth cleanup
 
-- Update `README.md`: it still says “Pre-implementation” and describes the old
-  product state.
+- Keep `README.md` and the capability matrix synchronized with shipped branch
+  state; README now reflects the personal-terminal foundation.
 - Update `ARCHITECTURE.md`: it describes a React/Vite frontend and behavior
   package that are not implemented as documented.
 - Convert `docs/14-roadmap.md` from week estimates to capability/status gates.
@@ -509,3 +513,48 @@ This slice converts IntelliDhan from a visually strong signal page into the
 beginning of a trustworthy stock-picking terminal while preserving its main
 differentiator: disciplined, explicit evidence rather than confident-looking
 prediction.
+
+## 15. Implementation status — 2026-07-13
+
+The recommended slice now has a working vertical implementation:
+
+- `INTELLIDHAN_OWNER_TOKEN` exchanges once for a signed HttpOnly, SameSite
+  owner cookie. Budgets, saved screens, watchlists, automation controls, and
+  `/ws` are protected; agent bearer-token endpoints remain separate.
+- `TerminalStore` supports PostgreSQL through `DATABASE_URL` and a local SQLite
+  fallback. It persists alerts, paper trades, briefings, budgets, automation
+  policy/intents, saved screens, watchlists, securities, and universe membership.
+- The live loop restores operational state, boots daily history concurrently,
+  applies the bar sentinel before the engine, exposes per-plane readiness, and
+  returns HTTP 503 from `/api/health` until boot, provider, persistence, and
+  data-quality requirements pass.
+- Live engine and discovery share `config/universe.yaml`. Missing F6 flow and
+  missing macro/volatility inputs are excluded with weight renormalization;
+  ORB relative volume and Daily Breakout two-close contracts are enforced.
+- `/api/discover` provides cached EOD technical/liquidity/risk fields and four
+  simple presets. It labels ranking `technical_score_v1` and marks Quality,
+  Growth, Valuation, and Catalyst unavailable rather than fabricating them.
+- `/api/dossier/{symbol}`, `/api/watchlists`, and `/api/screens` support the
+  Discover -> Watch -> Analyze path. The card-first UI includes responsive task
+  navigation, ranked evidence cards, saved screens, a durable Research queue,
+  and a watch action inside the dossier.
+
+Remaining limitations are intentional and visible:
+
+- SQLite is restart-durable locally but not deployment-durable on an ephemeral
+  container. Koyeb production must receive PostgreSQL or a mounted persistent
+  path and `INTELLIDHAN_PERSISTENT_STATE=true` before this milestone can claim
+  restart/deploy durability.
+- The screener covers the configured live universe, not yet the point-in-time
+  S&P 500 + Nasdaq-100 universe.
+- Fundamental, estimate, filing/news/event, peer, portfolio, and broker
+  reconciliation feeds remain unconnected. The UI must continue showing those
+  pillars as unavailable.
+- The WebSocket is owner-only; public read-only state continues to use bounded
+  polling. Rate limiting is process-local until Redis-backed identity limits
+  are added.
+
+The next slice is Milestone B data breadth: point-in-time universe membership,
+licensed fundamental/event ingestion with provenance, and cohort-relative
+Quality/Growth/Valuation pillars. Do not add another strategy before that data
+truth layer or promote any current strategy without its versioned evidence gate.

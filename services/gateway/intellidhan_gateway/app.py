@@ -9,10 +9,11 @@ import asyncio
 import json
 import os
 import secrets
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse
 
 from intellidhan_gateway.auth import (
@@ -46,8 +47,12 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         loop.last_error = f"operational store initialization failed: {exc}"
     task = asyncio.create_task(loop.run_forever())
-    yield
-    task.cancel()
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
 
 
 app = FastAPI(title="IntelliDhan", lifespan=lifespan)
@@ -127,12 +132,12 @@ async def delete_auth_session():
 @app.get("/api/health")
 async def health():
     payload = loop.health()
-    return JSONResponse(payload, status_code=200 if payload["ok"] else 503)
+    return JSONResponse(jsonable_encoder(payload), status_code=200 if payload["ok"] else 503)
 
 
 @app.get("/api/state")
 async def state():
-    return JSONResponse(loop.snapshot())
+    return JSONResponse(jsonable_encoder(loop.snapshot()))
 
 
 @app.get("/api/calibration")
@@ -443,16 +448,30 @@ async def ws(websocket: WebSocket):
         await websocket.close(code=4401, reason="owner sign-in required")
         return
     await websocket.accept()
-    q: asyncio.Queue = asyncio.Queue()
+    q: asyncio.Queue = asyncio.Queue(maxsize=100)
     loop.ws_subscribers.append(q)
+    queue_task = asyncio.create_task(q.get())
+    receive_task = asyncio.create_task(websocket.receive())
     try:
         while True:
-            msg = await q.get()
-            await websocket.send_json(msg)
-    except WebSocketDisconnect:
+            done, _ = await asyncio.wait(
+                {queue_task, receive_task}, return_when=asyncio.FIRST_COMPLETED
+            )
+            if receive_task in done:
+                incoming = receive_task.result()
+                if incoming.get("type") == "websocket.disconnect":
+                    break
+                receive_task = asyncio.create_task(websocket.receive())
+            if queue_task in done:
+                await websocket.send_json(queue_task.result())
+                queue_task = asyncio.create_task(q.get())
+    except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
-        loop.ws_subscribers.remove(q)
+        queue_task.cancel()
+        receive_task.cancel()
+        if q in loop.ws_subscribers:
+            loop.ws_subscribers.remove(q)
 
 
 @app.get("/")

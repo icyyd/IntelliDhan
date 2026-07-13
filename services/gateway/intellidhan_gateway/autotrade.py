@@ -13,7 +13,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -52,6 +52,12 @@ TERMINAL_STATUSES = {
     IntentStatus.EXPIRED,
     IntentStatus.CLOSED,
 }
+
+
+class SettingsStore(Protocol):
+    def get_setting(self, key: str) -> Any | None: ...
+
+    def put_setting(self, key: str, payload: Any) -> None: ...
 
 
 class AutotradePolicy(BaseModel):
@@ -129,21 +135,34 @@ class AutotradeManager:
         self,
         policy_path: str | Path = "config/autotrade.yaml",
         state_path: str | Path | None = None,
+        state_store: SettingsStore | None = None,
     ) -> None:
         self.policy_path = Path(policy_path)
         self.state_path = Path(
             state_path or os.getenv("AUTOTRADE_STATE_PATH", "data/autotrade_state.json")
         )
+        self.state_store = state_store
         self.policy = self._load_policy()
         self.intents: dict[str, ExecutionIntent] = self._load_state()
 
     def _load_policy(self) -> AutotradePolicy:
+        if self.state_store is not None:
+            persisted = self.state_store.get_setting("autotrade_policy")
+            if persisted:
+                return AutotradePolicy.model_validate(persisted)
         if not self.policy_path.exists():
             return AutotradePolicy()
         raw = yaml.safe_load(self.policy_path.read_text()) or {}
         return AutotradePolicy.model_validate(raw.get("autotrade", raw))
 
     def _load_state(self) -> dict[str, ExecutionIntent]:
+        if self.state_store is not None:
+            persisted = self.state_store.get_setting("autotrade_intents")
+            if persisted:
+                return {
+                    item["intent_id"]: ExecutionIntent.model_validate(item)
+                    for item in persisted.get("intents", [])
+                }
         if not self.state_path.exists():
             return {}
         raw = json.loads(self.state_path.read_text())
@@ -153,12 +172,16 @@ class AutotradeManager:
         }
 
     def _persist_policy(self) -> None:
+        if self.state_store is not None:
+            self.state_store.put_setting(
+                "autotrade_policy", self.policy.model_dump(mode="json")
+            )
+            return
         self.policy_path.parent.mkdir(parents=True, exist_ok=True)
         payload = {"autotrade": self.policy.model_dump(mode="json")}
         self.policy_path.write_text(yaml.safe_dump(payload, sort_keys=False))
 
     def _persist_state(self) -> None:
-        self.state_path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "contract_version": "1.0",
             "intents": [
@@ -166,6 +189,10 @@ class AutotradeManager:
                 for item in sorted(self.intents.values(), key=lambda x: x.created_at)
             ],
         }
+        if self.state_store is not None:
+            self.state_store.put_setting("autotrade_intents", payload)
+            return
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.state_path.with_suffix(".tmp")
         tmp.write_text(json.dumps(payload, indent=2))
         tmp.replace(self.state_path)

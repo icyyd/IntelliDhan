@@ -84,6 +84,11 @@ class LiveLoop:
         self.store.init_schema()
         self.persistence_ready = True
         self.store.seed_universe(security_records())
+        self.autotrade = AutotradeManager(
+            self.autotrade.policy_path,
+            self.autotrade.state_path,
+            state_store=self.store,
+        )
         persisted_budgets = self.store.get_setting("budgets")
         if persisted_budgets:
             self.composer.budgets.update(persisted_budgets)
@@ -93,6 +98,8 @@ class LiveLoop:
         ]
         self.executor.restore(restored_trades)
         self.last_briefing = self.store.latest_briefing()
+        self.runner = EngineRunner(self.symbols)
+        self.seen_bars = set()
 
         end = datetime.now(timezone.utc)
         from intellidhan_engine.macro import build_macro_series
@@ -181,8 +188,7 @@ class LiveLoop:
                f"(entry {trade.entry:.2f}, tranches exited {trade.tranches_exited}/3)\n"
                f"⚠️ Educational tool — not financial advice.")
         await self.telegram.send(msg)
-        for q in list(self.ws_subscribers):
-            q.put_nowait({"type": "settlement", "data": trade.model_dump(mode="json")})
+        self.publish_ws({"type": "settlement", "data": trade.model_dump(mode="json")})
 
     async def _deliver(self, alert: Alert) -> None:
         intent = None
@@ -191,11 +197,21 @@ class LiveLoop:
         except Exception as exc:  # automation must fail closed without blocking alerts
             print(f"[autotrade] intent creation failed: {exc}")
         await self.telegram.send(format_alert(alert))
-        for q in list(self.ws_subscribers):
-            q.put_nowait({"type": "alert", "data": alert.model_dump(mode="json")})
-            if intent is not None:
-                q.put_nowait({"type": "autotrade_intent",
-                              "data": intent.model_dump(mode="json")})
+        self.publish_ws({"type": "alert", "data": alert.model_dump(mode="json")})
+        if intent is not None:
+            self.publish_ws(
+                {"type": "autotrade_intent", "data": intent.model_dump(mode="json")}
+            )
+
+    def publish_ws(self, event: dict) -> None:
+        """Bound subscriber memory; slow clients receive the newest state change."""
+        for queue in list(self.ws_subscribers):
+            if queue.full():
+                try:
+                    queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    pass
+            queue.put_nowait(event)
 
     async def maybe_brief(self, now: datetime) -> None:
         """8:30 ET daily briefing (doc 12); once per trading day."""
