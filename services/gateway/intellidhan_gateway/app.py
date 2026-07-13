@@ -12,14 +12,16 @@ import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Body, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 
 from intellidhan_gateway.live import LiveLoop
+from intellidhan_gateway.stock_analysis import StockAnalysisService
 
 WEB_DIR = Path(__file__).resolve().parents[3] / "web"
 
 loop = LiveLoop()
+stock_analyzer = StockAnalysisService()
 
 
 @asynccontextmanager
@@ -75,6 +77,36 @@ async def calibration():
 @app.get("/api/briefing")
 async def briefing():
     return loop.last_briefing or {"status": "not generated yet (8:30 ET on trading days)"}
+
+
+@app.get("/api/analyze/{symbol}")
+async def analyze_stock(
+    symbol: str,
+    years: int = Query(5, ge=2, le=15),
+    risk_budget: float | None = Query(None, gt=0, le=1_000_000),
+    include_backtest: bool = True,
+    cost_bps: float = Query(10.0, ge=0, le=100),
+):
+    """Corporate-action-adjusted daily trend analysis for an arbitrary ticker."""
+    try:
+        return await asyncio.wait_for(
+            stock_analyzer.analyze(
+                symbol,
+                years=years,
+                risk_budget=risk_budget,
+                include_backtest=include_backtest,
+                cost_bps=cost_bps,
+            ),
+            timeout=30,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="stock analysis provider timed out") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="stock analysis provider failed") from exc
 
 
 @app.get("/api/budgets")

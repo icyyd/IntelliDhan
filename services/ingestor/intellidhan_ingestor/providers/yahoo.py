@@ -38,7 +38,8 @@ class YahooProvider:
         self.health = ProviderHealth()
 
     async def get_bars(
-        self, symbol: str, timeframe: Timeframe, start: datetime, end: datetime
+        self, symbol: str, timeframe: Timeframe, start: datetime, end: datetime,
+        *, adjusted: bool = False,
     ) -> list[Bar]:
         if timeframe == Timeframe.H4:
             raise ValueError("4H bars are derived by the analytics rollup, not fetched")
@@ -46,7 +47,7 @@ class YahooProvider:
         try:
             df = await asyncio.to_thread(
                 lambda: yf.Ticker(yf_symbol).history(
-                    start=start, end=end, interval=_TF_TO_YF[timeframe], auto_adjust=False
+                    start=start, end=end, interval=_TF_TO_YF[timeframe], auto_adjust=adjusted
                 )
             )
         except Exception as exc:
@@ -73,7 +74,7 @@ class YahooProvider:
                     low=float(row["Low"]),
                     close=float(row["Close"]),
                     volume=float(row["Volume"]),
-                    source=self.name,
+                    source=f"{self.name}_adjusted" if adjusted else self.name,
                 )
             )
         self.health.record_ok(datetime.now(timezone.utc))

@@ -649,6 +649,117 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   #queue0dteTracking,#queueSwingTracking{grid-template-columns:1fr}
 }
 
+/* ── On-demand stock analysis ───────────────────────────────────── */
+.analysis-search-panel{padding:16px}
+.analysis-form{display:grid; grid-template-columns:minmax(140px,1.4fr) repeat(3,minmax(108px,.7fr)) auto; gap:10px; align-items:end}
+.analysis-field{display:block; min-width:0}
+.analysis-field>span{display:block; color:var(--text-faint); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin:0 0 5px 3px}
+.analysis-field input,.analysis-field select{
+  width:100%; height:43px; border:1px solid var(--border); border-radius:14px;
+  background:var(--input-bg); color:var(--text); padding:8px 11px; font:12px var(--sans);
+}
+.analysis-field input.analysis-symbol{font:700 15px var(--mono); letter-spacing:.04em; text-transform:uppercase}
+.analysis-field input[type="number"]{font-family:var(--mono)}
+.analysis-run{
+  display:flex; align-items:center; justify-content:center; gap:8px; height:43px; padding:0 18px;
+  border:0; border-radius:14px; background:var(--cyan); color:var(--on-accent); font-weight:750; cursor:pointer;
+  box-shadow:0 8px 22px rgba(145,164,255,.18); transition:filter 180ms ease,opacity 180ms ease;
+}
+.analysis-run:hover{filter:brightness(1.08)}
+.analysis-run:disabled{cursor:not-allowed; opacity:.58; filter:none}
+.analysis-run.loading .analysis-spinner{display:block}
+.analysis-spinner{display:none; width:14px; height:14px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:analysisSpin 700ms linear infinite}
+@keyframes analysisSpin{to{transform:rotate(360deg)}}
+.analysis-options{display:flex; align-items:center; gap:8px; margin-top:12px; padding:0 3px; color:var(--text-dim); font-size:11.5px}
+.analysis-options input{accent-color:var(--cyan)}
+.analysis-status{margin-left:auto; min-height:18px; color:var(--text-faint); font-size:11px}
+.analysis-status.err{color:var(--red)}
+.analysis-status.ok{color:var(--teal)}
+.analysis-results[hidden]{display:none}
+.analysis-results{display:flex; flex-direction:column; gap:18px}
+.analysis-verdict{
+  position:relative; overflow:hidden; display:grid; grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr); gap:18px;
+  border:1px solid var(--border); border-radius:var(--radius-card); padding:22px;
+  background:var(--card-gradient); box-shadow:var(--shadow-card);
+}
+.analysis-verdict::after{content:""; position:absolute; width:230px; height:230px; border-radius:50%; right:-85px; top:-110px; background:rgba(145,164,255,.09); pointer-events:none}
+.analysis-verdict.bullish{border-color:rgba(94,234,212,.28)}
+.analysis-verdict.bearish{border-color:rgba(251,113,133,.30)}
+.analysis-verdict.mixed{border-color:rgba(246,200,107,.25)}
+.analysis-verdict-main{position:relative; z-index:1}
+.analysis-verdict-top{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:14px}
+.analysis-signal{display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:99px; background:rgba(246,200,107,.10); color:var(--gold); font-size:10.5px; font-weight:800; letter-spacing:.04em}
+.analysis-signal::before{content:""; width:7px; height:7px; border-radius:50%; background:currentColor}
+.analysis-signal.bullish{background:rgba(94,234,212,.11); color:var(--teal)}
+.analysis-signal.bearish{background:rgba(251,113,133,.11); color:var(--red)}
+.analysis-asof{color:var(--text-faint); font-size:10.5px}
+.analysis-symbol-line{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+.analysis-symbol-line h2{margin:0; font-size:34px; line-height:1; letter-spacing:-.045em}
+.analysis-price{font:600 15px var(--mono); color:var(--text-dim)}
+.analysis-interpretation{max-width:680px; margin:13px 0 0; color:var(--text-dim); font-size:13px; line-height:1.65}
+.analysis-votes{position:relative; z-index:1; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; align-self:stretch}
+.analysis-vote{display:flex; flex-direction:column; justify-content:center; padding:14px; border-radius:18px; background:var(--tint-c); border:1px solid var(--border)}
+.analysis-vote b{font:750 22px var(--mono)}
+.analysis-vote small{color:var(--text-faint); font-size:9.5px; text-transform:uppercase; letter-spacing:.06em}
+.analysis-vote.up b{color:var(--teal)}
+.analysis-vote.down b{color:var(--red)}
+.analysis-section-head{display:flex; align-items:flex-end; gap:12px; margin:0 3px 11px}
+.analysis-section-head h2{font-size:18px; letter-spacing:-.02em; margin:0 0 2px}
+.analysis-section-head p{color:var(--text-faint); font-size:11.5px; margin:0}
+.analysis-methods{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
+.method-card{position:relative; overflow:hidden; padding:18px; border:1px solid var(--border); border-radius:22px; background:var(--card-gradient); min-height:190px}
+.method-card.bullish{border-top-color:rgba(94,234,212,.42)}
+.method-card.bearish{border-top-color:rgba(251,113,133,.46)}
+.method-card.neutral{border-top-color:rgba(246,200,107,.36)}
+.method-top{display:flex; align-items:center; gap:9px; margin-bottom:13px}
+.method-name{font-weight:750; font-size:14px}
+.method-state{margin-left:auto; padding:4px 8px; border-radius:99px; color:var(--gold); background:rgba(246,200,107,.10); font:750 9.5px var(--mono)}
+.method-card.bullish .method-state{color:var(--teal); background:rgba(94,234,212,.10)}
+.method-card.bearish .method-state{color:var(--red); background:rgba(251,113,133,.10)}
+.method-metrics{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-bottom:13px}
+.method-metric{padding:9px; border-radius:14px; background:var(--tint-d); min-width:0}
+.method-metric b{display:block; overflow:hidden; text-overflow:ellipsis; font:650 11.5px var(--mono)}
+.method-metric small{display:block; color:var(--text-faint); font-size:8.5px; letter-spacing:.04em; text-transform:uppercase; margin-top:2px}
+.method-rule{margin:0; color:var(--text-dim); font-size:11.5px; line-height:1.55}
+.analysis-risk-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+.analysis-risk-card{padding:14px; border:1px solid var(--border); border-radius:18px; background:var(--tint-c)}
+.analysis-risk-card b{display:block; font:700 16px var(--mono); margin-bottom:2px}
+.analysis-risk-card small{display:block; color:var(--text-faint); font-size:9.5px}
+.analysis-table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:18px}
+.analysis-table{width:100%; min-width:650px; border-collapse:collapse; font-size:11.5px}
+.analysis-table th,.analysis-table td{padding:11px 13px; border-bottom:1px solid var(--border-soft); text-align:right; white-space:nowrap}
+.analysis-table th{color:var(--text-faint); font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; background:var(--tint-c)}
+.analysis-table th:first-child,.analysis-table td:first-child{text-align:left}
+.analysis-table tbody tr:last-child td{border-bottom:0}
+.analysis-table tbody tr:hover{background:var(--tint-a)}
+.analysis-table .benchmark td{color:var(--text-dim); background:var(--tint-b)}
+.analysis-positive{color:var(--teal)}
+.analysis-negative{color:var(--red)}
+.analysis-disclaimer{display:flex; align-items:flex-start; gap:9px; padding:13px 15px; border:1px solid rgba(246,200,107,.22); border-radius:17px; background:rgba(246,200,107,.06); color:var(--text-dim); font-size:10.5px; line-height:1.55}
+.analysis-disclaimer svg{width:15px; height:15px; color:var(--gold); flex:none; margin-top:1px}
+body.analysis-view .shell{grid-template-columns:70px minmax(0,1fr)}
+body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none}
+@media (max-width:1100px){
+  .analysis-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .analysis-run{grid-column:2}
+  .analysis-verdict{grid-template-columns:1fr}
+}
+@media (max-width:700px){
+  .analysis-methods{grid-template-columns:1fr}
+  .analysis-risk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:480px){
+  .analysis-form{grid-template-columns:1fr}
+  .analysis-run{grid-column:1}
+  .analysis-options{align-items:flex-start; flex-wrap:wrap}
+  .analysis-status{width:100%; margin-left:0}
+  .analysis-verdict{padding:18px; border-radius:20px}
+  .analysis-symbol-line h2{font-size:29px}
+  .analysis-votes{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .analysis-vote{padding:10px}
+  .method-metrics{grid-template-columns:1fr}
+}
+
 /* ── Light theme (toggle in topbar; dark stays the default) ───────────── */
 :root[data-theme="light"]{
   --bg:#EEF1F7;
@@ -737,6 +848,7 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
     <button class="nav-item active" data-view="signals" title="Signals" aria-label="Signals" aria-pressed="true"><svg class="icon"><use href="#i-activity"/></svg></button>
     <button class="nav-item" data-view="0dte" title="0DTE desk" aria-label="0DTE desk" aria-pressed="false">0D</button>
     <button class="nav-item" data-view="swings" title="Swing desk" aria-label="Swing desk" aria-pressed="false">SW</button>
+    <button class="nav-item" data-view="analysis" title="Analyze a stock" aria-label="Analyze a stock" aria-pressed="false"><svg class="icon"><use href="#i-search"/></svg></button>
     <button class="nav-item" disabled title="LEAPS — not yet implemented">LP</button>
     <button class="nav-item" disabled title="HODL — not yet implemented">HD</button>
     <button class="nav-item" disabled title="Trade Log — not yet implemented">TL</button>
@@ -877,6 +989,51 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
       </div>
       <div id="swingTrendInner" aria-label="Higher-timeframe indicators"></div>
     </section>
+   </div>
+
+   <div id="view-analysis" hidden>
+    <section class="desk-hero" aria-labelledby="analysisTitle">
+      <div class="desk-copy">
+        <div class="desk-eyebrow">Any ticker · adjusted daily data</div>
+        <h1 id="analysisTitle">Stock analysis</h1>
+        <p>A clear trend verdict from four transparent methods, with risk context and an optional fixed-rule backtest.</p>
+      </div>
+    </section>
+
+    <section class="panel analysis-search-panel" aria-label="Stock analysis request">
+      <form class="analysis-form" id="stockAnalysisForm">
+        <label class="analysis-field"><span>Ticker</span><input class="analysis-symbol" id="analysisSymbol" name="symbol" type="text" maxlength="12" pattern="[A-Za-z][A-Za-z0-9.\-]{0,11}" autocomplete="off" placeholder="AAPL" required></label>
+        <label class="analysis-field"><span>History</span><select id="analysisYears" name="years"><option value="3">3 years</option><option value="5" selected>5 years</option><option value="10">10 years</option><option value="15">15 years</option></select></label>
+        <label class="analysis-field"><span>Risk budget</span><input id="analysisRisk" name="risk_budget" type="number" min="1" max="1000000" step="1" inputmode="decimal" placeholder="Optional $"></label>
+        <label class="analysis-field"><span>Trading costs</span><select id="analysisCosts" name="cost_bps"><option value="0">0 bps</option><option value="10" selected>10 bps</option><option value="25">25 bps</option><option value="50">50 bps</option></select></label>
+        <button class="analysis-run" id="analysisRun" type="submit"><span class="analysis-spinner" aria-hidden="true"></span><svg class="icon"><use href="#i-search"/></svg><span class="analysis-run-label">Analyze</span></button>
+      </form>
+      <div class="analysis-options">
+        <label><input id="analysisBacktest" type="checkbox" checked> Include historical comparison</label>
+        <span class="analysis-status" id="analysisStatus" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <div class="analysis-results" id="analysisResults" hidden aria-live="polite">
+      <section class="analysis-verdict" id="analysisSummary" aria-label="Analysis verdict"></section>
+
+      <section aria-labelledby="analysisMethodsTitle">
+        <div class="analysis-section-head"><div><h2 id="analysisMethodsTitle">What the methods say</h2><p>Each vote stays visible; there is no hidden model score.</p></div></div>
+        <div class="analysis-methods" id="analysisMethods"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="analysisRiskTitle">
+        <div class="analysis-section-head"><div><h2 id="analysisRiskTitle">Risk snapshot</h2><p>Position-sizing references, not an order recommendation.</p></div></div>
+        <div class="analysis-risk-grid" id="analysisRiskOutput"></div>
+      </section>
+
+      <section class="panel" id="analysisBacktestPanel" aria-labelledby="analysisBacktestTitle">
+        <div class="analysis-section-head"><div><h2 id="analysisBacktestTitle">Historical comparison</h2><p>Fixed parameters, long/cash, next-period exposure, and the selected cost assumption.</p></div></div>
+        <div id="analysisBacktestOutput"></div>
+      </section>
+
+      <div class="analysis-disclaimer"><svg class="icon"><use href="#i-alert"/></svg><span><b>Research context only.</b> A trend vote is not a trade signal and cannot create a Robinhood intent. Single-stock tests are sensitive to gaps, earnings, survivorship, and the selected date window.</span></div>
+    </div>
    </div>
   </main>
 
@@ -1552,12 +1709,13 @@ document.getElementById("qtabSuppressed").addEventListener("click", ()=>{
 let activeView = "signals", selectedSwingSymbol = null;
 function switchView(view){
   activeView = view;
+  document.body.classList.toggle("analysis-view",view==="analysis");
   document.querySelectorAll(".nav-item[data-view]").forEach(b=>{
     const on = b.dataset.view === view;
     b.classList.toggle("active", on);
     b.setAttribute("aria-pressed", String(on));
   });
-  ["signals","0dte","swings"].forEach(v=>{
+  ["signals","0dte","swings","analysis"].forEach(v=>{
     document.getElementById("view-"+v).hidden = v !== view;
   });
 }
@@ -1578,6 +1736,153 @@ function wireQtabPair(aId, bId, aPanel, bPanel){
 }
 wireQtabPair("qtab0dteTracking","qtab0dteSuppressed","queue0dteTracking","queue0dteSuppressed");
 wireQtabPair("qtabSwingTracking","qtabSwingSuppressed","queueSwingTracking","queueSwingSuppressed");
+
+// ── On-demand stock analysis ─────────────────────────────────────
+function analysisTone(value){
+  const signal=String(value||"").toUpperCase();
+  if(signal.includes("BULL")||signal.includes("UPTREND")) return "bullish";
+  if(signal.includes("BEAR")||signal.includes("DOWNTREND")) return "bearish";
+  return "neutral";
+}
+function fmtSignedPct(value){
+  const n=Number(value);
+  return Number.isFinite(n) ? `${n>0?"+":""}${n.toFixed(2)}%` : "—";
+}
+function fmtPercent(value){
+  const n=Number(value);
+  return Number.isFinite(n) ? `${n.toFixed(2)}%` : "—";
+}
+function fmtAnalysisDate(value){
+  const d=new Date(value);
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString([], {year:"numeric",month:"short",day:"numeric"});
+}
+function methodMetric(value,label){
+  return `<span class="method-metric"><b>${esc(value)}</b><small>${esc(label)}</small></span>`;
+}
+function renderAnalysisMethods(methods){
+  const definitions=[
+    ["sma_200_regime","200-day regime",m=>[
+      [`$${fmtPx(m.sma_200)}`,"SMA 200"],
+      [fmtSignedPct(m.price_distance_pct),"Price vs avg"],
+      [fmtSignedPct(m.sma_20d_slope_pct),"20d avg slope"],
+    ]],
+    ["time_series_momentum","3 / 6 / 12m momentum",m=>[
+      [fmtSignedPct(m.return_3m_pct),"3 months"],
+      [fmtSignedPct(m.return_6m_pct),"6 months"],
+      [fmtSignedPct(m.return_12m_pct),"12 months"],
+    ]],
+    ["donchian_55_20","55 / 20 channel",m=>[
+      [`$${fmtPx(m.prior_55d_high)}`,"55d high"],
+      [`$${fmtPx(m.prior_20d_low)}`,"20d low"],
+      [fmtSignedPct(m.distance_to_breakout_pct),"To breakout"],
+    ]],
+    ["high_52w_proximity","52-week-high context",m=>[
+      [`$${fmtPx(m.high_52w)}`,"52w high"],
+      [`$${fmtPx(m.low_52w)}`,"52w low"],
+      [fmtPercent(m.percent_of_52w_high),"Of yearly high"],
+    ]],
+  ];
+  document.getElementById("analysisMethods").innerHTML=definitions.map(([key,name,metrics])=>{
+    const m=methods?.[key]||{}, tone=analysisTone(m.signal);
+    return `<article class="method-card ${tone}">
+      <div class="method-top"><span class="method-name">${esc(name)}</span><span class="method-state">${esc(m.signal||"—")}</span></div>
+      <div class="method-metrics">${metrics(m).map(([v,l])=>methodMetric(v,l)).join("")}</div>
+      <p class="method-rule">${esc(m.rule||"")}</p>
+    </article>`;
+  }).join("");
+}
+function renderAnalysisBacktest(backtest){
+  const panel=document.getElementById("analysisBacktestPanel");
+  if(!backtest){ panel.hidden=true; return; }
+  panel.hidden=false;
+  const labels={
+    sma_200:"200-day regime",
+    time_series_momentum_12m:"12-month momentum",
+    donchian_55_20:"55 / 20 channel",
+    majority_consensus:"2-of-3 consensus",
+    buy_and_hold:"Buy & hold benchmark",
+  };
+  const rows=[...Object.entries(backtest.methods||{}),["buy_and_hold",backtest.buy_and_hold]];
+  const metric=(value,suffix="")=>Number.isFinite(Number(value))?`${Number(value).toFixed(2)}${suffix}`:"—";
+  const signedClass=value=>Number(value)>0?"analysis-positive":Number(value)<0?"analysis-negative":"";
+  document.getElementById("analysisBacktestOutput").innerHTML=`<div class="analysis-table-wrap"><table class="analysis-table">
+    <thead><tr><th>Method</th><th>Total return</th><th>CAGR</th><th>Sharpe</th><th>Max drawdown</th><th>Exposure</th><th>Entries</th></tr></thead>
+    <tbody>${rows.map(([key,result])=>`<tr class="${key==="buy_and_hold"?"benchmark":""}">
+      <td>${esc(labels[key]||key.replaceAll("_"," "))}</td>
+      <td class="${signedClass(result?.total_return_pct)} num">${metric(result?.total_return_pct,"%")}</td>
+      <td class="${signedClass(result?.cagr_pct)} num">${metric(result?.cagr_pct,"%")}</td>
+      <td class="num">${metric(result?.sharpe)}</td>
+      <td class="analysis-negative num">${metric(result?.max_drawdown_pct,"%")}</td>
+      <td class="num">${metric(result?.exposure_pct,"%")}</td>
+      <td class="num">${Number.isFinite(Number(result?.trades))?Number(result.trades):"—"}</td>
+    </tr>`).join("")}</tbody>
+  </table></div>`;
+}
+function renderStockAnalysis(data){
+  const consensus=data.consensus||{}, tone=analysisTone(consensus.label);
+  const summary=document.getElementById("analysisSummary");
+  summary.className=`analysis-verdict ${tone==="neutral"?"mixed":tone}`;
+  summary.innerHTML=`<div class="analysis-verdict-main">
+    <div class="analysis-verdict-top"><span class="analysis-signal ${tone}">${esc(String(consensus.label||"MIXED").replaceAll("_"," "))}</span><span class="analysis-asof">As of ${esc(fmtAnalysisDate(data.as_of))} · ${esc(data.source||"adjusted daily data")}</span></div>
+    <div class="analysis-symbol-line"><h2>${esc(data.symbol)}</h2><span class="analysis-price">$${esc(fmtPx(data.price))}</span></div>
+    <p class="analysis-interpretation">${esc(data.interpretation||"")}</p>
+  </div><div class="analysis-votes" aria-label="Method vote count">
+    <span class="analysis-vote up"><b>${esc(consensus.bullish_votes??0)}</b><small>Bullish</small></span>
+    <span class="analysis-vote"><b>${esc(consensus.neutral_votes??0)}</b><small>Neutral</small></span>
+    <span class="analysis-vote down"><b>${esc(consensus.bearish_votes??0)}</b><small>Bearish</small></span>
+  </div>`;
+  renderAnalysisMethods(data.methods);
+  const risk=data.risk||{};
+  const riskCards=[
+    [`$${fmtPx(risk.atr14)} / ${fmtPercent(risk.atr14_pct)}`,"14-day ATR / price"],
+    [fmtPercent(risk.realized_volatility_20d_annualized_pct),"20-day annualized volatility"],
+    [`$${fmtPx(risk.prior_20d_low)}`,"Prior 20-day low"],
+    [`$${fmtPx(risk.two_atr_reference)}`,"Two-ATR reference"],
+  ];
+  if(risk.risk_budget!=null) riskCards.push([
+    `${Number(risk.reference_quantity||0).toLocaleString()} shares`,
+    `$${Number(risk.risk_budget).toLocaleString()} risk-budget reference`,
+  ]);
+  document.getElementById("analysisRiskOutput").innerHTML=riskCards.map(([v,l])=>
+    `<span class="analysis-risk-card"><b>${esc(v)}</b><small>${esc(l)}</small></span>`).join("");
+  renderAnalysisBacktest(data.backtest);
+  document.getElementById("analysisResults").hidden=false;
+}
+async function analyzeStock(event){
+  event?.preventDefault();
+  const form=document.getElementById("stockAnalysisForm");
+  if(!form.reportValidity()) return;
+  const symbol=document.getElementById("analysisSymbol").value.trim().toUpperCase();
+  const params=new URLSearchParams({
+    years:document.getElementById("analysisYears").value,
+    include_backtest:String(document.getElementById("analysisBacktest").checked),
+    cost_bps:document.getElementById("analysisCosts").value,
+  });
+  const risk=document.getElementById("analysisRisk").value;
+  if(risk) params.set("risk_budget",risk);
+  const button=document.getElementById("analysisRun"), status=document.getElementById("analysisStatus");
+  button.disabled=true; button.classList.add("loading");
+  button.querySelector(".analysis-run-label").textContent="Analyzing…";
+  status.textContent=`Loading completed daily history for ${symbol}…`; status.className="analysis-status";
+  try{
+    const response=await fetch(`/api/analyze/${encodeURIComponent(symbol)}?${params}`);
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(typeof payload.detail==="string"?payload.detail:`Analysis failed (${response.status})`);
+    renderStockAnalysis(payload);
+    status.textContent=`Updated ${fmtAnalysisDate(payload.as_of)} · ${payload.daily_bars} daily bars`; status.className="analysis-status ok";
+  }catch(error){
+    status.textContent=error.message||"Unable to analyze that ticker"; status.className="analysis-status err";
+  }finally{
+    button.disabled=false; button.classList.remove("loading");
+    button.querySelector(".analysis-run-label").textContent="Analyze";
+  }
+}
+document.getElementById("stockAnalysisForm").addEventListener("submit",analyzeStock);
+document.getElementById("analysisSymbol").addEventListener("input",event=>{
+  const start=event.target.selectionStart;
+  event.target.value=event.target.value.toUpperCase();
+  if(start!=null) event.target.setSelectionRange(start,start);
+});
 
 function moduleAlerts(s, mod){ return orderedAlerts(s).filter(a=>a.module===mod); }
 function moduleSuppressed(s, mod){ return (s.suppressed||[]).filter(x=>x.module===mod); }
@@ -1737,6 +2042,10 @@ function renderPaletteResults(q){
       closePalette();
       selectSymbol(s);
     }})),
+    {label:"Analyze a stock", type:"Action", action:()=>{
+      closePalette(); switchView("analysis");
+      requestAnimationFrame(()=>document.getElementById("analysisSymbol").focus());
+    }},
     {label:"Open Budgets", type:"Action", action:()=>{ closePalette(); openBudgets(); }},
   ];
   const filtered = q ? items.filter(i=>i.label.toLowerCase().includes(q.toLowerCase())) : items;

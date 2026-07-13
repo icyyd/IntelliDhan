@@ -95,3 +95,18 @@ Control endpoints require `X-Autotrade-Token: $AUTOTRADE_CONTROL_TOKEN`:
 
 The dashboard uses these endpoints for explicit configuration and supervised
 approval. Do not expose either token to browser logs, URLs, or version control.
+
+## On-demand stock trend analysis
+
+Use `GET /api/analyze/{symbol}` for an arbitrary ticker. Optional query fields
+are `years` (2–15), `risk_budget`, `include_backtest`, and `cost_bps`. The same
+analysis is available with:
+
+```bash
+.venv/bin/python scripts/analyze_stock.py AAPL --years 5 --risk-budget 500
+```
+
+The response is descriptive research. Never convert its consensus label into a
+Robinhood order, auto-trade intent, live signal, or calibration update. Refer to
+`docs/19-trend-analysis-and-on-demand-module.md` for methodology evidence,
+frozen parameters, current cross-ticker results, and promotion requirements.

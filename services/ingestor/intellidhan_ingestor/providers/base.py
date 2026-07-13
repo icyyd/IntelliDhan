@@ -55,7 +55,13 @@ class DataProvider(Protocol):
     health: ProviderHealth
 
     async def get_bars(
-        self, symbol: str, timeframe: Timeframe, start: datetime, end: datetime
+        self,
+        symbol: str,
+        timeframe: Timeframe,
+        start: datetime,
+        end: datetime,
+        *,
+        adjusted: bool = False,
     ) -> list[Bar]: ...
 
     async def get_quote(self, symbol: str) -> Quote: ...
