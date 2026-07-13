@@ -65,6 +65,7 @@ class LiveLoop:
         self.autotrade = AutotradeManager()
         self.store = store or TerminalStore()
         self.alerts: list[Alert] = []
+        self._alert_ids: set[str] = set()
         self.last_briefing: dict | None = None
         self._briefed_on: str | None = None
         self.seen_bars: set[tuple[str, datetime]] = set()
@@ -83,6 +84,7 @@ class LiveLoop:
     async def boot(self) -> None:
         self.boot_state = "STARTING"
         self.last_error = None
+        restart_at = datetime.now(timezone.utc)
         self.store.init_schema()
         self.persistence_ready = True
         self.store.seed_universe(security_records())
@@ -95,15 +97,26 @@ class LiveLoop:
         if persisted_budgets:
             self.composer.budgets.update(persisted_budgets)
         self.alerts = [Alert.model_validate(item) for item in self.store.list_alerts()]
-        restored_trades = [
-            PaperTrade.model_validate(item) for item in self.store.list_paper_trades()
-        ]
+        self._alert_ids = {alert.alert_id for alert in self.alerts}
+        alert_created_at = {alert.alert_id: alert.created_at for alert in self.alerts}
+        restored_trades: list[PaperTrade] = []
+        for item in self.store.list_paper_trades():
+            trade = PaperTrade.model_validate(item)
+            if trade.created_at is None:
+                # Migrate pre-created_at rows safely.  A matching alert retains
+                # downtime catch-up; an orphan is bounded at restart so stale
+                # historical bars can never mutate it.
+                trade.created_at = alert_created_at.get(trade.alert_id, restart_at)
+                self.store.upsert_paper_trade(trade.model_dump(mode="json"))
+            restored_trades.append(trade)
         self.executor.restore(restored_trades)
         self.last_briefing = self.store.latest_briefing()
         self.runner = EngineRunner(self.symbols)
+        for trade in self.executor.active_trades():
+            self.runner.controls.register_open(trade.module, trade.symbol, trade.strategy)
         self.seen_bars = set()
 
-        end = datetime.now(timezone.utc)
+        end = restart_at
         from intellidhan_engine.macro import build_macro_series
         vix_task = self.provider.get_bars(
             "VIX", Timeframe.D1, end - timedelta(days=1200), end
@@ -163,17 +176,28 @@ class LiveLoop:
             for settled in self.executor.on_bar(bar):
                 self.runner.controls.register_close(
                     settled.module, settled.symbol, settled.strategy)
-                if not replay:
+                if replay:
+                    # Replay is notification-silent, not durability-silent.
+                    # Persist the terminal state before a later restart can
+                    # regenerate/overwrite the plan as PENDING.
+                    if self.persistence_ready:
+                        self.store.upsert_paper_trade(settled.model_dump(mode="json"))
+                else:
                     await self._notify_settlement(settled)
             for setup in self.runner.on_bar_5m(bar):
                 alert = self.composer.compose(setup)
                 if alert is None:
                     continue
-                self.alerts.append(alert)
+                is_new_alert = alert.alert_id not in self._alert_ids
+                if is_new_alert:
+                    self.alerts.append(alert)
+                    self._alert_ids.add(alert.alert_id)
+                    if self.persistence_ready:
+                        self.store.upsert_alert(alert.model_dump(mode="json"))
                 trade = PaperTrade.from_alert(alert, setup)
-                self.executor.track(trade)
+                if not self.executor.track(trade):
+                    continue
                 if self.persistence_ready:
-                    self.store.upsert_alert(alert.model_dump(mode="json"))
                     self.store.upsert_paper_trade(trade.model_dump(mode="json"))
                 self.runner.controls.register_open(setup.module, setup.symbol, setup.strategy)
                 if not replay:

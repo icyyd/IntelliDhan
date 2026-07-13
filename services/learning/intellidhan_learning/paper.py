@@ -37,6 +37,10 @@ class PaperTrade(BaseModel):
     direction: Direction
     confidence: float
     composite: float | None = None
+    # Durable lower bound for replay/catch-up.  Older ledger rows did not carry
+    # this field, so it remains optional and the live boot path backfills it
+    # from the corresponding alert (or the restart time as a fail-safe).
+    created_at: datetime | None = None
     entry: float
     initial_stop: float
     targets: list[float]
@@ -54,7 +58,8 @@ class PaperTrade(BaseModel):
         return cls(
             alert_id=alert.alert_id, symbol=alert.symbol, module=alert.module,
             strategy=alert.strategy, direction=setup.direction,
-            confidence=alert.confidence, composite=setup.composite, entry=setup.entry_underlying,
+            confidence=alert.confidence, composite=setup.composite, created_at=alert.created_at,
+            entry=setup.entry_underlying,
             initial_stop=setup.stop_underlying, targets=setup.targets_underlying,
             valid_until=alert.valid_until,
         )
@@ -70,18 +75,33 @@ class PaperExecutor:
     def __init__(self) -> None:
         self.trades: list[PaperTrade] = []
         self._active: dict[str, list[PaperTrade]] = {}
+        self._by_alert_id: dict[str, PaperTrade] = {}
 
     def restore(self, trades: list[PaperTrade]) -> None:
         """Rebuild the executor after a process restart from its durable ledger."""
-        self.trades = list(trades)
+        # The alert id is the durable identity.  Keep the last representation
+        # if a malformed/legacy source supplies duplicates; replay must never
+        # grade the same printed plan twice.
+        deduped = {trade.alert_id: trade for trade in trades}
+        self.trades = list(deduped.values())
+        self._by_alert_id = dict(deduped)
         self._active = {}
         for trade in self.trades:
             if trade.outcome in {Outcome.PENDING, Outcome.OPEN}:
                 self._active.setdefault(trade.symbol, []).append(trade)
 
-    def track(self, trade: PaperTrade) -> None:
+    def track(self, trade: PaperTrade) -> bool:
+        """Track a new plan once; return False for replay-regenerated duplicates."""
+        if trade.alert_id in self._by_alert_id:
+            return False
         self.trades.append(trade)
+        self._by_alert_id[trade.alert_id] = trade
         self._active.setdefault(trade.symbol, []).append(trade)
+        return True
+
+    def active_trades(self) -> list[PaperTrade]:
+        """Return each unresolved durable plan exactly once."""
+        return [trade for trades in self._active.values() for trade in trades]
 
     def on_bar(self, bar: Bar) -> list[PaperTrade]:
         active = self._active.get(bar.symbol)
@@ -96,6 +116,19 @@ class PaperExecutor:
         return settled
 
     def _advance(self, t: PaperTrade, bar: Bar) -> bool:
+        # Boot catch-up replays bars from before a restored plan existed.  A
+        # pending plan can only fill on a bar strictly after alert creation;
+        # an open plan can only advance on a bar strictly after its recorded
+        # fill.  Without these guards a restart can create impossible fills or
+        # exits whose timestamps predate the trade itself.
+        not_before = (
+            t.created_at
+            if t.outcome == Outcome.PENDING
+            else (t.filled_at or t.created_at)
+        )
+        if not_before is not None and bar.ts_close <= not_before:
+            return False
+
         sign = 1.0 if t.direction == Direction.LONG else -1.0
         risk = abs(t.entry - t.initial_stop)
 
