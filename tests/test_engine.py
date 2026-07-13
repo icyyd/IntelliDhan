@@ -168,3 +168,38 @@ def test_recent_daily_buffer_seeds_bounded_and_grows_on_live_close():
     assert len(st.recent_daily) == n_before == 250
     assert st.recent_daily[-1].timeframe == Timeframe.D1
     assert st.recent_daily[-1].ts_close.date() == day1.date()  # the live close
+
+
+def test_replayed_intraday_session_does_not_duplicate_seeded_daily_close():
+    st = SymbolState("T")
+    session = datetime(2026, 7, 9, 16, 0, tzinfo=ET)
+    seeded = Bar(
+        symbol="T",
+        timeframe=Timeframe.D1,
+        ts_close=session,
+        open=100,
+        high=105,
+        low=99,
+        close=104,
+        volume=10_000_000,
+        source="adjusted-seed",
+    )
+    st.seed_daily([seeded])
+
+    start = session.replace(hour=9, minute=35)
+    for index in range(78):
+        price = 100 + index * 0.05
+        st.on_bar_5m(
+            mk_bar(
+                start + timedelta(minutes=5 * index),
+                price,
+                price + 0.5,
+                price - 0.5,
+                price + 0.1,
+            )
+        )
+    # The first bar of the next session flushes the replayed D1 rollup. Its
+    # session is already present from the adjusted seed and must be ignored.
+    st.on_bar_5m(mk_bar(start + timedelta(days=1), 105, 106, 104, 105.5))
+    assert len(st.recent_daily) == 1
+    assert st.recent_daily[0] == seeded

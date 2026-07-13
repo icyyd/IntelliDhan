@@ -42,7 +42,7 @@ than imply that specified modules already exist.
 | Market monitor | Yahoo daily/5m bars, 12 configured symbols, MTF state, levels, profile, bar quarantine, readiness | No provider routing, real-time entitlement, dynamic broad universe, or broad-market coverage | P0 |
 | Signal engine | Five technical strategies, veto wall, calibration maps, suppression audit; missing factors are excluded and weights renormalized | Zero demonstrably live-qualified strategies; production/research parity and versioned evidence promotion remain open | P0 |
 | Stock analysis | Arbitrary ticker, 3/6/12m momentum, SMA200, channel, yearly-high context, risk, backtest, v2 forward validation | No company, valuation, peer, earnings, revisions, ownership, catalyst, or news analysis | P1 |
-| Discovery | Technical EOD screener over the configured universe, four presets, ranked evidence cards, saved screens, watchlists | No point-in-time broad universe, sector map, cohort-relative fundamentals, comparison, or catalyst ranking | P1 |
+| Discovery | Adjusted, settled-session technical EOD screener over the configured universe, explicit partial-scan failures, four presets, ranked evidence cards, saved screens, watchlists | No point-in-time broad universe, sector map, cohort-relative fundamentals, comparison, or catalyst ranking | P1 |
 | Fundamentals | Specified in docs only | No statements, normalized metrics, quality/growth/value pillars, estimates, filings, or source timestamps | P1 |
 | News and events | Template briefing and VIX macro state | No earnings/economic calendar, filings, headlines, transcript changes, analyst revisions, or event lockouts | P0/P1 |
 | Options | Yahoo selector exists but live composer sets `option_selector=None` | No live chains, spread/liquidity surface, IV history, expected move, payoff lab, or options P&L truth | P2 |
@@ -317,9 +317,10 @@ workspace        users, watchlists, notes, saved views, preferences
 
 These are release blockers for a public personal-finance terminal.
 
-1. **Complete the authentication boundary.** Owner sessions now protect
-   mutations and `/ws`; decide whether production read APIs remain public or sit
-   behind an identity-aware proxy.
+1. **Complete the authentication boundary.** Server-expiring owner sessions now
+   protect personal signal/briefing/automation reads, mutations, and `/ws`;
+   decide whether non-personal research APIs also sit behind an identity-aware
+   proxy.
 2. **Add CSRF tokens and identity-aware limits.** SameSite cookies and
    process-local IP limits are foundations, not a distributed control plane.
 3. **Finish WebSocket controls.** Authentication and bounded newest-event queues
@@ -518,9 +519,10 @@ prediction.
 
 The recommended slice now has a working vertical implementation:
 
-- `INTELLIDHAN_OWNER_TOKEN` exchanges once for a signed HttpOnly, SameSite
-  owner cookie. Budgets, saved screens, watchlists, automation controls, and
-  `/ws` are protected; agent bearer-token endpoints remain separate.
+- `INTELLIDHAN_OWNER_TOKEN` exchanges once for a signed, timestamped, HttpOnly,
+  SameSite owner cookie with server-enforced expiry. Personal state, briefings,
+  budgets, saved screens, watchlists, automation controls, and `/ws` are
+  protected; agent bearer-token endpoints remain separate.
 - `TerminalStore` supports PostgreSQL through `DATABASE_URL` and a local SQLite
   fallback. It persists alerts, paper trades, briefings, budgets, automation
   policy/intents, saved screens, watchlists, securities, and universe membership.
@@ -531,9 +533,11 @@ The recommended slice now has a working vertical implementation:
 - Live engine and discovery share `config/universe.yaml`. Missing F6 flow and
   missing macro/volatility inputs are excluded with weight renormalization;
   ORB relative volume and Daily Breakout two-close contracts are enforced.
-- `/api/discover` provides cached EOD technical/liquidity/risk fields and four
-  simple presets. It labels ranking `technical_score_v1` and marks Quality,
-  Growth, Valuation, and Catalyst unavailable rather than fabricating them.
+- `/api/discover` provides adjusted, settled-session EOD
+  technical/liquidity/risk fields and four simple presets. Complete scans are
+  cached; partial scans expose per-symbol failures and are not cached. It labels
+  ranking `technical_score_v1` and marks Quality, Growth, Valuation, and
+  Catalyst unavailable rather than fabricating them.
 - `/api/dossier/{symbol}`, `/api/watchlists`, and `/api/screens` support the
   Discover -> Watch -> Analyze path. The card-first UI includes responsive task
   navigation, ranked evidence cards, saved screens, a durable Research queue,
@@ -550,8 +554,9 @@ Remaining limitations are intentional and visible:
 - Fundamental, estimate, filing/news/event, peer, portfolio, and broker
   reconciliation feeds remain unconnected. The UI must continue showing those
   pillars as unavailable.
-- The WebSocket is owner-only; public read-only state continues to use bounded
-  polling. Rate limiting is process-local until Redis-backed identity limits
+- The WebSocket and personal polling surfaces are owner-only. Health,
+  calibration metadata, Discover, and on-demand analysis remain non-personal
+  read APIs. Rate limiting is process-local until Redis-backed identity limits
   are added.
 
 The next slice is Milestone B data breadth: point-in-time universe membership,

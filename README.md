@@ -12,12 +12,14 @@ must not be presented as implemented.
 ## Current implementation
 
 - Card-first web terminal with Signals, Discover, Analyze, 0DTE, and Swing tasks.
-- Owner sessions protecting budgets, watchlists, saved screens, automation
-  controls, and the WebSocket; broker credentials never enter this app.
+- Server-expiring owner sessions protecting personal signal state, briefings,
+  budgets, watchlists, saved screens, automation controls, and the WebSocket;
+  broker credentials never enter this app.
 - SQLite local operational state or PostgreSQL via `DATABASE_URL`; production
   deployments require PostgreSQL or a mounted persistent volume.
 - Live data-quality quarantine and readiness-aware `/api/health`.
-- Technical-only EOD ranking with missing fundamental pillars shown explicitly.
+- Adjusted, settled-session technical EOD ranking with partial-scan failures and
+  missing fundamental pillars shown explicitly.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
   forward evidence and fixed-rule backtests.
 

@@ -13,6 +13,8 @@ from fastapi import HTTPException, Request, WebSocket
 
 
 OWNER_COOKIE = "intellidhan_owner"
+SESSION_MAX_AGE_SECONDS = 60 * 60 * 12
+SESSION_CLOCK_SKEW_SECONDS = 60
 
 
 def owner_token() -> str | None:
@@ -24,11 +26,28 @@ def owner_configured() -> bool:
     return owner_token() is not None
 
 
-def _cookie_value(token: str) -> str:
+def _cookie_value(token: str, issued_at: int | None = None) -> str:
+    issued_at = int(time.time()) if issued_at is None else int(issued_at)
+    message = f"intellidhan-owner-session-v2:{issued_at}".encode()
     signature = hmac.new(
-        token.encode(), b"intellidhan-owner-session-v1", hashlib.sha256
+        token.encode(), message, hashlib.sha256
     ).hexdigest()
-    return f"v1.{signature}"
+    return f"v2.{issued_at}.{signature}"
+
+
+def _valid_cookie(cookie: str, token: str, now: int | None = None) -> bool:
+    try:
+        version, issued_raw, _ = cookie.split(".", 2)
+        issued_at = int(issued_raw)
+    except (TypeError, ValueError):
+        return False
+    if version != "v2":
+        return False
+    now = int(time.time()) if now is None else int(now)
+    age = now - issued_at
+    if age < -SESSION_CLOCK_SKEW_SECONDS or age > SESSION_MAX_AGE_SECONDS:
+        return False
+    return secrets.compare_digest(cookie, _cookie_value(token, issued_at))
 
 
 def verify_owner_token(candidate: str) -> bool:
@@ -41,7 +60,7 @@ def request_is_owner(request: Request) -> bool:
     if expected is None:
         return False
     cookie = request.cookies.get(OWNER_COOKIE, "")
-    if cookie and secrets.compare_digest(cookie, _cookie_value(expected)):
+    if cookie and _valid_cookie(cookie, expected):
         return True
     auth = request.headers.get("authorization", "")
     candidate = auth[7:] if auth.lower().startswith("bearer ") else ""
@@ -53,7 +72,7 @@ def websocket_is_owner(websocket: WebSocket) -> bool:
     if expected is None:
         return False
     cookie = websocket.cookies.get(OWNER_COOKIE, "")
-    return bool(cookie and secrets.compare_digest(cookie, _cookie_value(expected)))
+    return bool(cookie and _valid_cookie(cookie, expected))
 
 
 def require_owner(request: Request) -> None:

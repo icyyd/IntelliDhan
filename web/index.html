@@ -1328,6 +1328,13 @@ let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
 let selectedDiscoverPreset = "trend_leaders", currentDossier = null;
+const DISCOVER_PRESETS = {
+  trend_leaders:{above_sma200:true,min_return_6m:5},
+  pullback_uptrend:{above_sma200:true,min_return_6m:0},
+  fresh_breakouts:{above_sma200:true},
+  defensive_trend:{above_sma200:true,max_volatility_pct:35},
+  "":{above_sma200:false},
+};
 
 function esc(value){
   return String(value ?? "").replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
@@ -1407,12 +1414,12 @@ async function fetchJSON(url, options){
 }
 
 async function refresh(){
+  if(!ownerAuthenticated){ setHealth("auth"); return; }
   try{
     lastState = await fetchJSON("/api/state");
     renderAll();
-    setHealth("live");
   }catch(e){
-    setHealth("down");
+    setHealth(e.status===401?"auth":"down");
   }
 }
 async function refreshCalibration(){
@@ -1429,6 +1436,7 @@ async function refreshCalibration(){
   }catch(e){}
 }
 async function refreshBriefing(){
+  if(!ownerAuthenticated){ briefing=null; renderBriefing(); return; }
   try{
     const b = await fetchJSON("/api/briefing");
     briefing = b && b.bias ? b : null;
@@ -1443,6 +1451,7 @@ function setHealth(mode){
   if(mode === "live"){ dot.classList.add("live"); el.lastChild.textContent = " Live"; }
   else if(mode === "warn"){ dot.classList.add("warn"); el.lastChild.textContent = " Stale"; }
   else if(mode === "down"){ dot.classList.add("down"); el.lastChild.textContent = " Reconnecting…"; }
+  else if(mode === "auth"){ dot.classList.add("warn"); el.lastChild.textContent = " Sign in"; }
   else { el.lastChild.textContent = " Connecting…"; }
 }
 
@@ -1458,7 +1467,8 @@ function renderAll(){
   // Honest readiness first; market-closed is healthy only after boot + DQ + store pass.
   if(s.readiness && !s.readiness.ok){
     setHealth(s.readiness.boot_state==="FAILED"?"down":"warn");
-    document.getElementById("dataHealth").lastChild.textContent = ` ${s.readiness.boot_state.replaceAll("_"," ")}`;
+    const plane=s.readiness.loop_state!=="RUNNING"?s.readiness.loop_state:s.readiness.provider_state||s.readiness.boot_state;
+    document.getElementById("dataHealth").lastChild.textContent = ` ${String(plane||"NOT READY").replaceAll("_"," ")}`;
   } else if(s.session === "RTH"){
     if(!s.last_poll) setHealth("connecting");
     else {
@@ -1943,6 +1953,7 @@ async function refreshOwnerSession(){
     const button=document.getElementById("ownerButton");
     button.style.color=ownerAuthenticated?"var(--teal)":"";
     button.title=ownerAuthenticated?"Owner signed in":"Owner sign in";
+    button.setAttribute("aria-label",ownerAuthenticated?"Owner account, signed in":"Owner sign in");
     document.getElementById("ownerSignOut").hidden=!ownerAuthenticated;
     if(ownerAuthenticated) await Promise.all([loadWatchlists(),loadSavedScreens()]);
     else renderWatchlists();
@@ -1967,6 +1978,7 @@ async function signInOwner(){
     document.getElementById("ownerToken").value="";
     await refreshOwnerSession();
     connectWS();
+    await Promise.all([refresh(),refreshBriefing(),refreshAutotrade()]);
     status.textContent="Signed in. Protected controls are unlocked."; status.className="bd-status ok";
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
 }
@@ -1977,6 +1989,7 @@ async function signOutOwner(){
   document.getElementById("ownerStatus").textContent="Signed out.";
   document.getElementById("ownerStatus").className="bd-status ok";
   document.getElementById("ownerButton").style.color="";
+  setHealth("auth");
 }
 async function loadWatchlists(){
   if(!ownerAuthenticated){ watchlistsCache=[]; renderWatchlists(); return; }
@@ -2003,8 +2016,15 @@ function currentDiscoverFilters(){
   if(selectedDiscoverPreset) filters.preset=selectedDiscoverPreset;
   const values={min_price:"discoverPrice",min_return_6m:"discoverMomentum",max_volatility_pct:"discoverVolatility"};
   Object.entries(values).forEach(([key,id])=>{ const value=document.getElementById(id).value; if(value!=="") filters[key]=Number(value); });
-  if(document.getElementById("discoverAbove200").checked) filters.above_sma200=true;
+  filters.above_sma200=document.getElementById("discoverAbove200").checked;
   return filters;
+}
+function applyPresetControls(preset){
+  const filters=DISCOVER_PRESETS[preset]||DISCOVER_PRESETS[""];
+  document.getElementById("discoverPrice").value=filters.min_price??"";
+  document.getElementById("discoverMomentum").value=filters.min_return_6m??"";
+  document.getElementById("discoverVolatility").value=filters.max_volatility_pct??"";
+  document.getElementById("discoverAbove200").checked=Boolean(filters.above_sma200);
 }
 async function saveCurrentScreen(){
   if(!ownerAuthenticated){ openOwnerDialog(); return; }
@@ -2018,7 +2038,8 @@ async function saveCurrentScreen(){
 }
 function applySavedScreen(screenId){
   const screen=savedScreensCache.find(item=>item.screen_id===screenId); if(!screen) return;
-  const filters=screen.filters||{}; selectedDiscoverPreset=filters.preset||"";
+  const stored=screen.filters||{}; selectedDiscoverPreset=stored.preset||"";
+  const filters={...(DISCOVER_PRESETS[selectedDiscoverPreset]||{}),...stored};
   document.querySelectorAll("[data-preset]").forEach(item=>item.classList.toggle("active",item.dataset.preset===selectedDiscoverPreset));
   document.getElementById("discoverPrice").value=filters.min_price??"";
   document.getElementById("discoverMomentum").value=filters.min_return_6m??"";
@@ -2062,8 +2083,11 @@ function compactDollar(value){
 function renderDiscovery(data){
   discoverLoaded=true;
   document.getElementById("discoverMatches").textContent=data.match_count??0;
-  document.getElementById("discoverUniverse").textContent=data.universe_size??0;
-  document.getElementById("discoverAsOf").textContent=data.as_of?`Completed data through ${fmtAnalysisDate(data.as_of)} · ${data.ranking}`:"No completed data available.";
+  document.getElementById("discoverUniverse").textContent=data.complete===false?`${data.succeeded_count}/${data.universe_size}`:(data.universe_size??0);
+  const failed=Object.keys(data.errors||{});
+  document.getElementById("discoverAsOf").textContent=data.as_of
+    ? `${data.complete===false?`Partial scan (${data.succeeded_count}/${data.universe_size}; failed: ${failed.join(", ")}) · `:""}Completed data through ${fmtAnalysisDate(data.as_of)} · ${data.ranking}`
+    : `No completed data available${failed.length?`; failed: ${failed.join(", ")}`:"."}`;
   const rows=data.results||[], output=document.getElementById("discoverResults");
   if(!rows.length){ output.innerHTML=`<div class="empty"><b>No names match this screen.</b>Loosen one filter or choose All names. A zero-result screen is a valid outcome.</div>`; return; }
   output.innerHTML=rows.map(row=>{
@@ -2104,6 +2128,7 @@ document.getElementById("discoverForm").addEventListener("submit",runDiscovery);
 document.querySelectorAll("[data-preset]").forEach(button=>button.addEventListener("click",()=>{
   selectedDiscoverPreset=button.dataset.preset;
   document.querySelectorAll("[data-preset]").forEach(item=>item.classList.toggle("active",item===button));
+  applyPresetControls(selectedDiscoverPreset);
   runDiscovery();
 }));
 
@@ -2480,6 +2505,7 @@ function renderAutotrade(data){
     ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "—";
 }
 async function refreshAutotrade(){
+  if(!ownerAuthenticated){ autotradeCache=null; return; }
   try{ renderAutotrade(await fetchJSON("/api/autotrade")); }catch(e){}
 }
 function listValue(values){ return (values||[]).join(", "); }
@@ -2622,8 +2648,12 @@ window.addEventListener("resize",()=>{
   resizeTimer=setTimeout(()=>{ if(lastState) renderContext(lastState); },120);
 });
 
-refresh(); refreshCalibration(); refreshBriefing(); refreshAutotrade();
-refreshOwnerSession().then(session=>{ if(session.authenticated) connectWS(); });
+applyPresetControls(selectedDiscoverPreset);
+refreshCalibration();
+refreshOwnerSession().then(session=>{
+  if(session.authenticated){ connectWS(); refresh(); refreshBriefing(); refreshAutotrade(); }
+  else setHealth("auth");
+});
 setInterval(refresh, 15000);
 setInterval(refreshCalibration, 60000);
 setInterval(refreshBriefing, 60000);

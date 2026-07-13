@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from intellidhan_gateway.auth import (
     OWNER_COOKIE,
     RateLimiter,
+    SESSION_MAX_AGE_SECONDS,
     owner_configured,
     request_is_owner,
     require_owner,
@@ -116,7 +117,7 @@ async def create_auth_session(request: Request, payload: dict = Body(...)):
         httponly=True,
         secure=secure,
         samesite="strict",
-        max_age=60 * 60 * 12,
+        max_age=SESSION_MAX_AGE_SECONDS,
         path="/",
     )
     return response
@@ -136,7 +137,8 @@ async def health():
 
 
 @app.get("/api/state")
-async def state():
+async def state(request: Request):
+    require_owner(request)
     return JSONResponse(jsonable_encoder(loop.snapshot()))
 
 
@@ -149,7 +151,8 @@ async def calibration():
 
 
 @app.get("/api/briefing")
-async def briefing():
+async def briefing(request: Request):
+    require_owner(request)
     return loop.last_briefing or {"status": "not generated yet (8:30 ET on trading days)"}
 
 
@@ -351,8 +354,9 @@ async def put_budgets(request: Request, new_budgets: dict = Body(...)):
 
 
 @app.get("/api/autotrade")
-async def get_autotrade():
-    """Credential-free status for the dashboard; never returns broker data."""
+async def get_autotrade(request: Request):
+    """Owner-only policy/status; broker credentials never enter this app."""
+    require_owner(request)
     return loop.autotrade.status()
 
 

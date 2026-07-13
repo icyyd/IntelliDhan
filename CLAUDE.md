@@ -126,7 +126,10 @@ confidence is capped below the live gate until its calibration metadata declares
   wraps the trend analysis with normalized security, coverage, and watch state.
 - `GET /api/discover` is a technical-only EOD ranker. Never describe its
   `technical_score_v1` as a probability, fundamental score, or recommendation.
-- Watchlist/screen/budget mutations and `/ws` require an owner session.
+- Personal `/api/state`, briefing, automation status, watchlist/screen/budget
+  access, and `/ws` require a server-expiring owner session. Health,
+  calibration metadata, Discover, and on-demand research remain non-personal
+  read surfaces.
 - PostgreSQL via `DATABASE_URL` is the production operational store. SQLite is
   acceptable for local work and only deployment-durable on a mounted path.
 - A 503 from `/api/health` means the signal plane is not ready even if the HTTP

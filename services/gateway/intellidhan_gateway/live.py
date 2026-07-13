@@ -71,7 +71,9 @@ class LiveLoop:
         self.started_at: datetime | None = None
         self.last_poll: datetime | None = None
         self.last_successful_poll: datetime | None = None
+        self.last_heartbeat: datetime | None = None
         self.boot_state = "NOT_STARTED"
+        self.loop_state = "NOT_STARTED"
         self.provider_state = "NOT_READY"
         self.last_error: str | None = None
         self.persistence_ready = False
@@ -112,6 +114,7 @@ class LiveLoop:
                 Timeframe.D1,
                 end - timedelta(days=730),
                 end - timedelta(days=1),
+                adjusted=True,
             )
             for symbol in self.symbols
         ]
@@ -125,6 +128,7 @@ class LiveLoop:
             self.runner.seed_daily(symbol, daily)
         await self._ingest_recent(days=4)  # warm intraday TFs + today so far
         self.started_at = end
+        self.last_heartbeat = end
         self.provider_state = "READY"
         self.boot_state = "READY"
 
@@ -222,40 +226,61 @@ class LiveLoop:
                 or (local.hour == 8 and local.minute < 30)
                 or not self.clock.is_trading_day(local.date())):
             return
-        self._briefed_on = day
         briefing = build_briefing(self.runner.states, self.profile_states(), now)
         self.last_briefing = briefing["web"]
         if self.persistence_ready:
             self.store.put_briefing(self.last_briefing)
         await self.telegram.send(briefing["telegram"])
+        self._briefed_on = day
 
     async def run_forever(self) -> None:
-        while self.started_at is None:
+        self.loop_state = "STARTING"
+        try:
+            while self.started_at is None:
+                try:
+                    await self.boot()
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    self.boot_state = "FAILED"
+                    self.loop_state = "DEGRADED"
+                    self.provider_state = "NOT_READY"
+                    self.last_error = str(exc)
+                    self.last_heartbeat = datetime.now(timezone.utc)
+                    print(f"[live] boot failed: {exc}")
+                    await asyncio.sleep(POLL_SECONDS)
+            self.loop_state = "RUNNING"
+            while True:
+                await self.poll_once(datetime.now(timezone.utc))
+                await asyncio.sleep(POLL_SECONDS)
+        finally:
+            self.loop_state = "STOPPED"
+
+    async def poll_once(self, now: datetime) -> None:
+        """Run one supervised iteration; operational failures degrade, never kill it."""
+        errors: list[str] = []
+        try:
+            await self.maybe_brief(now)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            errors.append(f"briefing: {exc}")
+            print(f"[live] briefing error: {exc}")
+        if self.clock.session_state(now) == SessionState.RTH:
             try:
-                await self.boot()
+                await self._ingest_recent(days=1)
+                self.last_successful_poll = now
+                self.provider_state = "READY"
             except asyncio.CancelledError:
                 raise
-            except Exception as exc:
-                self.boot_state = "FAILED"
-                self.provider_state = "NOT_READY"
-                self.last_error = str(exc)
-                print(f"[live] boot failed: {exc}")
-                await asyncio.sleep(POLL_SECONDS)
-        while True:
-            now = datetime.now(timezone.utc)
-            await self.maybe_brief(now)
-            if self.clock.session_state(now) == SessionState.RTH:
-                try:
-                    await self._ingest_recent(days=1)
-                    self.last_successful_poll = now
-                    self.provider_state = "READY"
-                    self.last_error = None
-                except Exception as exc:  # feed hiccup: log, stay alive, sentinel-honest
-                    self.provider_state = "DEGRADED"
-                    self.last_error = str(exc)
-                    print(f"[live] ingest error: {exc}")
-                self.last_poll = now
-            await asyncio.sleep(POLL_SECONDS)
+            except Exception as exc:  # feed hiccup: stay alive, sentinel-honest
+                self.provider_state = "DEGRADED"
+                errors.append(f"ingest: {exc}")
+                print(f"[live] ingest error: {exc}")
+            self.last_poll = now
+        self.last_error = "; ".join(errors) or None
+        self.loop_state = "DEGRADED" if errors else "RUNNING"
+        self.last_heartbeat = datetime.now(timezone.utc)
 
     def profile_states(self) -> dict:
         return {sym: st.profile_state for sym, st in self.runner.states.items()
@@ -264,19 +289,33 @@ class LiveLoop:
     # ----- gateway read API -----
 
     def health(self) -> dict:
+        heartbeat_age_seconds = (
+            (datetime.now(timezone.utc) - self.last_heartbeat).total_seconds()
+            if self.last_heartbeat
+            else None
+        )
+        heartbeat_fresh = (
+            heartbeat_age_seconds is not None
+            and heartbeat_age_seconds <= POLL_SECONDS * 3 + 30
+        )
         ready = (
             self.boot_state == "READY"
+            and self.loop_state == "RUNNING"
             and self.provider_state == "READY"
             and self.persistence_ready
+            and heartbeat_fresh
         )
         return {
             "ok": ready,
             "boot_state": self.boot_state,
+            "loop_state": self.loop_state,
             "provider_state": self.provider_state,
             "persistence": self.store.readiness(),
             "started_at": self.started_at,
             "last_poll": self.last_poll,
             "last_successful_poll": self.last_successful_poll,
+            "last_heartbeat": self.last_heartbeat,
+            "heartbeat_age_seconds": heartbeat_age_seconds,
             "last_error": self.last_error,
             "data_quality": self.quality_reports,
         }

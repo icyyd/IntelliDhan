@@ -9,13 +9,15 @@ from __future__ import annotations
 import asyncio
 import math
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time as dt_time, timedelta, timezone
 from typing import Any
 
 import numpy as np
 
 from intellidhan_ingestor.providers import YahooProvider
-from intellidhan_schemas import Bar, Timeframe
+from intellidhan_ingestor.market_clock import ET, MarketClock
+from intellidhan_ingestor.sentinel import check_bars
+from intellidhan_schemas import Bar, DataQuality, Timeframe
 
 from intellidhan_gateway.universe import load_live_symbols
 
@@ -36,6 +38,21 @@ PRESETS: dict[str, dict[str, Any]] = {
         "max_volatility_pct": 35.0,
     },
 }
+
+DAILY_SETTLEMENT_DELAY = timedelta(minutes=20)
+
+
+def _completed_session_boundary(now: datetime, clock: MarketClock) -> tuple[date, datetime]:
+    """Return the latest settled US session and Yahoo's exclusive end boundary."""
+    local = now.astimezone(ET)
+    candidate = local.date()
+    settled_at = datetime.combine(candidate, clock.rth_close(candidate), tzinfo=ET)
+    if not clock.is_trading_day(candidate) or local < settled_at + DAILY_SETTLEMENT_DELAY:
+        candidate -= timedelta(days=1)
+    while not clock.is_trading_day(candidate):
+        candidate -= timedelta(days=1)
+    exclusive_end = datetime.combine(candidate + timedelta(days=1), dt_time.min, tzinfo=ET)
+    return candidate, exclusive_end.astimezone(timezone.utc)
 
 
 def _return_pct(closes: np.ndarray, sessions: int) -> float | None:
@@ -133,26 +150,69 @@ class DiscoveryService:
     def __init__(self, provider: YahooProvider | None = None, cache_seconds: int = 900) -> None:
         self.provider = provider or YahooProvider()
         self.cache_seconds = cache_seconds
-        self._cache: tuple[float, list[dict[str, Any]]] | None = None
+        self.clock = MarketClock()
+        self._cache: tuple[float, dict[str, Any]] | None = None
 
-    async def _load_row(self, symbol: str, start: datetime, end: datetime) -> dict[str, Any]:
-        bars = await self.provider.get_bars(symbol, Timeframe.D1, start, end)
+    async def _load_row(
+        self,
+        symbol: str,
+        start: datetime,
+        end: datetime,
+        completed_session: date,
+    ) -> dict[str, Any]:
+        bars = await self.provider.get_bars(
+            symbol, Timeframe.D1, start, end, adjusted=True
+        )
+        report = check_bars(symbol, bars)
+        if report.quality != DataQuality.OK:
+            raise LookupError(f"daily data quality rejected: {'; '.join(report.issues)}")
+        completed_id = completed_session.isoformat()
+        bars = [bar for bar in bars if self.clock.session_id(bar.ts_close) <= completed_id]
+        if not bars:
+            raise LookupError("no completed adjusted daily history")
+        latest_id = self.clock.session_id(max(bars, key=lambda bar: bar.ts_close).ts_close)
+        if latest_id != completed_id:
+            raise LookupError(
+                f"stale daily history: expected {completed_id}, received {latest_id}"
+            )
         return screen_row(symbol, bars)
 
-    async def universe_rows(self, refresh: bool = False) -> list[dict[str, Any]]:
+    async def universe_scan(self, refresh: bool = False) -> dict[str, Any]:
         if not refresh and self._cache and time.monotonic() - self._cache[0] < self.cache_seconds:
             return self._cache[1]
-        end = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc)
+        completed_session, end = _completed_session_boundary(now, self.clock)
         start = end - timedelta(days=550)
         symbols = load_live_symbols()
         results = await asyncio.gather(
-            *(self._load_row(symbol, start, end) for symbol in symbols),
+            *(
+                self._load_row(symbol, start, end, completed_session)
+                for symbol in symbols
+            ),
             return_exceptions=True,
         )
-        rows = [item for item in results if isinstance(item, dict)]
+        rows: list[dict[str, Any]] = []
+        errors: dict[str, str] = {}
+        for symbol, item in zip(symbols, results):
+            if isinstance(item, dict):
+                rows.append(item)
+            else:
+                errors[symbol] = str(item)[:240] or type(item).__name__
         rows.sort(key=lambda item: item["technical_score"], reverse=True)
-        self._cache = (time.monotonic(), rows)
-        return rows
+        scan = {
+            "rows": rows,
+            "configured_count": len(symbols),
+            "attempted_count": len(results),
+            "succeeded_count": len(rows),
+            "failed_count": len(errors),
+            "errors": errors,
+            "complete": not errors,
+            "completed_session": completed_session.isoformat(),
+        }
+        # Never preserve a partial provider response as if it were a healthy scan.
+        if not errors:
+            self._cache = (time.monotonic(), scan)
+        return scan
 
     async def screen(
         self,
@@ -176,7 +236,8 @@ class DiscoveryService:
             "max_distance_from_high_pct": max_distance_from_high_pct,
         }
         filters.update({key: value for key, value in supplied.items() if value is not None})
-        rows = await self.universe_rows(refresh=refresh)
+        scan = await self.universe_scan(refresh=refresh)
+        rows = scan["rows"]
 
         def included(row: dict[str, Any]) -> bool:
             if filters.get("min_price") is not None and row["price"] < filters["min_price"]:
@@ -211,7 +272,13 @@ class DiscoveryService:
         return {
             "as_of": max((row["as_of"] for row in rows), default=None),
             "universe": "configured-live",
-            "universe_size": len(rows),
+            "universe_size": scan["configured_count"],
+            "attempted_count": scan["attempted_count"],
+            "succeeded_count": scan["succeeded_count"],
+            "failed_count": scan["failed_count"],
+            "errors": scan["errors"],
+            "complete": scan["complete"],
+            "completed_session": scan["completed_session"],
             "match_count": len(selected),
             "preset": preset,
             "filters": filters,

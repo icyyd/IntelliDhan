@@ -1,20 +1,28 @@
 """Trustworthy-terminal foundation: durability, auth, DQ, discovery, parity."""
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 
 import intellidhan_gateway.app as gateway
+import intellidhan_gateway.auth as owner_auth
+import intellidhan_gateway.discovery as discovery_module
 from intellidhan_engine.scoring import composite
 from intellidhan_engine.strategies import DailyBreakout, OrbBreakout
-from intellidhan_gateway.discovery import screen_row
+from intellidhan_gateway.discovery import (
+    DiscoveryService,
+    _completed_session_boundary,
+    screen_row,
+)
 from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.terminal_store import TerminalStore
+from intellidhan_ingestor.market_clock import MarketClock
 from intellidhan_learning.paper import PaperExecutor, PaperTrade
-from intellidhan_schemas import Bar, Timeframe
+from intellidhan_schemas import Bar, SessionState, Timeframe
 from intellidhan_schemas.signals import Direction, Module
 
 
@@ -91,6 +99,9 @@ def test_owner_session_protects_watchlist_mutations(tmp_path, monkeypatch):
     client = TestClient(gateway.app)
 
     assert client.get("/api/watchlists").status_code == 401
+    assert client.get("/api/state").status_code == 401
+    assert client.get("/api/autotrade").status_code == 401
+    assert client.get("/api/briefing").status_code == 401
     assert client.post("/api/auth/session", json={"token": "wrong"}).status_code == 401
     response = client.post(
         "/api/auth/session", json={"token": "owner-token-that-is-long-enough-123"}
@@ -101,6 +112,29 @@ def test_owner_session_protects_watchlist_mutations(tmp_path, monkeypatch):
     assert client.post("/api/watchlists", json={"name": "Research"}).status_code == 200
     assert client.post("/api/watchlists/research/symbols/aapl", json={}).status_code == 200
     assert client.get("/api/watchlists").json()["watchlists"][0]["symbols"] == ["AAPL"]
+    assert client.get("/api/state").status_code == 200
+    assert client.get("/api/autotrade").status_code == 200
+    assert client.get("/api/briefing").status_code == 200
+
+
+def test_owner_session_cookie_expires_on_the_server(tmp_path, monkeypatch):
+    token = "owner-token-that-is-long-enough-123"
+    monkeypatch.setenv("INTELLIDHAN_OWNER_TOKEN", token)
+    monkeypatch.setattr(owner_auth.time, "time", lambda: 1_000_000)
+    store = TerminalStore(tmp_path / "expired-session.sqlite3")
+    store.init_schema()
+    store.create_watchlist("Research")
+    monkeypatch.setattr(gateway.loop, "store", store)
+    client = TestClient(gateway.app)
+    client.cookies.set(owner_auth.OWNER_COOKIE, owner_auth.session_cookie_value())
+    assert client.get("/api/watchlists").status_code == 200
+
+    monkeypatch.setattr(
+        owner_auth.time,
+        "time",
+        lambda: 1_000_000 + owner_auth.SESSION_MAX_AGE_SECONDS + 1,
+    )
+    assert client.get("/api/watchlists").status_code == 401
 
 
 def test_health_is_503_until_every_readiness_plane_passes(tmp_path, monkeypatch):
@@ -109,6 +143,8 @@ def test_health_is_503_until_every_readiness_plane_passes(tmp_path, monkeypatch)
     monkeypatch.setattr(gateway.loop, "store", store)
     monkeypatch.setattr(gateway.loop, "persistence_ready", True)
     monkeypatch.setattr(gateway.loop, "boot_state", "READY")
+    monkeypatch.setattr(gateway.loop, "loop_state", "RUNNING")
+    monkeypatch.setattr(gateway.loop, "last_heartbeat", datetime.now(timezone.utc))
     monkeypatch.setattr(gateway.loop, "provider_state", "DEGRADED")
     client = TestClient(gateway.app)
     response = client.get("/api/health")
@@ -119,6 +155,15 @@ def test_health_is_503_until_every_readiness_plane_passes(tmp_path, monkeypatch)
     response = client.get("/api/health")
     assert response.status_code == 200
     assert response.json()["ok"] is True
+
+    monkeypatch.setattr(
+        gateway.loop,
+        "last_heartbeat",
+        datetime.now(timezone.utc) - timedelta(minutes=5),
+    )
+    response = client.get("/api/health")
+    assert response.status_code == 503
+    assert response.json()["heartbeat_age_seconds"] >= 300
 
 
 def test_websocket_subscriber_queue_is_bounded_to_newest_event(tmp_path):
@@ -168,6 +213,144 @@ def test_discovery_is_technical_only_and_future_claims_stay_explicit():
     }
     assert row["pillars"]["quality"] is None
     assert row["pillars"]["valuation"] is None
+
+
+def completed_daily_bars(symbol: str, final_session: date, count: int = 300) -> list[Bar]:
+    sessions: list[date] = []
+    current = final_session
+    while len(sessions) < count:
+        if current.weekday() < 5:
+            sessions.append(current)
+        current -= timedelta(days=1)
+    sessions.reverse()
+    return [
+        Bar(
+            symbol=symbol,
+            timeframe=Timeframe.D1,
+            ts_close=datetime.combine(session, time(16), tzinfo=timezone.utc),
+            open=100 + index * 0.1,
+            high=101 + index * 0.1,
+            low=99 + index * 0.1,
+            close=100.5 + index * 0.1,
+            volume=1_000_000,
+            source="adjusted-fixture",
+        )
+        for index, session in enumerate(sessions)
+    ]
+
+
+@pytest.mark.asyncio
+async def test_discovery_requests_adjusted_settled_daily_history():
+    expected_session = date(2026, 7, 10)
+
+    class Provider:
+        def __init__(self):
+            self.calls = []
+
+        async def get_bars(self, *args, **kwargs):
+            self.calls.append((args, kwargs))
+            return completed_daily_bars("TEST", expected_session)
+
+    provider = Provider()
+    service = DiscoveryService(provider=provider)
+    end = datetime(2026, 7, 11, 4, tzinfo=timezone.utc)
+    row = await service._load_row(
+        "TEST", end - timedelta(days=550), end, expected_session
+    )
+    assert row["as_of"].startswith("2026-07-10")
+    assert provider.calls[0][1]["adjusted"] is True
+    assert provider.calls[0][0][1] == Timeframe.D1
+
+    clock = MarketClock()
+    session, boundary = _completed_session_boundary(
+        datetime(2026, 7, 13, 12, tzinfo=timezone.utc), clock
+    )
+    assert session == expected_session
+    assert boundary > datetime(2026, 7, 10, 16, tzinfo=timezone.utc)
+
+
+@pytest.mark.asyncio
+async def test_partial_discovery_scan_is_explicit_and_not_cached(monkeypatch):
+    monkeypatch.setattr(discovery_module, "load_live_symbols", lambda: ["GOOD", "BAD"])
+    service = DiscoveryService(provider=SimpleNamespace(), cache_seconds=900)
+    calls = []
+
+    async def load(symbol, *_args):
+        calls.append(symbol)
+        if symbol == "BAD":
+            raise LookupError("provider unavailable")
+        return {"symbol": symbol, "technical_score": 75.0, "as_of": "2026-07-10"}
+
+    monkeypatch.setattr(service, "_load_row", load)
+    first = await service.universe_scan()
+    second = await service.universe_scan()
+    assert first["complete"] is False
+    assert first["configured_count"] == first["attempted_count"] == 2
+    assert first["succeeded_count"] == 1
+    assert first["failed_count"] == 1
+    assert first["errors"] == {"BAD": "provider unavailable"}
+    assert second["complete"] is False
+    assert calls == ["GOOD", "BAD", "GOOD", "BAD"]
+
+
+@pytest.mark.asyncio
+async def test_explicit_false_filter_overrides_a_preset(monkeypatch):
+    service = DiscoveryService(provider=SimpleNamespace())
+    below_200 = {
+        "symbol": "TEST",
+        "as_of": "2026-07-10",
+        "price": 100.0,
+        "technical_score": 50.0,
+        "average_dollar_volume_20d": 10_000_000,
+        "distance_from_sma_200_pct": -1.0,
+        "return_6m_pct": 10.0,
+        "realized_volatility_20d_pct": 20.0,
+        "distance_from_52w_high_pct": -5.0,
+    }
+
+    async def scan(refresh=False):
+        return {
+            "rows": [below_200],
+            "configured_count": 1,
+            "attempted_count": 1,
+            "succeeded_count": 1,
+            "failed_count": 0,
+            "errors": {},
+            "complete": True,
+            "completed_session": "2026-07-10",
+        }
+
+    monkeypatch.setattr(service, "universe_scan", scan)
+    result = await service.screen(preset="trend_leaders", above_sma200=False)
+    assert result["filters"]["above_sma200"] is False
+    assert result["match_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_briefing_failure_degrades_but_does_not_escape_poll_iteration(tmp_path):
+    loop = LiveLoop(["QQQ"], store=TerminalStore(tmp_path / "brief.sqlite3"))
+    loop.boot_state = "READY"
+    loop.provider_state = "READY"
+    loop.persistence_ready = True
+    loop.clock = SimpleNamespace(session_state=lambda _now: SessionState.CLOSED)
+
+    async def fail(_now):
+        raise RuntimeError("delivery unavailable")
+
+    loop.maybe_brief = fail
+    await loop.poll_once(datetime.now(timezone.utc))
+    assert loop.loop_state == "DEGRADED"
+    assert loop.last_error == "briefing: delivery unavailable"
+    assert loop.last_heartbeat is not None
+
+
+def test_frontend_does_not_override_readiness_with_unconditional_live():
+    source = Path("web/index.html").read_text()
+    refresh_block = source[source.index("async function refresh()") : source.index(
+        "async function refreshCalibration()"
+    )]
+    assert 'setHealth("live")' not in refresh_block
+    assert 'if(!ownerAuthenticated){ setHealth("auth"); return; }' in refresh_block
 
 
 def test_missing_factor_weights_are_renormalized_not_rewarded():
