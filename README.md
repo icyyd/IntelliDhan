@@ -12,9 +12,10 @@ must not be presented as implemented.
 ## Current implementation
 
 - Card-first web terminal with Signals, Discover, Analyze, 0DTE, and Swing tasks.
-- Server-expiring owner sessions protecting personal signal state, briefings,
-  budgets, watchlists, saved screens, automation controls, and the WebSocket;
-  broker credentials never enter this app.
+- Invite-only database accounts with scrypt password hashes, opaque
+  server-expiring sessions, and ADMIN/TRADER/VIEWER roles. Preferences, capital
+  limits, watchlists, and saved screens are isolated per user; broker
+  credentials never enter this app.
 - SQLite local operational state or PostgreSQL via `DATABASE_URL`; production
   deployments require PostgreSQL or a mounted persistent volume, enforced by a
   readiness gate when `INTELLIDHAN_REQUIRE_DURABLE_STATE=true`.
@@ -26,7 +27,10 @@ must not be presented as implemented.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
-least 24 characters, and configure durable state before production deployment.
+least 24 characters for first-admin setup, optionally set a separate
+`INTELLIDHAN_INVITE_CODE`, and configure durable state before production. Open
+the Account panel to create the first administrator. See
+[Accounts and personal settings](docs/21-accounts-and-personal-settings.md).
 
 ## Document Index
 
@@ -51,6 +55,9 @@ least 24 characters, and configure durable state before production deployment.
 | 16 | [Market Profile Layer](docs/16-market-profile.md) | Dalton auction theory: value areas, open types, day types, failed auctions, p/b shape vetoes |
 | 17 | [Trader Psychology Layer](docs/17-trader-psychology.md) | Douglas probabilistic voice + consistency framework; Tendler mental-game toolkit & error detection |
 | 18 | [Enhancement Review](docs/18-enhancement-review.md) | Post-implementation audit: research/production parity, risk-state wiring, evidence vocabulary, UX direction — living document, agent-readable implementation brief |
+| 19 | [Trend Analysis &amp; On-Demand Module](docs/19-trend-analysis-and-on-demand-module.md) | Cross-ticker trend methods, walk-forward evidence, and arbitrary-symbol analysis contract |
+| 20 | [One-Stop Terminal Gap Analysis](docs/20-one-stop-terminal-gap-analysis.md) | Full-solution audit and prioritized terminal roadmap |
+| 21 | [Accounts &amp; Personal Settings](docs/21-accounts-and-personal-settings.md) | Account/session architecture, roles, user-owned database state, APIs, and deployment requirements |
 
 ## Core Product Tenets
 

@@ -19,14 +19,22 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from intellidhan_gateway.auth import (
     OWNER_COOKIE,
+    SESSION_COOKIE,
     RateLimiter,
     SESSION_MAX_AGE_SECONDS,
+    create_account_session,
+    hash_password,
+    invite_configured,
     owner_configured,
-    request_is_owner,
+    request_principal,
     require_owner,
+    require_user,
     session_cookie_value,
+    session_token_hash,
+    verify_invite_code,
     verify_owner_token,
-    websocket_owner_expires_at,
+    verify_password,
+    websocket_principal,
 )
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.live import LiveLoop
@@ -38,6 +46,17 @@ loop = LiveLoop()
 stock_analyzer = StockAnalysisService()
 discovery = DiscoveryService()
 rate_limiter = RateLimiter()
+
+DEFAULT_PREFERENCES = {
+    "theme": "dark",
+    "default_view": "signals",
+    "compact_cards": False,
+    "alert_sound": False,
+    "reduced_motion": False,
+}
+VALID_ROLES = {"ADMIN", "TRADER", "VIEWER"}
+_DUMMY_PASSWORD_HASH = hash_password("not-a-real-account-password")
+WS_SESSION_RECHECK_SECONDS = 30.0
 
 
 @asynccontextmanager
@@ -88,47 +107,247 @@ def _client_key(request: Request, surface: str) -> str:
 
 
 def _require_control(request: Request) -> None:
-    if request_is_owner(request):
+    principal = request_principal(request, loop.store)
+    if principal and principal.role == "ADMIN":
         return
+    if principal:
+        raise HTTPException(status_code=403, detail="administrator access is required")
     _require_token(request, "AUTOTRADE_CONTROL_TOKEN", control=True)
+
+
+def _require_personal(request: Request, *, roles: set[str] | None = None):
+    """Use accounts when present and retain fail-closed legacy behavior."""
+    if loop.store.count_users() == 0 and not owner_configured():
+        require_owner(request)
+    return require_user(request, loop.store, roles=roles)
+
+
+def _secure_cookie(request: Request) -> bool:
+    return request.url.scheme == "https" or os.getenv(
+        "INTELLIDHAN_SECURE_COOKIE", ""
+    ).lower() in {"1", "true", "yes"}
+
+
+def _account_response(request: Request, user: dict, token: str) -> JSONResponse:
+    response = JSONResponse({"authenticated": True, "user": user})
+    response.set_cookie(
+        SESSION_COOKIE,
+        token,
+        httponly=True,
+        secure=_secure_cookie(request),
+        samesite="strict",
+        max_age=SESSION_MAX_AGE_SECONDS,
+        path="/",
+    )
+    response.delete_cookie(OWNER_COOKIE, path="/")
+    return response
+
+
+def _validate_email(value: str) -> str:
+    value = value.strip().lower()
+    local, separator, domain = value.partition("@")
+    if (
+        not separator
+        or not local
+        or "." not in domain
+        or domain.startswith(".")
+        or domain.endswith(".")
+        or len(value) > 254
+    ):
+        raise ValueError("enter a valid email address")
+    return value
+
+
+def _public_user(user: dict) -> dict:
+    return {key: user.get(key) for key in (
+        "user_id", "email", "display_name", "role", "active", "created_at",
+        "updated_at", "last_login_at",
+    ) if key in user}
+
+
+def _validate_capital_limits(payload: dict) -> dict[str, dict]:
+    if not isinstance(payload, dict) or not payload:
+        raise ValueError("capital limits must include at least one trading module")
+    allowed = set(loop.composer.budgets.as_dict())
+    clean: dict[str, dict] = {}
+    for module, raw in payload.items():
+        if module not in allowed or not isinstance(raw, dict):
+            raise ValueError(f"unknown trading module {module!r}")
+        cap_key = "daily_capital" if "daily_capital" in raw else "standing_capital"
+        if cap_key not in raw:
+            raise ValueError(f"{module}: capital limit is required")
+        capital = float(raw[cap_key])
+        risk_cap = float(raw.get("risk_cap_pct", 0))
+        if not 0 < capital <= 100_000_000:
+            raise ValueError(f"{module}: capital must be between 0 and 100,000,000")
+        if not 0 < risk_cap <= 1:
+            raise ValueError(f"{module}: risk limit must be between 0% and 100%")
+        item = {cap_key: capital, "risk_cap_pct": risk_cap}
+        if "max_alerts_per_day" in raw:
+            max_alerts = int(raw["max_alerts_per_day"])
+            if not 1 <= max_alerts <= 100:
+                raise ValueError(f"{module}: daily alert limit must be 1–100")
+            item["max_alerts_per_day"] = max_alerts
+        clean[module] = item
+    return clean
 
 
 @app.get("/api/auth/session")
 async def auth_session(request: Request):
+    account_count = loop.store.count_users()
+    principal = request_principal(request, loop.store)
+    configured = account_count > 0 or owner_configured()
+    if not configured:
+        return {"configured": False, "authenticated": False}
     return {
-        "configured": owner_configured(),
-        "authenticated": request_is_owner(request),
+        "configured": True,
+        "authenticated": principal is not None,
+        "accounts_enabled": account_count > 0,
+        "registration_enabled": (
+            owner_configured()
+            if account_count == 0
+            else invite_configured()
+        ),
+        "user": principal.public() if principal else None,
     }
 
 
 @app.post("/api/auth/session")
 async def create_auth_session(request: Request, payload: dict = Body(...)):
     rate_limiter.check(_client_key(request, "login"), limit=5, window_seconds=60)
+    if payload.get("email") is not None:
+        email = str(payload.get("email", "")).strip().lower()
+        password = str(payload.get("password", ""))
+        user = loop.store.get_user_by_email(email, include_password=True)
+        password_hash = user.get("password_hash", "") if user else _DUMMY_PASSWORD_HASH
+        password_valid = verify_password(password, password_hash)
+        if not user or not user["active"] or not password_valid:
+            raise HTTPException(status_code=401, detail="email or password is incorrect")
+        loop.store.mark_user_login(user["user_id"])
+        token, _ = create_account_session(loop.store, user["user_id"])
+        return _account_response(request, _public_user(user), token)
     if not owner_configured():
-        raise HTTPException(status_code=503, detail="owner authentication is not configured")
+        raise HTTPException(status_code=503, detail="account sign-in is not configured")
     if not verify_owner_token(str(payload.get("token", ""))):
-        raise HTTPException(status_code=401, detail="invalid owner token")
+        raise HTTPException(status_code=401, detail="invalid admin setup code")
+    account_token = request.cookies.get(SESSION_COOKIE, "")
+    if account_token:
+        loop.store.revoke_user_session(session_token_hash(account_token))
     response = JSONResponse({"authenticated": True})
-    secure = request.url.scheme == "https" or os.getenv(
-        "INTELLIDHAN_SECURE_COOKIE", ""
-    ).lower() in {"1", "true", "yes"}
     response.set_cookie(
         OWNER_COOKIE,
         session_cookie_value(),
         httponly=True,
-        secure=secure,
+        secure=_secure_cookie(request),
         samesite="strict",
         max_age=SESSION_MAX_AGE_SECONDS,
         path="/",
     )
+    response.delete_cookie(SESSION_COOKIE, path="/")
     return response
+
+
+@app.post("/api/auth/register")
+async def register_account(request: Request, payload: dict = Body(...)):
+    rate_limiter.check(_client_key(request, "register"), limit=3, window_seconds=300)
+    first_account = loop.store.count_users() == 0
+    if first_account and not owner_configured():
+        raise HTTPException(
+            status_code=503, detail="initial administrator setup is not configured"
+        )
+    if not first_account and not invite_configured():
+        raise HTTPException(status_code=503, detail="account registration is not configured")
+    if not verify_invite_code(
+        str(payload.get("invite_code", "")), first_account=first_account
+    ):
+        raise HTTPException(status_code=401, detail="invite or admin setup code is incorrect")
+    try:
+        user = loop.store.create_user(
+            email=_validate_email(str(payload.get("email", ""))),
+            display_name=str(payload.get("display_name", "")),
+            password_hash=hash_password(str(payload.get("password", ""))),
+            role="ADMIN" if first_account else "TRADER",
+            preferences=dict(DEFAULT_PREFERENCES),
+            capital_limits=loop.composer.budgets.as_dict(),
+            default_watchlist="Research",
+            require_first=first_account,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    token, _ = create_account_session(loop.store, user["user_id"])
+    return _account_response(request, _public_user(user), token)
+
+
+@app.get("/api/accounts")
+async def list_accounts(request: Request):
+    _require_personal(request, roles={"ADMIN"})
+    return {"accounts": loop.store.list_users()}
+
+
+@app.post("/api/accounts")
+async def create_account(request: Request, payload: dict = Body(...)):
+    _require_personal(request, roles={"ADMIN"})
+    try:
+        role = str(payload.get("role", "TRADER")).upper()
+        if role not in VALID_ROLES:
+            raise ValueError("role must be ADMIN, TRADER, or VIEWER")
+        user = loop.store.create_user(
+            email=_validate_email(str(payload.get("email", ""))),
+            display_name=str(payload.get("display_name", "")),
+            password_hash=hash_password(str(payload.get("password", ""))),
+            role=role,
+            preferences=dict(DEFAULT_PREFERENCES),
+            capital_limits=loop.composer.budgets.as_dict(),
+            default_watchlist="Research",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _public_user(user)
 
 
 @app.delete("/api/auth/session")
-async def delete_auth_session():
+async def delete_auth_session(request: Request):
+    token = request.cookies.get(SESSION_COOKIE, "")
+    if token:
+        loop.store.revoke_user_session(session_token_hash(token))
     response = JSONResponse({"authenticated": False})
     response.delete_cookie(OWNER_COOKIE, path="/")
+    response.delete_cookie(SESSION_COOKIE, path="/")
     return response
+
+
+@app.get("/api/account/preferences")
+async def get_preferences(request: Request):
+    principal = _require_personal(request)
+    if principal.legacy:
+        return DEFAULT_PREFERENCES
+    return {**DEFAULT_PREFERENCES, **loop.store.get_user_preferences(principal.user_id)}
+
+
+@app.put("/api/account/preferences")
+async def put_preferences(request: Request, updates: dict = Body(...)):
+    principal = _require_personal(request)
+    if principal.legacy:
+        raise HTTPException(
+            status_code=409, detail="create an account before saving personal preferences"
+        )
+    allowed = set(DEFAULT_PREFERENCES)
+    if not isinstance(updates, dict) or set(updates) - allowed:
+        raise HTTPException(status_code=422, detail="one or more preferences are unsupported")
+    preferences = {
+        **DEFAULT_PREFERENCES,
+        **loop.store.get_user_preferences(principal.user_id),
+        **updates,
+    }
+    if preferences["theme"] not in {"dark", "light", "system"}:
+        raise HTTPException(status_code=422, detail="theme must be dark, light, or system")
+    if preferences["default_view"] not in {"signals", "discover", "analysis"}:
+        raise HTTPException(status_code=422, detail="default view is unsupported")
+    for key in ("compact_cards", "alert_sound", "reduced_motion"):
+        if not isinstance(preferences[key], bool):
+            raise HTTPException(status_code=422, detail=f"{key} must be true or false")
+    loop.store.put_user_preferences(principal.user_id, preferences)
+    return preferences
 
 
 @app.get("/api/health")
@@ -139,7 +358,7 @@ async def health():
 
 @app.get("/api/state")
 async def state(request: Request):
-    require_owner(request)
+    _require_personal(request)
     return JSONResponse(jsonable_encoder(loop.snapshot()))
 
 
@@ -153,7 +372,7 @@ async def calibration():
 
 @app.get("/api/briefing")
 async def briefing(request: Request):
-    require_owner(request)
+    _require_personal(request)
     return loop.last_briefing or {"status": "not generated yet (8:30 ET on trading days)"}
 
 
@@ -264,15 +483,20 @@ async def stock_dossier(
         raise HTTPException(status_code=504, detail="stock analysis provider timed out") from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail="stock analysis provider failed") from exc
+    principal = request_principal(request, loop.store)
+    if principal and principal.legacy:
+        watchlists = loop.store.watchlists_for_symbol(symbol)
+    elif principal:
+        watchlists = loop.store.user_watchlists_for_symbol(principal.user_id, symbol)
+    else:
+        watchlists = []
     return {
         "security": loop.store.get_security(symbol) or {
             "symbol": symbol.upper(),
             "name": symbol.upper(),
             "source": "on-demand",
         },
-        "watchlists": (
-            loop.store.watchlists_for_symbol(symbol) if request_is_owner(request) else []
-        ),
+        "watchlists": watchlists,
         "analysis": analysis,
         "coverage": {
             "technicals": "AVAILABLE",
@@ -286,15 +510,24 @@ async def stock_dossier(
 
 @app.get("/api/watchlists")
 async def list_watchlists(request: Request):
-    require_owner(request)
-    return {"watchlists": loop.store.list_watchlists()}
+    principal = _require_personal(request)
+    watchlists = (
+        loop.store.list_watchlists()
+        if principal.legacy
+        else loop.store.list_user_watchlists(principal.user_id)
+    )
+    return {"watchlists": watchlists}
 
 
 @app.post("/api/watchlists")
 async def create_watchlist(request: Request, payload: dict = Body(...)):
-    require_owner(request)
+    principal = _require_personal(request)
     try:
-        return loop.store.create_watchlist(str(payload.get("name", "")))
+        if principal.legacy:
+            return loop.store.create_watchlist(str(payload.get("name", "")))
+        return loop.store.create_user_watchlist(
+            principal.user_id, str(payload.get("name", ""))
+        )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -303,9 +536,16 @@ async def create_watchlist(request: Request, payload: dict = Body(...)):
 async def add_watchlist_symbol(
     watchlist_id: str, symbol: str, request: Request, payload: dict = Body(default={})
 ):
-    require_owner(request)
+    principal = _require_personal(request)
     try:
-        loop.store.add_watchlist_member(watchlist_id, symbol, str(payload.get("note", "")))
+        if principal.legacy:
+            loop.store.add_watchlist_member(
+                watchlist_id, symbol, str(payload.get("note", ""))
+            )
+        else:
+            loop.store.add_user_watchlist_member(
+                principal.user_id, watchlist_id, symbol, str(payload.get("note", ""))
+            )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return {"watchlist_id": watchlist_id, "symbol": symbol.upper(), "saved": True}
@@ -313,51 +553,74 @@ async def add_watchlist_symbol(
 
 @app.delete("/api/watchlists/{watchlist_id}/symbols/{symbol}")
 async def remove_watchlist_symbol(watchlist_id: str, symbol: str, request: Request):
-    require_owner(request)
-    loop.store.remove_watchlist_member(watchlist_id, symbol)
+    principal = _require_personal(request)
+    if principal.legacy:
+        loop.store.remove_watchlist_member(watchlist_id, symbol)
+    else:
+        loop.store.remove_user_watchlist_member(principal.user_id, watchlist_id, symbol)
     return {"watchlist_id": watchlist_id, "symbol": symbol.upper(), "saved": False}
 
 
 @app.get("/api/screens")
 async def list_saved_screens(request: Request):
-    require_owner(request)
-    return {"screens": loop.store.list_saved_screens()}
+    principal = _require_personal(request)
+    screens = (
+        loop.store.list_saved_screens()
+        if principal.legacy
+        else loop.store.list_user_saved_screens(principal.user_id)
+    )
+    return {"screens": screens}
 
 
 @app.post("/api/screens")
 async def save_screen(request: Request, payload: dict = Body(...)):
-    require_owner(request)
+    principal = _require_personal(request)
     try:
-        return loop.store.put_saved_screen(
-            str(payload.get("name", "")), dict(payload.get("filters") or {})
-        )
+        name = str(payload.get("name", ""))
+        filters = dict(payload.get("filters") or {})
+        if principal.legacy:
+            return loop.store.put_saved_screen(name, filters)
+        return loop.store.put_user_saved_screen(principal.user_id, name, filters)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.get("/api/budgets")
 async def get_budgets(request: Request):
-    require_owner(request)
-    return loop.composer.budgets.as_dict()
+    principal = _require_personal(request)
+    if principal.legacy:
+        return loop.composer.budgets.as_dict()
+    limits = loop.store.get_user_capital_limits(principal.user_id)
+    if not limits:
+        limits = loop.composer.budgets.as_dict()
+        loop.store.put_user_capital_limits(principal.user_id, limits)
+    return limits
 
 
 @app.put("/api/budgets")
 async def put_budgets(request: Request, new_budgets: dict = Body(...)):
-    """Persist edited budgets to config/budgets.yaml; sizing picks them up on
-    the very next alert — no restart (doc 09 §3, hot-reload)."""
-    require_owner(request)
+    """Save personal capital and risk limits for the signed-in account.
+
+    The legacy administrator route retains its original shared-engine behavior
+    until that installation is migrated to accounts.
+    """
+    principal = _require_personal(request)
     try:
-        loop.composer.budgets.update(new_budgets)
-        loop.store.put_setting("budgets", loop.composer.budgets.as_dict())
+        clean = _validate_capital_limits(new_budgets)
+        if principal.legacy:
+            loop.composer.budgets.update(clean)
+            loop.store.put_setting("budgets", clean)
+        else:
+            loop.store.put_user_capital_limits(principal.user_id, clean)
     except (ValueError, KeyError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return loop.composer.budgets.as_dict()
+    return clean
 
 
 @app.get("/api/autotrade")
 async def get_autotrade(request: Request):
-    """Owner-only policy/status; broker credentials never enter this app."""
-    require_owner(request)
+    """Account-only policy/status; broker credentials never enter this app."""
+    _require_personal(request)
     return loop.autotrade.status()
 
 
@@ -449,10 +712,11 @@ async def record_autotrade_receipt(
 
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
-    expires_at = websocket_owner_expires_at(websocket)
-    if expires_at is None:
-        await websocket.close(code=4401, reason="owner sign-in required")
+    principal = websocket_principal(websocket, loop.store)
+    if principal is None:
+        await websocket.close(code=4401, reason="sign-in required")
         return
+    expires_at = principal.expires_at
     await websocket.accept()
     q: asyncio.Queue = asyncio.Queue(maxsize=100)
     loop.ws_subscribers.append(q)
@@ -461,15 +725,28 @@ async def ws(websocket: WebSocket):
     expiry_task = asyncio.create_task(
         asyncio.sleep(max(0.0, expires_at - time.time()))
     )
+    session_check_task = asyncio.create_task(
+        asyncio.sleep(WS_SESSION_RECHECK_SECONDS)
+    )
     try:
         while True:
             done, _ = await asyncio.wait(
-                {queue_task, receive_task, expiry_task},
+                {queue_task, receive_task, expiry_task, session_check_task},
                 return_when=asyncio.FIRST_COMPLETED,
             )
             if expiry_task in done:
-                await websocket.close(code=4401, reason="owner session expired")
+                await websocket.close(code=4401, reason="account session expired")
                 break
+            if session_check_task in done:
+                current = websocket_principal(websocket, loop.store)
+                if current is None or current.user_id != principal.user_id:
+                    await websocket.close(
+                        code=4401, reason="account session revoked or expired"
+                    )
+                    break
+                session_check_task = asyncio.create_task(
+                    asyncio.sleep(WS_SESSION_RECHECK_SECONDS)
+                )
             if receive_task in done:
                 incoming = receive_task.result()
                 if incoming.get("type") == "websocket.disconnect":
@@ -484,6 +761,7 @@ async def ws(websocket: WebSocket):
         queue_task.cancel()
         receive_task.cancel()
         expiry_task.cancel()
+        session_check_task.cancel()
         if q in loop.ws_subscribers:
             loop.ws_subscribers.remove(q)
 

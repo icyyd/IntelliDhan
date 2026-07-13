@@ -87,7 +87,7 @@ and `EXECUTED → CLOSED|FAILED`.
 
 Agent/operator API calls may use
 `X-Autotrade-Token: $AUTOTRADE_CONTROL_TOKEN`; the browser uses the separate
-HttpOnly owner session and never handles this token:
+HttpOnly account session and never handles this token:
 
 - `PUT /api/autotrade/policy`
 - `POST /api/autotrade/disarm`
@@ -95,7 +95,7 @@ HttpOnly owner session and never handles this token:
 - `POST /api/autotrade/intents/{intent_id}/approve`
 - `POST /api/autotrade/intents/{intent_id}/reject`
 
-Do not expose owner, control, or agent tokens to browser logs, URLs, prompts,
+Do not expose setup, invite, control, or agent tokens to browser logs, URLs, prompts,
 tool output, or version control.
 
 ## On-demand stock trend analysis
@@ -126,10 +126,17 @@ confidence is capped below the live gate until its calibration metadata declares
   wraps the trend analysis with normalized security, coverage, and watch state.
 - `GET /api/discover` is a technical-only EOD ranker. Never describe its
   `technical_score_v1` as a probability, fundamental score, or recommendation.
-- Personal `/api/state`, briefing, automation status, watchlist/screen/budget
-  access, and `/ws` require a server-expiring owner session. Health,
+- Personal `/api/state`, briefing, automation status, watchlist/screen/capital
+  limit access, and `/ws` require a server-expiring account session. Health,
   calibration metadata, Discover, and on-demand research remain non-personal
   read surfaces.
+- Account preferences, capital limits, watchlists, and saved screens are always
+  scoped by `user_id`. Read `docs/21-accounts-and-personal-settings.md` before
+  changing auth or personal state. The legacy owner token is bootstrap/emergency
+  compatibility, not the primary identity model.
+- Per-user capital limits are currently review ceilings. Do not claim they
+  resize shared signals or constrain shared auto-trade intents until the
+  user-specific order-planning layer exists.
 - PostgreSQL via `DATABASE_URL` is the production operational store. SQLite is
   acceptable for local work and only deployment-durable on a mounted path.
 - A 503 from `/api/health` means the signal plane is not ready even if the HTTP

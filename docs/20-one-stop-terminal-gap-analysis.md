@@ -317,18 +317,21 @@ workspace        users, watchlists, notes, saved views, preferences
 
 These are release blockers for a public personal-finance terminal.
 
-1. **Complete the authentication boundary.** Server-expiring owner sessions now
-   protect personal signal/briefing/automation reads, mutations, and `/ws`;
-   decide whether non-personal research APIs also sit behind an identity-aware
-   proxy.
+1. **Finish the account boundary.** Invite-only database accounts now protect
+   personal signal/briefing/automation reads, mutations, and `/ws`, with
+   user-scoped preferences, limits, watchlists, and screens. Add CSRF, password
+   recovery/change, email verification, session management, and account
+   lifecycle controls before public exposure; decide whether non-personal
+   research APIs also sit behind an identity-aware proxy.
 2. **Add CSRF tokens and identity-aware limits.** SameSite cookies and
    process-local IP limits are foundations, not a distributed control plane.
 3. **Finish WebSocket controls.** Authentication and bounded newest-event queues
    are implemented; add connection caps, heartbeat/timeouts, and telemetry.
 4. **Rate-limit expensive analysis** per identity/IP in addition to process-wide
    provider concurrency.
-5. **Keep control secrets out of page state.** The browser exchanges the owner
-   token for an HttpOnly cookie; add CSRF tokens before multi-user expansion.
+5. **Keep control secrets out of page state.** Normal login uses an opaque
+   HttpOnly account cookie and stores only its digest. The legacy owner token is
+   bootstrap/emergency compatibility; add CSRF tokens before public expansion.
 6. **Run the container as a non-root user**, pin dependency versions, scan the
    image/dependencies, and enable secret scanning.
 7. **Make audit logs durable and tamper-evident** for policy, approvals, intents,
@@ -519,10 +522,12 @@ prediction.
 
 The recommended slice now has a working vertical implementation:
 
-- `INTELLIDHAN_OWNER_TOKEN` exchanges once for a signed, timestamped, HttpOnly,
-  SameSite owner cookie with server-enforced expiry. Personal state, briefings,
-  budgets, saved screens, watchlists, automation controls, and `/ws` are
-  protected; agent bearer-token endpoints remain separate.
+- Invite-only accounts use salted scrypt password hashes, opaque HttpOnly
+  SameSite session cookies, database-stored session digests, 12-hour expiry,
+  and ADMIN/TRADER/VIEWER roles. Personal preferences, capital limits, saved
+  screens, and watchlists are isolated by user; agent bearer-token endpoints
+  remain separate. `INTELLIDHAN_OWNER_TOKEN` remains first-admin/emergency
+  compatibility.
 - `TerminalStore` supports PostgreSQL through `DATABASE_URL` and a local SQLite
   fallback. It persists alerts, paper trades, briefings, budgets, automation
   policy/intents, saved screens, watchlists, securities, and universe membership.
@@ -555,10 +560,12 @@ Remaining limitations are intentional and visible:
 - Fundamental, estimate, filing/news/event, peer, portfolio, and broker
   reconciliation feeds remain unconnected. The UI must continue showing those
   pillars as unavailable.
-- The WebSocket and personal polling surfaces are owner-only. Health,
-  calibration metadata, Discover, and on-demand analysis remain non-personal
-  read APIs. Rate limiting is process-local until Redis-backed identity limits
-  are added.
+- The WebSocket and personal polling surfaces require an account (or the legacy
+  administrator compatibility session). Health, calibration metadata, Discover,
+  and on-demand analysis remain non-personal read APIs. Rate limiting is
+  process-local until shared identity/IP limits are added. Per-user capital
+  limits are durable review ceilings but do not yet resize shared signals or
+  constrain shared auto-trade intents.
 
 The next slice is Milestone B data breadth: point-in-time universe membership,
 licensed fundamental/event ingestion with provenance, and cohort-relative
