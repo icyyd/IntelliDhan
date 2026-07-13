@@ -74,8 +74,8 @@ class EngineRunner:
         if not sig.live_eligible and not self.shadow:
             self.suppressed.append(
                 SuppressedSetup(
-                    setup_id=setup_id, strategy=sig.strategy, symbol=state.symbol,
-                    ts=state.ts(), gate="disabled",
+                    setup_id=setup_id, module=sig.module, strategy=sig.strategy,
+                    symbol=state.symbol, ts=state.ts(), gate="disabled",
                     detail="strategy disabled from live/gated delivery pending "
                            "research/production parity revalidation "
                            "(see docs/18-enhancement-review.md)",
@@ -89,8 +89,9 @@ class EngineRunner:
         if not verdict.passed:
             self.suppressed.append(
                 SuppressedSetup(
-                    setup_id=setup_id, strategy=sig.strategy, symbol=state.symbol,
-                    ts=state.ts(), gate=verdict.gate, detail=verdict.detail,
+                    setup_id=setup_id, module=sig.module, strategy=sig.strategy,
+                    symbol=state.symbol, ts=state.ts(), gate=verdict.gate,
+                    detail=verdict.detail,
                     composite=comp, confidence=conf,
                 )
             )

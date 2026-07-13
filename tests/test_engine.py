@@ -60,6 +60,8 @@ def test_full_fixture_run_emits_and_suppresses():
             assert "SHADOW" in setup.explain  # uncalibrated honesty stamp
     # the wall must be doing real work: evaluations happened, most were suppressed
     assert len(runner.suppressed) > 0
+    # every suppressed record carries its module so the UI can filter by view
+    assert all(s.module in (Module.ZDTE, Module.SWING) for s in runner.suppressed)
     gates = {s.gate for s in runner.suppressed}
     assert gates <= {"warmup", "lockout", "extension", "reward_risk",
                      "cooldown", "concurrency", "confidence", "risk_geometry",
@@ -109,3 +111,41 @@ def test_pullback_continuation_calibration_loads():
     cal = CalibrationMap.load("PULLBACK_CONTINUATION")
     assert cal.buckets, "held-out calibration table must exist"
     assert cal.confidence(60.0) == 0.765  # claimed = validation WR, not train
+
+
+def test_recent_daily_buffer_seeds_bounded_and_grows_on_live_close():
+    st = SymbolState("T")
+    t0 = datetime(2025, 1, 1, 16, 0, tzinfo=ET)
+    daily = []
+    d = t0
+    while len(daily) < 260:
+        if d.weekday() < 5:
+            px = 100.0 + len(daily) * 0.1
+            daily.append(Bar(symbol="T", timeframe=Timeframe.D1, ts_close=d,
+                             open=px, high=px + 1, low=px - 1, close=px + 0.5,
+                             volume=1e6, source="fx"))
+        d += timedelta(days=1)
+    st.seed_daily(daily)
+    # bounded at 250, keeping the most recent bars
+    assert len(st.recent_daily) == 250
+    assert st.recent_daily[-1].ts_close == daily[-1].ts_close
+    assert st.recent_daily[0].ts_close == daily[10].ts_close
+
+    # a full live session then the next day's first bar closes one more D1 bar
+    day1 = daily[-1].ts_close + timedelta(days=3)  # skip past weekend safely
+    while day1.weekday() >= 5:
+        day1 += timedelta(days=1)
+    start = day1.replace(hour=9, minute=35)
+    n_before = len(st.recent_daily)
+    for i in range(78):  # 9:35 -> 16:00
+        ts = start + timedelta(minutes=5 * i)
+        st.on_bar_5m(mk_bar(ts, 200 + i * 0.01, 201 + i * 0.01, 199 + i * 0.01,
+                            200.5 + i * 0.01))
+    nxt = start + timedelta(days=1)
+    while nxt.weekday() >= 5:
+        nxt += timedelta(days=1)
+    st.on_bar_5m(mk_bar(nxt, 210, 211, 209, 210.5))
+    # buffer was full: the new D1 close pushes one out, cap holds at 250
+    assert len(st.recent_daily) == n_before == 250
+    assert st.recent_daily[-1].timeframe == Timeframe.D1
+    assert st.recent_daily[-1].ts_close.date() == day1.date()  # the live close

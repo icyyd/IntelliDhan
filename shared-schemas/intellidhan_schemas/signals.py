@@ -64,6 +64,7 @@ class SuppressedSetup(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     setup_id: str
+    module: Module
     strategy: str
     symbol: str
     ts: datetime

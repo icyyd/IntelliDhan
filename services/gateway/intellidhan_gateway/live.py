@@ -168,7 +168,8 @@ class LiveLoop:
         matrices = {}
         for sym, state in self.runner.states.items():
             indicator_snapshots = {}
-            for tf in (Timeframe.M5, Timeframe.M15, Timeframe.H1):
+            for tf in (Timeframe.M5, Timeframe.M15, Timeframe.H1, Timeframe.H4,
+                       Timeframe.D1):
                 indicators = state.indicators(tf)
                 if indicators is not None:
                     indicator_snapshots[tf.value] = indicators.model_dump(mode="json")
@@ -188,6 +189,14 @@ class LiveLoop:
                     "close": bar.close,
                     "volume": bar.volume,
                 } for bar in state.recent_5m[-72:]],
+                "daily_bars": [{
+                    "ts_close": bar.ts_close.isoformat(),
+                    "open": bar.open,
+                    "high": bar.high,
+                    "low": bar.low,
+                    "close": bar.close,
+                    "volume": bar.volume,
+                } for bar in state.recent_daily[-150:]],
                 "indicators": indicator_snapshots,
             }
         return {

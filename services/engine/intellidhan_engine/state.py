@@ -62,6 +62,8 @@ class SymbolState:
         self.bars_in_session = 0
         # rolling recent 5m bars for strategy pattern checks (2-candle rule etc.)
         self.recent_5m: list[Bar] = []
+        # completed daily bars (seed + live closes) for swing-view charting
+        self.recent_daily: list[Bar] = []
 
     def seed_daily(self, daily_bars: list[Bar]) -> None:
         """Warm-start higher-TF context from backfilled daily history — exactly
@@ -72,6 +74,8 @@ class SymbolState:
             if b.timeframe != Timeframe.D1 or b.symbol != self.symbol:
                 raise ValueError("seed_daily takes this symbol's D1 bars only")
             eng.update(b, self.clock.session_id(b.ts_close))
+            self.recent_daily.append(b)
+        del self.recent_daily[:-250]
         self._on_daily(eng)
 
     def on_bar_5m(self, bar: Bar) -> None:
@@ -92,6 +96,9 @@ class SymbolState:
                 eng = self.trend[rolled.timeframe]
                 eng.update(rolled, self.clock.session_id(rolled.ts_close))
                 if rolled.timeframe == Timeframe.D1:
+                    self.recent_daily.append(rolled)
+                    if len(self.recent_daily) > 250:
+                        self.recent_daily.pop(0)
                     self._on_daily(eng)
 
     def _on_daily(self, eng: TrendEngine) -> None:
