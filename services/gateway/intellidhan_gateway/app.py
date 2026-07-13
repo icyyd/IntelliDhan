@@ -9,6 +9,7 @@ import asyncio
 import json
 import os
 import secrets
+import time
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
@@ -25,7 +26,7 @@ from intellidhan_gateway.auth import (
     require_owner,
     session_cookie_value,
     verify_owner_token,
-    websocket_is_owner,
+    websocket_owner_expires_at,
 )
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.live import LiveLoop
@@ -448,7 +449,8 @@ async def record_autotrade_receipt(
 
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
-    if not websocket_is_owner(websocket):
+    expires_at = websocket_owner_expires_at(websocket)
+    if expires_at is None:
         await websocket.close(code=4401, reason="owner sign-in required")
         return
     await websocket.accept()
@@ -456,11 +458,18 @@ async def ws(websocket: WebSocket):
     loop.ws_subscribers.append(q)
     queue_task = asyncio.create_task(q.get())
     receive_task = asyncio.create_task(websocket.receive())
+    expiry_task = asyncio.create_task(
+        asyncio.sleep(max(0.0, expires_at - time.time()))
+    )
     try:
         while True:
             done, _ = await asyncio.wait(
-                {queue_task, receive_task}, return_when=asyncio.FIRST_COMPLETED
+                {queue_task, receive_task, expiry_task},
+                return_when=asyncio.FIRST_COMPLETED,
             )
+            if expiry_task in done:
+                await websocket.close(code=4401, reason="owner session expired")
+                break
             if receive_task in done:
                 incoming = receive_task.result()
                 if incoming.get("type") == "websocket.disconnect":
@@ -474,6 +483,7 @@ async def ws(websocket: WebSocket):
     finally:
         queue_task.cancel()
         receive_task.cancel()
+        expiry_task.cancel()
         if q in loop.ws_subscribers:
             loop.ws_subscribers.remove(q)
 

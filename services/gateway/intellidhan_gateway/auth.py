@@ -35,19 +35,25 @@ def _cookie_value(token: str, issued_at: int | None = None) -> str:
     return f"v2.{issued_at}.{signature}"
 
 
-def _valid_cookie(cookie: str, token: str, now: int | None = None) -> bool:
+def _cookie_expires_at(cookie: str, token: str, now: int | None = None) -> int | None:
     try:
         version, issued_raw, _ = cookie.split(".", 2)
         issued_at = int(issued_raw)
     except (TypeError, ValueError):
-        return False
+        return None
     if version != "v2":
-        return False
+        return None
     now = int(time.time()) if now is None else int(now)
     age = now - issued_at
     if age < -SESSION_CLOCK_SKEW_SECONDS or age > SESSION_MAX_AGE_SECONDS:
-        return False
-    return secrets.compare_digest(cookie, _cookie_value(token, issued_at))
+        return None
+    if not secrets.compare_digest(cookie, _cookie_value(token, issued_at)):
+        return None
+    return issued_at + SESSION_MAX_AGE_SECONDS
+
+
+def _valid_cookie(cookie: str, token: str, now: int | None = None) -> bool:
+    return _cookie_expires_at(cookie, token, now) is not None
 
 
 def verify_owner_token(candidate: str) -> bool:
@@ -68,11 +74,15 @@ def request_is_owner(request: Request) -> bool:
 
 
 def websocket_is_owner(websocket: WebSocket) -> bool:
+    return websocket_owner_expires_at(websocket) is not None
+
+
+def websocket_owner_expires_at(websocket: WebSocket) -> int | None:
     expected = owner_token()
     if expected is None:
-        return False
+        return None
     cookie = websocket.cookies.get(OWNER_COOKIE, "")
-    return bool(cookie and _valid_cookie(cookie, expected))
+    return _cookie_expires_at(cookie, expected) if cookie else None
 
 
 def require_owner(request: Request) -> None:

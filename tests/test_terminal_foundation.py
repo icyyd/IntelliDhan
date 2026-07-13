@@ -1,12 +1,14 @@
 """Trustworthy-terminal foundation: durability, auth, DQ, discovery, parity."""
 
 import asyncio
+import time as wall_time
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 import intellidhan_gateway.app as gateway
 import intellidhan_gateway.auth as owner_auth
@@ -137,6 +139,23 @@ def test_owner_session_cookie_expires_on_the_server(tmp_path, monkeypatch):
     assert client.get("/api/watchlists").status_code == 401
 
 
+def test_owner_websocket_closes_when_session_expires(tmp_path, monkeypatch):
+    monkeypatch.setenv("INTELLIDHAN_OWNER_TOKEN", "owner-token-that-is-long-enough-123")
+    monkeypatch.setattr(owner_auth, "SESSION_MAX_AGE_SECONDS", 1)
+    store = TerminalStore(tmp_path / "ws-expiry.sqlite3")
+    store.init_schema()
+    monkeypatch.setattr(gateway.loop, "store", store)
+    client = TestClient(gateway.app)
+    client.cookies.set(owner_auth.OWNER_COOKIE, owner_auth.session_cookie_value())
+
+    started = wall_time.monotonic()
+    with client.websocket_connect("/ws") as socket:
+        with pytest.raises(WebSocketDisconnect) as closed:
+            socket.receive_json()
+    assert closed.value.code == 4401
+    assert wall_time.monotonic() - started <= 2
+
+
 def test_health_is_503_until_every_readiness_plane_passes(tmp_path, monkeypatch):
     store = TerminalStore(tmp_path / "health.sqlite3")
     store.init_schema()
@@ -164,6 +183,14 @@ def test_health_is_503_until_every_readiness_plane_passes(tmp_path, monkeypatch)
     response = client.get("/api/health")
     assert response.status_code == 503
     assert response.json()["heartbeat_age_seconds"] >= 300
+
+    monkeypatch.setattr(gateway.loop, "last_heartbeat", datetime.now(timezone.utc))
+    monkeypatch.delenv("INTELLIDHAN_PERSISTENT_STATE", raising=False)
+    monkeypatch.setenv("INTELLIDHAN_REQUIRE_DURABLE_STATE", "true")
+    response = client.get("/api/health")
+    assert response.status_code == 503
+    assert response.json()["durability_required"] is True
+    assert response.json()["durability_ready"] is False
 
 
 def test_websocket_subscriber_queue_is_bounded_to_newest_event(tmp_path):
@@ -351,6 +378,20 @@ def test_frontend_does_not_override_readiness_with_unconditional_live():
     )]
     assert 'setHealth("live")' not in refresh_block
     assert 'if(!ownerAuthenticated){ setHealth("auth"); return; }' in refresh_block
+
+
+def test_frontend_clears_personal_state_on_logout_401_and_ws_expiry():
+    source = Path("web/index.html").read_text()
+    clear_block = source[source.index("function clearPersonalState") : source.index(
+        "function renderAll()"
+    )]
+    assert "lastState=null" in clear_block
+    assert "socket.onclose=null; socket.close()" in clear_block
+    assert 'document.getElementById("briefBody").replaceChildren()' in clear_block
+    assert 'clearPersonalState("Signed out.")' in source
+    assert 'r.status===401 && url!=="/api/auth/session"' in source
+    assert 'event.code===4401' in source
+    assert 'fetchJSON("/api/discover/presets")' in source
 
 
 def test_missing_factor_weights_are_renormalized_not_rewarded():

@@ -16,7 +16,8 @@ must not be presented as implemented.
   budgets, watchlists, saved screens, automation controls, and the WebSocket;
   broker credentials never enter this app.
 - SQLite local operational state or PostgreSQL via `DATABASE_URL`; production
-  deployments require PostgreSQL or a mounted persistent volume.
+  deployments require PostgreSQL or a mounted persistent volume, enforced by a
+  readiness gate when `INTELLIDHAN_REQUIRE_DURABLE_STATE=true`.
 - Live data-quality quarantine and readiness-aware `/api/health`.
 - Adjusted, settled-session technical EOD ranking with partial-scan failures and
   missing fundamental pillars shown explicitly.

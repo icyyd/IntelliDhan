@@ -1137,6 +1137,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
         <label class="discover-check"><input id="discoverAbove200" type="checkbox"> Above 200-day average</label>
         <button class="analysis-run" id="discoverRun" type="submit"><span class="analysis-spinner" aria-hidden="true"></span><svg class="icon"><use href="#i-search"/></svg><span>Run screen</span></button>
       </form>
+      <div class="discover-note"><svg class="icon"><use href="#i-check"/></svg><span id="discoverEffectiveFilters">Loading effective preset rules…</span></div>
       <div class="discover-note"><svg class="icon"><use href="#i-alert"/></svg><span>V1 ranks Trend and Risk only. Quality, Growth, Valuation, and Catalyst stay visibly unavailable until point-in-time feeds are connected.</span></div>
       <div class="screen-tools">
         <label class="analysis-field"><span>Save current screen</span><input id="discoverScreenName" type="text" maxlength="60" placeholder="My momentum screen"></label>
@@ -1328,7 +1329,7 @@ let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
 let selectedDiscoverPreset = "trend_leaders", currentDossier = null;
-const DISCOVER_PRESETS = {
+let discoverPresets = {
   trend_leaders:{above_sma200:true,min_return_6m:5},
   pullback_uptrend:{above_sma200:true,min_return_6m:0},
   fresh_breakouts:{above_sma200:true},
@@ -1406,6 +1407,7 @@ async function fetchJSON(url, options){
   const r = await fetch(url, options);
   const payload = await r.json().catch(()=>({}));
   if(!r.ok){
+    if(r.status===401 && url!=="/api/auth/session") clearPersonalState("Owner session expired.");
     const error = new Error(typeof payload.detail==="string"?payload.detail:`${url} ${r.status}`);
     error.status = r.status;
     throw error;
@@ -1453,6 +1455,39 @@ function setHealth(mode){
   else if(mode === "down"){ dot.classList.add("down"); el.lastChild.textContent = " Reconnecting…"; }
   else if(mode === "auth"){ dot.classList.add("warn"); el.lastChild.textContent = " Sign in"; }
   else { el.lastChild.textContent = " Connecting…"; }
+}
+
+function clearPersonalState(reason="Owner sign-in required."){
+  ownerAuthenticated=false;
+  lastState=null; briefing=null; watchlistsCache=[]; savedScreensCache=[];
+  selectedSymbol=null; selectedAlertId=null; selectionTouched=false;
+  if(typeof autotradeCache!=="undefined") autotradeCache=null;
+  if(typeof budgetsCache!=="undefined") budgetsCache=null;
+  if(typeof wsConnection!=="undefined"&&wsConnection){
+    const socket=wsConnection; wsConnection=null; socket.onclose=null; socket.close();
+  }
+  document.querySelectorAll('[id^="summary"]').forEach(el=>{ el.textContent="—"; });
+  document.querySelectorAll('[id^="qCount"]').forEach(el=>{ el.textContent="(0)"; });
+  ["queueTracking","queueSuppressed","queue0dteTracking","queue0dteSuppressed","queueSwingTracking","queueSwingSuppressed","matrix","decisionGrid","drawerInner","riskUsage","contextMeta"].forEach(id=>{ const el=document.getElementById(id); if(el) el.replaceChildren(); });
+  document.getElementById("queueTracking").innerHTML=`<div class="empty"><b>${esc(reason)}</b>Sign in to load personal signals, performance, and risk state.</div>`;
+  document.getElementById("contextSymbol").textContent="—";
+  document.getElementById("contextPrice").textContent="—";
+  document.getElementById("contextBanner").replaceChildren();
+  document.getElementById("tape").replaceChildren();
+  document.getElementById("symCount").textContent="—";
+  document.getElementById("session").textContent="—";
+  document.getElementById("briefPanel").hidden=true;
+  document.getElementById("briefBody").replaceChildren();
+  document.getElementById("autotradeMode").textContent="OFF";
+  document.getElementById("autotradeMode").className="auto-mode off";
+  document.getElementById("autotradeReady").textContent="0";
+  document.getElementById("autotradeApproval").textContent="0";
+  document.getElementById("autotradeExpiry").textContent="—";
+  const ownerButton=document.getElementById("ownerButton");
+  ownerButton.style.color=""; ownerButton.title="Owner sign in";
+  ownerButton.setAttribute("aria-label","Owner sign in");
+  document.getElementById("ownerSignOut").hidden=true;
+  renderWatchlists(); renderSavedScreens(); renderBriefing(); setHealth("auth");
 }
 
 function renderAll(){
@@ -1984,12 +2019,9 @@ async function signInOwner(){
 }
 async function signOutOwner(){
   await fetchJSON("/api/auth/session",{method:"DELETE"}).catch(()=>{});
-  ownerAuthenticated=false; watchlistsCache=[]; savedScreensCache=[]; renderWatchlists(); renderSavedScreens();
-  if(wsConnection){ wsConnection.close(); wsConnection=null; }
+  clearPersonalState("Signed out.");
   document.getElementById("ownerStatus").textContent="Signed out.";
   document.getElementById("ownerStatus").className="bd-status ok";
-  document.getElementById("ownerButton").style.color="";
-  setHealth("auth");
 }
 async function loadWatchlists(){
   if(!ownerAuthenticated){ watchlistsCache=[]; renderWatchlists(); return; }
@@ -2020,11 +2052,25 @@ function currentDiscoverFilters(){
   return filters;
 }
 function applyPresetControls(preset){
-  const filters=DISCOVER_PRESETS[preset]||DISCOVER_PRESETS[""];
+  const filters=discoverPresets[preset]||discoverPresets[""];
   document.getElementById("discoverPrice").value=filters.min_price??"";
   document.getElementById("discoverMomentum").value=filters.min_return_6m??"";
   document.getElementById("discoverVolatility").value=filters.max_volatility_pct??"";
   document.getElementById("discoverAbove200").checked=Boolean(filters.above_sma200);
+  const rules=[];
+  if(filters.above_sma200) rules.push("above the 200-day average");
+  if(filters.min_return_6m!=null) rules.push(`6m return ≥ ${filters.min_return_6m}%`);
+  if(filters.max_volatility_pct!=null) rules.push(`20d volatility ≤ ${filters.max_volatility_pct}%`);
+  if(filters.max_distance_from_high_pct!=null) rules.push(`within ${filters.max_distance_from_high_pct}% of the 52-week high`);
+  document.getElementById("discoverEffectiveFilters").textContent=rules.length?`Effective preset: ${rules.join(" · ")}`:"No preset constraints; form fields still apply.";
+}
+async function loadDiscoveryPresets(){
+  try{
+    const data=await fetchJSON("/api/discover/presets");
+    discoverPresets=Object.fromEntries((data.presets||[]).map(item=>[item.key,item.filters||{}]));
+    discoverPresets[""]={above_sma200:false};
+  }catch(e){}
+  applyPresetControls(selectedDiscoverPreset);
 }
 async function saveCurrentScreen(){
   if(!ownerAuthenticated){ openOwnerDialog(); return; }
@@ -2039,7 +2085,7 @@ async function saveCurrentScreen(){
 function applySavedScreen(screenId){
   const screen=savedScreensCache.find(item=>item.screen_id===screenId); if(!screen) return;
   const stored=screen.filters||{}; selectedDiscoverPreset=stored.preset||"";
-  const filters={...(DISCOVER_PRESETS[selectedDiscoverPreset]||{}),...stored};
+  const filters={...(discoverPresets[selectedDiscoverPreset]||{}),...stored};
   document.querySelectorAll("[data-preset]").forEach(item=>item.classList.toggle("active",item.dataset.preset===selectedDiscoverPreset));
   document.getElementById("discoverPrice").value=filters.min_price??"";
   document.getElementById("discoverMomentum").value=filters.min_return_6m??"";
@@ -2637,7 +2683,11 @@ function connectWS(){
     wsConnection=ws;
     ws.onopen = () => { wsRetry = 1000; };
     ws.onmessage = () => refresh();
-    ws.onclose = () => { wsConnection=null; if(ownerAuthenticated) setTimeout(connectWS, Math.min(wsRetry*=1.6, 15000)); };
+    ws.onclose = event => {
+      wsConnection=null;
+      if(event.code===4401){ clearPersonalState("Owner session expired."); return; }
+      if(ownerAuthenticated) setTimeout(connectWS, Math.min(wsRetry*=1.6, 15000));
+    };
     ws.onerror = () => ws.close();
   }catch(e){ setTimeout(connectWS, 5000); }
 }
@@ -2648,7 +2698,7 @@ window.addEventListener("resize",()=>{
   resizeTimer=setTimeout(()=>{ if(lastState) renderContext(lastState); },120);
 });
 
-applyPresetControls(selectedDiscoverPreset);
+loadDiscoveryPresets();
 refreshCalibration();
 refreshOwnerSession().then(session=>{
   if(session.authenticated){ connectWS(); refresh(); refreshBriefing(); refreshAutotrade(); }

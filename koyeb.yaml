@@ -16,10 +16,11 @@
 #
 # PostgreSQL (or a separately configured mounted persistent path) is a release
 # requirement. The default SQLite file is suitable for local work only and is
-# lost when Koyeb replaces an ephemeral container. Set
-# INTELLIDHAN_PERSISTENT_STATE=true only after the selected state path is
-# genuinely deployment-durable. Keep the service single-instance until the
-# in-process signal orchestrator and rate limits move to shared coordination.
+# lost when Koyeb replaces an ephemeral container. The production durability
+# gate below accepts PostgreSQL automatically. Set INTELLIDHAN_PERSISTENT_STATE
+# only for a SQLite path that is genuinely mounted and deployment-durable. Keep
+# the service single-instance until the in-process signal orchestrator and rate
+# limits move to shared coordination.
 
 name: intellidhan
 type: WEB
@@ -58,4 +59,6 @@ definition:
     - key: PORT
       value: "8000"
     - key: INTELLIDHAN_SECURE_COOKIE
+      value: "true"
+    - key: INTELLIDHAN_REQUIRE_DURABLE_STATE
       value: "true"

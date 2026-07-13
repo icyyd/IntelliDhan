@@ -298,11 +298,17 @@ class LiveLoop:
             heartbeat_age_seconds is not None
             and heartbeat_age_seconds <= POLL_SECONDS * 3 + 30
         )
+        persistence = self.store.readiness()
+        durability_required = os.getenv(
+            "INTELLIDHAN_REQUIRE_DURABLE_STATE", ""
+        ).lower() in {"1", "true", "yes"}
+        durability_ready = not durability_required or persistence["deploy_durable"]
         ready = (
             self.boot_state == "READY"
             and self.loop_state == "RUNNING"
             and self.provider_state == "READY"
             and self.persistence_ready
+            and durability_ready
             and heartbeat_fresh
         )
         return {
@@ -310,7 +316,9 @@ class LiveLoop:
             "boot_state": self.boot_state,
             "loop_state": self.loop_state,
             "provider_state": self.provider_state,
-            "persistence": self.store.readiness(),
+            "persistence": persistence,
+            "durability_required": durability_required,
+            "durability_ready": durability_ready,
             "started_at": self.started_at,
             "last_poll": self.last_poll,
             "last_successful_poll": self.last_successful_poll,

@@ -546,9 +546,10 @@ The recommended slice now has a working vertical implementation:
 Remaining limitations are intentional and visible:
 
 - SQLite is restart-durable locally but not deployment-durable on an ephemeral
-  container. Koyeb production must receive PostgreSQL or a mounted persistent
-  path and `INTELLIDHAN_PERSISTENT_STATE=true` before this milestone can claim
-  restart/deploy durability.
+  container. Koyeb sets `INTELLIDHAN_REQUIRE_DURABLE_STATE=true`, so readiness
+  fails until PostgreSQL is configured or a mounted SQLite path is explicitly
+  declared with `INTELLIDHAN_PERSISTENT_STATE=true`. PostgreSQL is recognized as
+  deploy-durable automatically.
 - The screener covers the configured live universe, not yet the point-in-time
   S&P 500 + Nasdaq-100 universe.
 - Fundamental, estimate, filing/news/event, peer, portfolio, and broker
