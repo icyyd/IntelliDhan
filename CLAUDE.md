@@ -103,10 +103,23 @@ are `years` (2–15), `risk_budget`, `include_backtest`, and `cost_bps`. The sam
 analysis is available with:
 
 ```bash
-.venv/bin/python scripts/analyze_stock.py AAPL --years 5 --risk-budget 500
+.venv/bin/python scripts/analyze_stock.py AAPL --years 10 --risk-budget 500
 ```
 
 The response is descriptive research. Never convert its consensus label into a
 Robinhood order, auto-trade intent, live signal, or calibration update. Refer to
 `docs/19-trend-analysis-and-on-demand-module.md` for methodology evidence,
 frozen parameters, current cross-ticker results, and promotion requirements.
+
+Treat `forecast.horizons.*` as usable context only when the horizon is not
+`UNCONFIRMED`, confidence is `MODERATE` or `HIGH`, matched samples are at least
+12, and walk-forward Brier skill is positive. Never substitute the forecast's
+conditional probability for a strategy-specific calibrated win rate. Strategy
+confidence is capped below the live gate until its calibration metadata declares
+`HISTORICAL_OOS`, `FORWARD_PAPER`, or `LIVE_VALIDATED` evidence.
+
+## Product expansion priority
+
+Use `docs/20-one-stop-terminal-gap-analysis.md` as the prioritized implementation
+brief. Build the durable Discover -> Analyze -> Decide -> Track loop before
+adding more indicators, strategies, or dashboards.

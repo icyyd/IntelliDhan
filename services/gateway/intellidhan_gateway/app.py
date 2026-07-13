@@ -82,7 +82,7 @@ async def briefing():
 @app.get("/api/analyze/{symbol}")
 async def analyze_stock(
     symbol: str,
-    years: int = Query(5, ge=2, le=15),
+    years: int = Query(10, ge=2, le=15),
     risk_budget: float | None = Query(None, gt=0, le=1_000_000),
     include_backtest: bool = True,
     cost_bps: float = Query(10.0, ge=0, le=100),

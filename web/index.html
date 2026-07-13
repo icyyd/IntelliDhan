@@ -706,6 +706,23 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
 .analysis-section-head{display:flex; align-items:flex-end; gap:12px; margin:0 3px 11px}
 .analysis-section-head h2{font-size:18px; letter-spacing:-.02em; margin:0 0 2px}
 .analysis-section-head p{color:var(--text-faint); font-size:11.5px; margin:0}
+.forecast-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+.forecast-card{padding:17px; border:1px solid var(--border); border-radius:20px; background:var(--card-gradient)}
+.forecast-card.favorable{border-color:rgba(94,234,212,.32)}
+.forecast-card.unfavorable{border-color:rgba(251,113,133,.34)}
+.forecast-card.unconfirmed{border-color:rgba(246,200,107,.26)}
+.forecast-top{display:flex; align-items:center; gap:8px; margin-bottom:13px}
+.forecast-top b{font-size:14px}
+.forecast-badge{margin-left:auto; padding:4px 8px; border-radius:99px; background:var(--tint-e); color:var(--text-dim); font:750 9.5px var(--mono)}
+.forecast-card.favorable .forecast-badge{color:var(--teal); background:rgba(94,234,212,.10)}
+.forecast-card.unfavorable .forecast-badge{color:var(--red); background:rgba(251,113,133,.10)}
+.forecast-stats{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px}
+.forecast-stat{padding:9px; border-radius:14px; background:var(--tint-d); min-width:0}
+.forecast-stat b{display:block; overflow:hidden; text-overflow:ellipsis; font:650 12px var(--mono)}
+.forecast-stat small{display:block; color:var(--text-faint); font-size:8.5px; text-transform:uppercase; letter-spacing:.04em; margin-top:2px}
+.forecast-foot{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; color:var(--text-faint); font-size:10px}
+.forecast-foot .chip{font-size:9px; padding:3px 7px}
+.forecast-note{margin-top:12px; color:var(--text-dim); font-size:10.5px; line-height:1.55}
 .analysis-methods{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
 .method-card{position:relative; overflow:hidden; padding:18px; border:1px solid var(--border); border-radius:22px; background:var(--card-gradient); min-height:190px}
 .method-card.bullish{border-top-color:rgba(94,234,212,.42)}
@@ -737,7 +754,9 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
 .analysis-negative{color:var(--red)}
 .analysis-disclaimer{display:flex; align-items:flex-start; gap:9px; padding:13px 15px; border:1px solid rgba(246,200,107,.22); border-radius:17px; background:rgba(246,200,107,.06); color:var(--text-dim); font-size:10.5px; line-height:1.55}
 .analysis-disclaimer svg{width:15px; height:15px; color:var(--gold); flex:none; margin-top:1px}
-body.analysis-view .shell{grid-template-columns:70px minmax(0,1fr)}
+@media (min-width:901px){
+  body.analysis-view .shell{grid-template-columns:70px minmax(0,1fr)}
+}
 body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none}
 @media (max-width:1100px){
   .analysis-form{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -745,6 +764,7 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   .analysis-verdict{grid-template-columns:1fr}
 }
 @media (max-width:700px){
+  .forecast-grid{grid-template-columns:1fr}
   .analysis-methods{grid-template-columns:1fr}
   .analysis-risk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -758,6 +778,7 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   .analysis-votes{grid-template-columns:repeat(3,minmax(0,1fr))}
   .analysis-vote{padding:10px}
   .method-metrics{grid-template-columns:1fr}
+  .forecast-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 /* ── Light theme (toggle in topbar; dark stays the default) ───────────── */
@@ -996,14 +1017,14 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
       <div class="desk-copy">
         <div class="desk-eyebrow">Any ticker · adjusted daily data</div>
         <h1 id="analysisTitle">Stock analysis</h1>
-        <p>A clear trend verdict from four transparent methods, with risk context and an optional fixed-rule backtest.</p>
+        <p>Historically calibrated forward odds from transparent trend methods, with uncertainty, risk context, and fixed-rule backtests.</p>
       </div>
     </section>
 
     <section class="panel analysis-search-panel" aria-label="Stock analysis request">
       <form class="analysis-form" id="stockAnalysisForm">
         <label class="analysis-field"><span>Ticker</span><input class="analysis-symbol" id="analysisSymbol" name="symbol" type="text" maxlength="12" pattern="[A-Za-z][A-Za-z0-9.\-]{0,11}" autocomplete="off" placeholder="AAPL" required></label>
-        <label class="analysis-field"><span>History</span><select id="analysisYears" name="years"><option value="3">3 years</option><option value="5" selected>5 years</option><option value="10">10 years</option><option value="15">15 years</option></select></label>
+        <label class="analysis-field"><span>History</span><select id="analysisYears" name="years"><option value="3">3 years</option><option value="5">5 years</option><option value="10" selected>10 years</option><option value="15">15 years</option></select></label>
         <label class="analysis-field"><span>Risk budget</span><input id="analysisRisk" name="risk_budget" type="number" min="1" max="1000000" step="1" inputmode="decimal" placeholder="Optional $"></label>
         <label class="analysis-field"><span>Trading costs</span><select id="analysisCosts" name="cost_bps"><option value="0">0 bps</option><option value="10" selected>10 bps</option><option value="25">25 bps</option><option value="50">50 bps</option></select></label>
         <button class="analysis-run" id="analysisRun" type="submit"><span class="analysis-spinner" aria-hidden="true"></span><svg class="icon"><use href="#i-search"/></svg><span class="analysis-run-label">Analyze</span></button>
@@ -1016,6 +1037,12 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
 
     <div class="analysis-results" id="analysisResults" hidden aria-live="polite">
       <section class="analysis-verdict" id="analysisSummary" aria-label="Analysis verdict"></section>
+
+      <section class="panel" aria-labelledby="analysisForecastTitle">
+        <div class="analysis-section-head"><div><h2 id="analysisForecastTitle">Forward outlook</h2><p>Non-overlapping historical outcomes, shrunk toward the ticker base rate and checked walk-forward.</p></div></div>
+        <div class="forecast-grid" id="analysisForecast"></div>
+        <div class="forecast-note" id="analysisForecastNote"></div>
+      </section>
 
       <section aria-labelledby="analysisMethodsTitle">
         <div class="analysis-section-head"><div><h2 id="analysisMethodsTitle">What the methods say</h2><p>Each vote stays visible; there is no hidden model score.</p></div></div>
@@ -1745,10 +1772,12 @@ function analysisTone(value){
   return "neutral";
 }
 function fmtSignedPct(value){
+  if(value==null||value==="") return "—";
   const n=Number(value);
   return Number.isFinite(n) ? `${n>0?"+":""}${n.toFixed(2)}%` : "—";
 }
 function fmtPercent(value){
+  if(value==null||value==="") return "—";
   const n=Number(value);
   return Number.isFinite(n) ? `${n.toFixed(2)}%` : "—";
 }
@@ -1818,6 +1847,28 @@ function renderAnalysisBacktest(backtest){
     </tr>`).join("")}</tbody>
   </table></div>`;
 }
+function renderAnalysisForecast(forecast){
+  const labels={one_month:"1 month",three_months:"3 months"};
+  const horizons=forecast?.horizons||{};
+  document.getElementById("analysisForecast").innerHTML=Object.entries(labels).map(([key,name])=>{
+    const item=horizons[key]||{}, validation=item.walk_forward_validation||{};
+    const state=String(item.label||"UNCONFIRMED").toLowerCase();
+    const tone=state==="favorable"?"favorable":state==="unfavorable"?"unfavorable":"unconfirmed";
+    const interval=item.probability_interval_95_pct||[];
+    const skill=validation.brier_skill_pct==null?"—":fmtSignedPct(validation.brier_skill_pct);
+    return `<article class="forecast-card ${tone}">
+      <div class="forecast-top"><b>${esc(name)}</b><span class="forecast-badge">${esc(String(item.label||"UNCONFIRMED").replaceAll("_"," "))} · ${esc(item.confidence||"LOW")}</span></div>
+      <div class="forecast-stats">
+        <span class="forecast-stat"><b>${fmtPercent(item.probability_positive_pct)}</b><small>Positive odds</small></span>
+        <span class="forecast-stat"><b>${fmtPercent(item.unconditional_probability_positive_pct)}</b><small>Ticker base rate</small></span>
+        <span class="forecast-stat"><b>${fmtSignedPct(item.conditional_edge_percentage_points)}</b><small>Conditional edge</small></span>
+        <span class="forecast-stat"><b>${fmtSignedPct(item.median_forward_return_pct)}</b><small>Median outcome</small></span>
+      </div>
+      <div class="forecast-foot"><span class="chip">95% range ${esc(interval.length===2?`${fmtPercent(interval[0])}–${fmtPercent(interval[1])}`:"—")}</span><span>${esc(item.matched_state_samples??0)} matched non-overlapping samples</span><span>Walk-forward skill ${esc(skill)}</span></div>
+    </article>`;
+  }).join("");
+  document.getElementById("analysisForecastNote").textContent=`${forecast?.interpretation||"Forecast evidence is unavailable."} Historical conditional odds are not a price target or guarantee.`;
+}
 function renderStockAnalysis(data){
   const consensus=data.consensus||{}, tone=analysisTone(consensus.label);
   const summary=document.getElementById("analysisSummary");
@@ -1831,6 +1882,7 @@ function renderStockAnalysis(data){
     <span class="analysis-vote"><b>${esc(consensus.neutral_votes??0)}</b><small>Neutral</small></span>
     <span class="analysis-vote down"><b>${esc(consensus.bearish_votes??0)}</b><small>Bearish</small></span>
   </div>`;
+  renderAnalysisForecast(data.forecast);
   renderAnalysisMethods(data.methods);
   const risk=data.risk||{};
   const riskCards=[

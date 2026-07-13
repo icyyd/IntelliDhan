@@ -72,6 +72,24 @@ async def run(symbols: list[str], years: int = 5, cost_bps: float = 10.0) -> dic
                 median(item["exposure_pct"] for item in samples), 2
             ),
         }
+    forecast_aggregate = {}
+    for horizon in ("one_month", "three_months"):
+        samples = [report["forecast"]["horizons"][horizon] for report in reports.values()]
+        skills = [
+            item["walk_forward_validation"]["brier_skill_pct"]
+            for item in samples
+            if item["walk_forward_validation"]["brier_skill_pct"] is not None
+        ]
+        forecast_aggregate[horizon] = {
+            "symbols": len(samples),
+            "validated_context": sum(item["label"] != "UNCONFIRMED" for item in samples),
+            "positive_walk_forward_skill": sum((value or 0.0) > 0 for value in skills),
+            "median_brier_skill_pct": round(median(skills), 2) if skills else None,
+            "median_matched_state_samples": (
+                round(median(item["matched_state_samples"] for item in samples), 1)
+                if samples else None
+            ),
+        }
     return {
         "research_type": "fixed-parameter cross-ticker diagnostic",
         "years_requested": years,
@@ -80,11 +98,13 @@ async def run(symbols: list[str], years: int = 5, cost_bps: float = 10.0) -> dic
         "symbols_completed": list(reports),
         "errors": errors,
         "aggregate": aggregate,
+        "forecast_aggregate": forecast_aggregate,
         "per_symbol": {
             symbol: {
                 "as_of": report["as_of"],
                 "bars": report["daily_bars"],
                 "consensus": report["consensus"]["label"],
+                "forecast": report["forecast"],
                 "methods": report["backtest"]["methods"],
                 "buy_and_hold": report["backtest"]["buy_and_hold"],
             }

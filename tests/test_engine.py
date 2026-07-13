@@ -113,6 +113,25 @@ def test_pullback_continuation_calibration_loads():
     assert cal.confidence(60.0) == 0.765  # claimed = validation WR, not train
 
 
+def test_unvalidated_calibration_cannot_claim_live_probability():
+    from intellidhan_engine.calibration import CalibrationMap
+
+    unvalidated = CalibrationMap(
+        "TEST",
+        {"0-100": {"n": 1000, "wr": 0.99, "sufficient": True}},
+        {"evidence_status": "UNVALIDATED"},
+    )
+    validated = CalibrationMap(
+        "TEST",
+        {"0-100": {"n": 1000, "wr": 0.80, "sufficient": True}},
+        {"evidence_status": "FORWARD_PAPER"},
+    )
+    assert unvalidated.confidence(100.0) == 0.74
+    assert not unvalidated.has_validated_evidence
+    assert validated.confidence(100.0) == 0.80
+    assert validated.has_validated_evidence
+
+
 def test_recent_daily_buffer_seeds_bounded_and_grows_on_live_close():
     st = SymbolState("T")
     t0 = datetime(2025, 1, 1, 16, 0, tzinfo=ET)

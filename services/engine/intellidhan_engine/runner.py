@@ -107,7 +107,11 @@ class EngineRunner:
             reward_risk=reward_risk(sig),
             explain=sig.explain + (
                 " [SHADOW mode — calibration harvesting]" if self.shadow
-                else (f" [calibrated: {len(cal.buckets)} buckets]" if cal.buckets
-                      else " [uncalibrated-v0 — conservative map]")),
+                else (
+                    f" [validated {cal.evidence_status}: {len(cal.buckets)} buckets]"
+                    if cal.has_validated_evidence
+                    else " [unvalidated evidence — confidence capped below live gate]"
+                )
+            ),
             invalidation=sig.invalidation,
         )

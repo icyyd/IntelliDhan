@@ -25,7 +25,7 @@ def main() -> int:
         description="Corporate-action-adjusted trend analysis and fixed-rule backtest"
     )
     parser.add_argument("symbol")
-    parser.add_argument("--years", type=int, default=5)
+    parser.add_argument("--years", type=int, default=10)
     parser.add_argument("--risk-budget", type=float, default=None)
     parser.add_argument("--cost-bps", type=float, default=10.0)
     parser.add_argument("--no-backtest", action="store_true")

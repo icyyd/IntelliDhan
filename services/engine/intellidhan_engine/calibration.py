@@ -16,6 +16,8 @@ from pathlib import Path
 MIN_N = 15
 BUCKET = 5.0
 CONSERVATIVE_FACTOR = 0.90  # v0 fallback: composite/100 × 0.90
+MAX_UNVALIDATED_CONFIDENCE = 0.74  # below the standard 0.75 live gate
+VALIDATED_EVIDENCE_STATUSES = {"HISTORICAL_OOS", "FORWARD_PAPER", "LIVE_VALIDATED"}
 
 CALIB_DIR = Path("config/calibration")
 
@@ -66,12 +68,25 @@ class CalibrationMap:
 
     # ----- lookup -----
 
+    @property
+    def evidence_status(self) -> str:
+        return str(self.meta.get("evidence_status", "UNVALIDATED")).upper()
+
+    @property
+    def has_validated_evidence(self) -> bool:
+        return self.evidence_status in VALIDATED_EVIDENCE_STATUSES
+
     def confidence(self, composite: float) -> float:
-        for key, b in self.buckets.items():
-            lo, hi = (float(x) for x in key.split("-"))
-            if lo <= composite < hi and b["sufficient"]:
-                return min(b["wr"], 0.95)  # never claim > 95% (Truth 1: anything can happen)
-        return conservative(composite)
+        if self.has_validated_evidence:
+            for key, bucket in self.buckets.items():
+                lo, hi = (float(x) for x in key.split("-"))
+                in_bucket = lo <= composite < hi or (composite == 100.0 and hi == 100.0)
+                if in_bucket and bucket["sufficient"]:
+                    # Truth 1: anything can happen; never claim more than 95%.
+                    return min(bucket["wr"], 0.95)
+        # Composite score is not a forward probability.  Until the strategy
+        # has explicit OOS/forward evidence, fail below the normal live gate.
+        return min(conservative(composite), MAX_UNVALIDATED_CONFIDENCE)
 
     # ----- persistence -----
 

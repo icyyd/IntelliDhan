@@ -41,6 +41,22 @@ def test_uptrend_report_is_transparent_and_adjusted_source_visible():
     assert report["methods"]["donchian_55_20"]["state"] == "BREAKOUT"
     assert report["source"] == "fixture_adjusted"
     assert report["risk"]["reference_quantity"] > 0
+    assert report["analytics_version"] == "trend-analysis-v2"
+    assert report["forecast"]["current_state"] == "UP"
+    assert set(report["forecast"]["horizons"]) == {"one_month", "three_months"}
+
+
+def test_forward_outlook_is_shrunk_non_overlapping_and_walk_forward():
+    report = analyze_daily_trend(daily_bars(n=1200, slope=0.1))
+    one_month = report["forecast"]["horizons"]["one_month"]
+    assert report["forecast"]["sampling"] == "non-overlapping forward windows"
+    assert one_month["matched_state_samples"] >= 12
+    assert one_month["total_non_overlapping_samples"] < 50
+    assert 50 < one_month["probability_positive_pct"] < 100
+    low, high = one_month["probability_interval_95_pct"]
+    assert 0 <= low <= one_month["probability_positive_pct"] <= high <= 100
+    assert one_month["walk_forward_validation"]["evaluation_samples"] >= 12
+    assert one_month["confidence"] in {"LOW", "MODERATE", "HIGH"}
 
 
 def test_downtrend_report_does_not_force_a_bullish_interpretation():

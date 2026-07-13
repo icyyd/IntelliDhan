@@ -46,7 +46,7 @@ class StockAnalysisService:
         self,
         symbol: str,
         *,
-        years: int = 5,
+        years: int = 10,
         risk_budget: float | None = None,
         include_backtest: bool = True,
         cost_bps: float = 10.0,

@@ -1,7 +1,7 @@
 # Trend Analysis Research and On-Demand Stock Module
 
 **Status:** Implemented analysis module; methodologies remain `RESEARCH_ONLY`.
-**Frozen analytics version:** `trend-analysis-v1`
+**Frozen analytics version:** `trend-analysis-v2`
 **Research date:** 2026-07-12
 
 ## 1. Objective
@@ -92,6 +92,33 @@ risk normalization only.
 
 Primary sources: [Moreira and Muir (2017)](https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12513), [Cederburg et al. (2020)](https://www.sciencedirect.com/science/article/abs/pii/S0304405X2030132X)
 
+### 2.6 Forward-looking probability layer
+
+The trend state now produces separate 21- and 63-trading-day outlooks. These
+are not extrapolated price targets. For each horizon the module:
+
+1. reconstructs the fixed trend state at historical dates using only data then
+   available;
+2. uses non-overlapping forward-return windows to reduce serial dependence;
+3. selects outcomes whose broad state (`UP`, `DOWN`, or `MIXED`) matches today;
+4. shrinks the conditional positive-return rate toward that ticker's
+   unconditional base rate with a fixed ten-observation prior;
+5. reports the median return, interquartile range, sample count, and Wilson
+   probability interval;
+6. evaluates sequential predictions with walk-forward Brier skill against an
+   expanding unconditional base-rate forecast.
+
+The result remains `UNCONFIRMED` unless there are at least 12 matched,
+non-overlapping observations and the historical walk-forward forecasts beat the
+base-rate Brier score. Parameters and thresholds are identical for every ticker.
+
+This conservative benchmark requirement reflects the poor out-of-sample
+stability documented for many return predictors by [Goyal, Welch, and Zafirov
+(2024)](https://academic.oup.com/rfs/article/37/11/3490/7749383). It also avoids
+selecting a more complex model from repeated backtests, a known source of
+overfitting discussed by [Bailey et al.
+(2015)](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2326253).
+
 ## 3. What was deliberately excluded
 
 - per-ticker optimized moving-average lengths;
@@ -139,6 +166,27 @@ is charged 10 basis points. Parameters are identical for all symbols.
   survivorship-biased, the window is short, and taxes/borrow/opportunity cost are
   excluded.
 
+### Forward-forecast diagnostic
+
+The v2 forecast layer was run without parameter search across the same 12
+symbols. A ticker/horizon counts as validated only when matched-state samples
+clear the minimum and its sequential Brier score improves on the expanding
+ticker base-rate forecast.
+
+| History | Horizon | Positive walk-forward skill | Validated current context | Median Brier skill | Median matched samples |
+|---|---:|---:|---:|---:|---:|
+| 5 years | 21 sessions | 1/12 | 1/12 | -1.85% | 33.5 |
+| 5 years | 63 sessions | 0/12 | 0/12 | insufficient | 10.5 |
+| 10 years | 21 sessions | 1/12 | 1/12 | -1.32% | 80.0 |
+| 10 years | 63 sessions | 1/12 | 1/12 | -2.47% | 26.5 |
+
+The evidence does **not** support relabeling the four-method trend vote as a
+generally reliable return predictor. The correct production behavior is to show
+the state, historical forward distribution, and uncertainty, while returning
+`UNCONFIRMED` for most ticker/horizon combinations. Ten years is the on-demand
+default to improve effective sample size; users can still inspect shorter
+regimes, but shorter windows are more likely to fail the evidence gates.
+
 ## 5. On-demand module
 
 ### Web app
@@ -147,9 +195,11 @@ Open **Analyze a stock** from the left navigation or search for it with the
 command palette. The result view uses progressive disclosure:
 
 1. consensus, price, as-of date, and bullish/neutral/bearish vote counts;
-2. one card per method with the exact observed values and rule;
-3. ATR, realized volatility, invalidation references, and optional size;
-4. a fixed-rule backtest table against buy-and-hold when requested.
+2. 1- and 3-month forward odds with base-rate comparison, uncertainty, matched
+   sample count, and walk-forward skill;
+3. one card per method with the exact observed values and rule;
+4. ATR, realized volatility, invalidation references, and optional size;
+5. a fixed-rule backtest table against buy-and-hold when requested.
 
 The global execution rail and calibration drawer are hidden in this view so an
 analysis result is not visually confused with a live signal or Robinhood
@@ -160,7 +210,7 @@ to one column on small screens.
 
 ```text
 GET /api/analyze/{symbol}
-    ?years=5
+    ?years=10
     &risk_budget=500
     &include_backtest=true
     &cost_bps=10
@@ -176,12 +226,14 @@ without a bound.
 ### CLI
 
 ```bash
-.venv/bin/python scripts/analyze_stock.py AAPL --years 5 --risk-budget 500
+.venv/bin/python scripts/analyze_stock.py AAPL --years 10 --risk-budget 500
 ```
 
 ### Output contract
 
 - transparent vote counts and consensus label;
+- conditional 21/63-day outlooks with uncertainty and benchmarked walk-forward
+  calibration;
 - every methodology’s values, signal, and literal rule;
 - ATR/volatility and optional reference quantity;
 - fixed-rule historical comparisons with costs and buy-and-hold;
@@ -189,6 +241,16 @@ without a bound.
 
 The output is analysis only. It does not create a `Setup`, `Alert`, Robinhood
 execution intent, or live-eligibility record.
+
+### Strategy-confidence policy
+
+A composite technical score is not a forward probability. The live engine now
+caps strategy confidence below the normal 0.75 gate unless calibration metadata
+explicitly declares `HISTORICAL_OOS`, `FORWARD_PAPER`, or `LIVE_VALIDATED`
+evidence. Thin or unclassified calibration buckets can still collect shadow
+outcomes but cannot claim live-ready forward confidence. The stock outlook and
+strategy calibration remain separate: a favorable ticker trend forecast never
+replaces the strategy-specific win-rate calibration.
 
 ## 6. Required validation before any strategy promotion
 
