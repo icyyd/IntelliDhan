@@ -386,8 +386,13 @@ def test_frontend_clears_personal_state_on_logout_401_and_ws_expiry():
         "function renderAll()"
     )]
     assert "lastState=null" in clear_block
+    assert "currentDossier=null" in clear_block
     assert "socket.onclose=null; socket.close()" in clear_block
     assert 'document.getElementById("briefBody").replaceChildren()' in clear_block
+    assert '"budgets-dialog","autotrade-dialog"' in clear_block
+    assert '"bdSuppression","bdEvidence","bdPerformance"' in clear_block
+    assert '"profile0dteInner","marketChart","chartLegend","dailyChart"' in clear_block
+    assert "window.location.reload()" in clear_block
     assert 'clearPersonalState("Signed out.")' in source
     assert 'r.status===401 && url!=="/api/auth/session"' in source
     assert 'event.code===4401' in source

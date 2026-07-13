@@ -1331,8 +1331,8 @@ let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], di
 let selectedDiscoverPreset = "trend_leaders", currentDossier = null;
 let discoverPresets = {
   trend_leaders:{above_sma200:true,min_return_6m:5},
-  pullback_uptrend:{above_sma200:true,min_return_6m:0},
-  fresh_breakouts:{above_sma200:true},
+  pullback_uptrend:{above_sma200:true,min_return_6m:0,max_distance_from_high_pct:12},
+  fresh_breakouts:{above_sma200:true,max_distance_from_high_pct:3},
   defensive_trend:{above_sma200:true,max_volatility_pct:35},
   "":{above_sma200:false},
 };
@@ -1460,15 +1460,19 @@ function setHealth(mode){
 function clearPersonalState(reason="Owner sign-in required."){
   ownerAuthenticated=false;
   lastState=null; briefing=null; watchlistsCache=[]; savedScreensCache=[];
-  selectedSymbol=null; selectedAlertId=null; selectionTouched=false;
+  symbolOrder=[]; selectedSymbol=null; selectedAlertId=null; selectedSwingSymbol=null;
+  currentDossier=null; selectionTouched=false;
   if(typeof autotradeCache!=="undefined") autotradeCache=null;
   if(typeof budgetsCache!=="undefined") budgetsCache=null;
   if(typeof wsConnection!=="undefined"&&wsConnection){
     const socket=wsConnection; wsConnection=null; socket.onclose=null; socket.close();
   }
+  ["owner-dialog","budgets-dialog","autotrade-dialog"].forEach(id=>{
+    const dialog=document.getElementById(id); if(dialog?.open) dialog.close();
+  });
   document.querySelectorAll('[id^="summary"]').forEach(el=>{ el.textContent="—"; });
   document.querySelectorAll('[id^="qCount"]').forEach(el=>{ el.textContent="(0)"; });
-  ["queueTracking","queueSuppressed","queue0dteTracking","queue0dteSuppressed","queueSwingTracking","queueSwingSuppressed","matrix","decisionGrid","drawerInner","riskUsage","contextMeta"].forEach(id=>{ const el=document.getElementById(id); if(el) el.replaceChildren(); });
+  ["queueTracking","queueSuppressed","queue0dteTracking","queue0dteSuppressed","queueSwingTracking","queueSwingSuppressed","matrix","decisionGrid","drawerInner","riskUsage","contextMeta","bdSuppression","bdEvidence","bdPerformance","profile0dteInner","marketChart","chartLegend","dailyChart","swingTrendInner","swingSymbols"].forEach(id=>{ const el=document.getElementById(id); if(el) el.replaceChildren(); });
   document.getElementById("queueTracking").innerHTML=`<div class="empty"><b>${esc(reason)}</b>Sign in to load personal signals, performance, and risk state.</div>`;
   document.getElementById("contextSymbol").textContent="—";
   document.getElementById("contextPrice").textContent="—";
@@ -1483,11 +1487,21 @@ function clearPersonalState(reason="Owner sign-in required."){
   document.getElementById("autotradeReady").textContent="0";
   document.getElementById("autotradeApproval").textContent="0";
   document.getElementById("autotradeExpiry").textContent="—";
+  document.getElementById("budgets-body").textContent="Sign in to load budgets.";
+  document.getElementById("budgets-status").textContent="";
+  document.getElementById("autoMode").value="OFF";
+  ["autoConfidence","autoOrderRisk","autoDailyRisk","autoOpenIntents","autoSymbols","autoStrategies","autoModules"].forEach(id=>{ document.getElementById(id).value=""; });
+  document.getElementById("autoOptions").checked=false;
+  document.getElementById("autotrade-status").textContent="";
+  document.getElementById("analysisResults").hidden=true;
   const ownerButton=document.getElementById("ownerButton");
   ownerButton.style.color=""; ownerButton.title="Owner sign in";
   ownerButton.setAttribute("aria-label","Owner sign in");
   document.getElementById("ownerSignOut").hidden=true;
   renderWatchlists(); renderSavedScreens(); renderBriefing(); setHealth("auth");
+  // Reload is the final privacy boundary: it discards every closure, event
+  // handler, SVG node, and DOM fragment rather than relying on a partial list.
+  window.location.reload();
 }
 
 function renderAll(){
