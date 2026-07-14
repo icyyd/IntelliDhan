@@ -140,8 +140,16 @@ confidence is capped below the live gate until its calibration metadata declares
 
 - Prefer `GET /api/dossier/{symbol}` for the UI-facing Analyze workflow; it
   wraps the trend analysis with normalized security, coverage, and watch state.
-- `GET /api/discover` is a technical-only EOD ranker. Never describe its
-  `technical_score_v1` as a probability, fundamental score, or recommendation.
+- `GET /api/discover` is a settled-daily, configured-universe smart-play ranker.
+  Never describe `smart-play-v1` as a probability, broad-market rank,
+  fundamental score, recommendation, or execution signal. Read
+  `docs/22-smart-play-scanner-and-ai-thesis.md` before changing its fixed rules.
+- `POST /api/discover/thesis` is an account-only OpenAI research aid. Its
+  `RESEARCH`, `WATCH`, and `AVOID` verdicts never create an intent or override
+  deterministic rank. Model output is a closed set of enums and evidence IDs;
+  all displayed prose and numbers are rendered by the server. Require a complete
+  universe scan and fail closed on an evidence-ID mismatch. Web research stays
+  disabled until claim-level inline citations are implemented.
 - Personal `/api/state`, briefing, automation status, watchlist/screen/capital
   limit access, and `/ws` require a server-expiring account session. Health,
   calibration metadata, Discover, and on-demand research remain non-personal
@@ -164,6 +172,11 @@ confidence is capped below the live gate until its calibration metadata declares
 Use `docs/20-one-stop-terminal-gap-analysis.md` as the prioritized implementation
 brief. Build the durable Discover -> Analyze -> Decide -> Track loop before
 adding more indicators, strategies, or dashboards.
+
+The smart-play scanner is the current strategy expansion baseline. Do not add
+fundamental quality, valuation, revisions, or earnings drift until their
+point-in-time data contracts are implemented; today's values in historical
+backtests would create lookahead bias.
 
 ## GitOps and multi-agent workflow
 

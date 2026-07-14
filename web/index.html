@@ -815,27 +815,49 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
 .discover-card:hover{border-color:rgba(145,164,255,.43); box-shadow:0 16px 34px rgba(0,0,0,.18)}
 .discover-card::after{content:""; position:absolute; width:130px; height:130px; right:-58px; top:-70px; border-radius:50%; background:rgba(145,164,255,.08); pointer-events:none}
 .discover-card-head{position:relative; z-index:1; display:flex; align-items:flex-start; gap:12px}
-.discover-symbol{font-size:24px; line-height:1; font-weight:800; letter-spacing:-.035em}
+.play-kicker{display:block; margin-bottom:7px; color:var(--cyan); font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase}
+.discover-symbol{margin:0; font-size:24px; line-height:1; font-weight:800; letter-spacing:-.035em}
 .discover-price{display:block; margin-top:5px; color:var(--text-dim); font:600 12px var(--mono)}
 .score-bubble{display:grid; place-items:center; width:58px; height:58px; margin-left:auto; border-radius:19px; background:rgba(145,164,255,.12); color:var(--cyan)}
 .score-bubble b{display:block; font:800 17px var(--mono); line-height:1; text-align:center}
-.score-bubble small{display:block; margin-top:3px; color:var(--text-faint); font-size:7.5px; text-transform:uppercase; letter-spacing:.06em}
-.discover-state{display:inline-flex; align-items:center; gap:6px; margin-top:12px; padding:5px 9px; border-radius:99px; background:rgba(94,234,212,.10); color:var(--teal); font-size:9.5px; font-weight:800; letter-spacing:.04em}
+.score-bubble small{display:block; margin-top:3px; color:var(--text-dim); font-size:10px; text-transform:uppercase; letter-spacing:.06em}
+.discover-state{display:inline-flex; align-items:center; gap:6px; margin-top:12px; padding:6px 10px; border-radius:99px; background:rgba(94,234,212,.10); color:var(--teal); font-size:11px; font-weight:800; letter-spacing:.04em}
 .discover-state::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor}
 .discover-state.below{background:rgba(251,113,133,.10); color:var(--red)}
+.discover-state.waiting{background:rgba(251,191,36,.10); color:var(--gold)}
+.play-evidence{display:grid; gap:7px; margin:13px 0 0; padding:0; list-style:none}
+.play-evidence li{display:flex; align-items:flex-start; gap:8px; padding:9px 10px; border:1px solid var(--border-soft); border-radius:14px; background:var(--tint-d)}
+.play-evidence li::before{content:""; width:7px; height:7px; margin-top:4px; border-radius:50%; background:var(--teal); box-shadow:0 0 0 4px rgba(94,234,212,.08); flex:none}
+.play-evidence b{display:block; font-size:11.5px}
+.play-evidence small{display:block; margin-top:3px; color:var(--text-dim); font:600 11px var(--mono)}
+.play-rules{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:10px}
+.play-rule{padding:10px 11px; border-radius:14px; background:rgba(94,234,212,.055); color:var(--text-dim); font-size:11px; line-height:1.5}
+.play-rule.risk{background:rgba(251,113,133,.055)}
+.play-rule b{display:block; margin-bottom:3px; color:var(--teal); font-size:10px; letter-spacing:.06em; text-transform:uppercase}
+.play-rule.risk b{color:var(--red)}
 .discover-metrics{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-top:13px}
 .discover-metric{padding:9px; border-radius:14px; background:var(--tint-d); min-width:0}
 .discover-metric b{display:block; overflow:hidden; text-overflow:ellipsis; font:650 11.5px var(--mono)}
-.discover-metric small{display:block; margin-top:2px; color:var(--text-faint); font-size:8px; text-transform:uppercase; letter-spacing:.04em}
-.coverage-strip{display:flex; align-items:center; gap:7px; margin-top:12px; color:var(--text-faint); font-size:9.5px}
+.discover-metric small{display:block; margin-top:3px; color:var(--text-dim); font-size:10px; text-transform:uppercase; letter-spacing:.04em}
+.coverage-strip{display:flex; align-items:center; gap:7px; margin-top:12px; color:var(--text-dim); font-size:11px}
 .coverage-dots{display:flex; gap:3px}
 .coverage-dots i{display:block; width:13px; height:5px; border-radius:99px; background:var(--border)}
 .coverage-dots i.on{background:var(--gold)}
-.discover-actions{display:flex; gap:8px; margin-top:14px; padding-top:13px; border-top:1px solid var(--border-soft)}
-.secondary-action,.primary-action{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; padding:7px 11px; border-radius:12px; cursor:pointer; font:700 10.5px var(--sans)}
+.discover-actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:13px; border-top:1px solid var(--border-soft)}
+.discover-actions>*{flex:1 1 auto}
+.secondary-action,.primary-action{display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:9px 12px; border-radius:13px; cursor:pointer; font:700 11px var(--sans)}
 .primary-action{border:0; background:var(--cyan); color:var(--on-accent)}
 .secondary-action{border:1px solid var(--border); background:var(--tint-c); color:var(--text-dim)}
 .secondary-action:hover{border-color:rgba(145,164,255,.43); color:var(--cyan)}
+.ai-thesis{margin-top:12px; padding:14px; border:1px solid rgba(145,164,255,.28); border-radius:18px; background:linear-gradient(145deg,rgba(145,164,255,.09),rgba(94,234,212,.045)); color:var(--text-dim); font-size:10.5px; line-height:1.55}
+.ai-thesis[hidden]{display:none}
+.ai-thesis-head{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+.ai-thesis-head b{color:var(--text); font-size:12px}
+.ai-verdict{padding:4px 7px; border-radius:99px; background:rgba(145,164,255,.14); color:var(--cyan); font:800 8px var(--mono)}
+.ai-thesis p{margin:0 0 8px}
+.ai-thesis ul{margin:6px 0 9px; padding-left:17px}
+.ai-thesis a{color:var(--cyan); text-decoration:underline; text-underline-offset:2px}
+.ai-thesis-note{color:var(--text-dim); font-size:11px}
 .watch-panel{position:sticky; top:88px}
 .watch-status{min-height:18px; margin:8px 0; color:var(--text-faint); font-size:10px}
 .watch-status.err{color:var(--red)}
@@ -897,6 +919,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   .discover-form .analysis-run{grid-column:1}
   .screen-tools{align-items:stretch; flex-direction:column}
   .screen-tools select{max-width:none}
+  .play-rules{grid-template-columns:1fr}
 }
 
 :root[data-theme="light"]{
@@ -1156,7 +1179,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       <div class="desk-copy">
         <div class="desk-eyebrow">Find candidates worth researching</div>
         <h1 id="discoverTitle">Discover</h1>
-        <p>Rank the configured universe by transparent trend, liquidity, and risk data. No hidden stock-picking probability.</p>
+        <p>Find research-ready momentum, breakout, and trend-pullback setups with clear confirmation and risk rules.</p>
       </div>
       <div class="desk-stats" aria-label="Discovery summary">
         <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-grid"/></svg></span><span><b id="discoverMatches">—</b><small>Current matches</small></span></div>
@@ -1167,11 +1190,11 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 
     <section class="panel discover-filter-panel" aria-label="Discovery filters">
       <div class="discover-presets" id="discoverPresets">
-        <button class="preset-chip active" type="button" data-preset="trend_leaders">Trend leaders</button>
-        <button class="preset-chip" type="button" data-preset="pullback_uptrend">Pullback in uptrend</button>
-        <button class="preset-chip" type="button" data-preset="fresh_breakouts">Fresh breakouts</button>
-        <button class="preset-chip" type="button" data-preset="defensive_trend">Defensive trend</button>
-        <button class="preset-chip" type="button" data-preset="">All names</button>
+        <button class="preset-chip active" type="button" data-preset="smart_momentum" aria-pressed="true">Momentum leaders</button>
+        <button class="preset-chip" type="button" data-preset="breakout_watch" aria-pressed="false">Breakout watch</button>
+        <button class="preset-chip" type="button" data-preset="trend_pullbacks" aria-pressed="false">Trend pullbacks</button>
+        <button class="preset-chip" type="button" data-preset="defensive_trend" aria-pressed="false">Defensive trend</button>
+        <button class="preset-chip" type="button" data-preset="" aria-pressed="false">All names</button>
       </div>
       <form class="discover-form" id="discoverForm">
         <label class="analysis-field"><span>Minimum price</span><input id="discoverPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="Any"></label>
@@ -1181,7 +1204,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
         <button class="analysis-run" id="discoverRun" type="submit"><span class="analysis-spinner" aria-hidden="true"></span><svg class="icon"><use href="#i-search"/></svg><span>Run screen</span></button>
       </form>
       <div class="discover-note"><svg class="icon"><use href="#i-check"/></svg><span id="discoverEffectiveFilters">Loading effective preset rules…</span></div>
-      <div class="discover-note"><svg class="icon"><use href="#i-alert"/></svg><span>V1 ranks Trend and Risk only. Quality, Growth, Valuation, and Catalyst stay visibly unavailable until point-in-time feeds are connected.</span></div>
+      <div class="discover-note"><svg class="icon"><use href="#i-alert"/></svg><span>Scores compare only the configured universe. AI research is optional, cannot change rank or trigger a trade, and keeps fundamental/event coverage visibly unavailable until point-in-time feeds are connected.</span></div>
       <div class="screen-tools">
         <label class="analysis-field"><span>Save current screen</span><input id="discoverScreenName" type="text" maxlength="60" placeholder="My momentum screen"></label>
         <button class="secondary-action" id="saveScreenButton" type="button" onclick="saveCurrentScreen()"><svg class="icon"><use href="#i-bookmark"/></svg>Save screen</button>
@@ -1421,8 +1444,11 @@ let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
 let accountUser = null, preferencesCache = null, preferencesApplied = false;
-let selectedDiscoverPreset = "trend_leaders", currentDossier = null;
+let selectedDiscoverPreset = "smart_momentum", currentDossier = null;
 let discoverPresets = {
+  smart_momentum:{play_type:"MOMENTUM_LEADER"},
+  breakout_watch:{play_type:"BREAKOUT_WATCH"},
+  trend_pullbacks:{play_type:"TREND_PULLBACK"},
   trend_leaders:{above_sma200:true,min_return_6m:5},
   pullback_uptrend:{above_sma200:true,min_return_6m:0,max_distance_from_high_pct:12},
   fresh_breakouts:{above_sma200:true,max_distance_from_high_pct:3},
@@ -2364,6 +2390,8 @@ function applyPresetControls(preset){
   document.getElementById("discoverVolatility").value=filters.max_volatility_pct??"";
   document.getElementById("discoverAbove200").checked=Boolean(filters.above_sma200);
   const rules=[];
+  const playLabels={MOMENTUM_LEADER:"positive 12–1 and 6–1 momentum above a rising 200-day average",BREAKOUT_WATCH:"within 4% of a 55-day breakout in a rising trend",TREND_PULLBACK:"orderly pullback near the 50-day average in a rising trend"};
+  if(filters.play_type) rules.push(playLabels[filters.play_type]||filters.play_type.replaceAll("_"," ").toLowerCase());
   if(filters.above_sma200) rules.push("above the 200-day average");
   if(filters.min_return_6m!=null) rules.push(`6m return ≥ ${filters.min_return_6m}%`);
   if(filters.max_volatility_pct!=null) rules.push(`20d volatility ≤ ${filters.max_volatility_pct}%`);
@@ -2392,7 +2420,7 @@ function applySavedScreen(screenId){
   const screen=savedScreensCache.find(item=>item.screen_id===screenId); if(!screen) return;
   const stored=screen.filters||{}; selectedDiscoverPreset=stored.preset||"";
   const filters={...(discoverPresets[selectedDiscoverPreset]||{}),...stored};
-  document.querySelectorAll("[data-preset]").forEach(item=>item.classList.toggle("active",item.dataset.preset===selectedDiscoverPreset));
+  document.querySelectorAll("[data-preset]").forEach(item=>{ const selected=item.dataset.preset===selectedDiscoverPreset; item.classList.toggle("active",selected); item.setAttribute("aria-pressed",String(selected)); });
   document.getElementById("discoverPrice").value=filters.min_price??"";
   document.getElementById("discoverMomentum").value=filters.min_return_6m??"";
   document.getElementById("discoverVolatility").value=filters.max_volatility_pct??"";
@@ -2432,6 +2460,13 @@ function compactDollar(value){
   const n=Number(value); if(!Number.isFinite(n)) return "—";
   return n>=1e9?`$${(n/1e9).toFixed(1)}B`:n>=1e6?`$${(n/1e6).toFixed(0)}M`:`$${n.toLocaleString()}`;
 }
+function formatPlayFact(fact){
+  const value=fact?.value;
+  if(value==null) return "Unavailable";
+  if(fact.unit==="percent"||fact.unit==="percentile") return `${Number(value).toFixed(1)}${fact.unit==="percent"?"%":" percentile"}`;
+  if(fact.unit==="ratio") return `${Number(value).toFixed(2)}x`;
+  return String(value);
+}
 function renderDiscovery(data){
   discoverLoaded=true;
   document.getElementById("discoverMatches").textContent=data.match_count??0;
@@ -2443,24 +2478,50 @@ function renderDiscovery(data){
   const rows=data.results||[], output=document.getElementById("discoverResults");
   if(!rows.length){ output.innerHTML=`<div class="empty"><b>No names match this screen.</b>Loosen one filter or choose All names. A zero-result screen is a valid outcome.</div>`; return; }
   output.innerHTML=rows.map(row=>{
-    const below=row.trend_state==="BELOW_200D", watched=researchWatchlist()?.symbols?.includes(row.symbol);
+    const play=row.selected_play||row.best_play||{}, below=row.trend_state==="BELOW_200D", waiting=String(play.status||"").startsWith("WAIT"), watched=researchWatchlist()?.symbols?.includes(row.symbol);
+    const evidence=(play.evidence||[]).slice(0,3);
     return `<article class="discover-card">
-      <div class="discover-card-head"><div><div class="discover-symbol">${esc(row.symbol)}</div><span class="discover-price">$${esc(fmtPx(row.price))}</span></div><div class="score-bubble"><span><b>${esc(Math.round(row.technical_score))}</b><small>Technical</small></span></div></div>
-      <span class="discover-state ${below?"below":""}">${esc(String(row.trend_state||"UNCONFIRMED").replaceAll("_"," "))}</span>
+      <div class="discover-card-head"><div><span class="play-kicker">${esc(play.label||"Research candidate")}</span><h3 class="discover-symbol">${esc(row.symbol)}</h3><span class="discover-price">$${esc(fmtPx(row.price))} · ${esc(play.horizon||"No active horizon")}</span></div><div class="score-bubble"><span><b>${esc(Math.round(play.score||0))}</b><small>Play score</small></span></div></div>
+      <span class="discover-state ${below?"below":waiting?"waiting":""}">${esc(String(play.status||row.trend_state||"UNCONFIRMED").replaceAll("_"," "))}</span>
+      <ul class="play-evidence">${evidence.map(fact=>`<li><span><b>${esc(fact.label)}</b><small>${esc(formatPlayFact(fact))}</small></span></li>`).join("")}</ul>
+      <div class="play-rules"><div class="play-rule"><b>Confirmation</b>${esc(play.confirmation||"Wait for a supported setup.")}</div><div class="play-rule risk"><b>Invalidation</b>${esc(play.invalidation||"No active setup.")}</div></div>
       <div class="discover-metrics">
-        <span class="discover-metric"><b class="${Number(row.return_6m_pct)>=0?"analysis-positive":"analysis-negative"}">${esc(fmtSignedPct(row.return_6m_pct))}</b><small>6m return</small></span>
-        <span class="discover-metric"><b>${esc(fmtPercent(row.percent_of_52w_high))}</b><small>Of 52w high</small></span>
+        <span class="discover-metric"><b class="${Number(row.return_12_1_pct)>=0?"analysis-positive":"analysis-negative"}">${esc(fmtSignedPct(row.return_12_1_pct))}</b><small>12–1 return</small></span>
+        <span class="discover-metric"><b>${esc(fmtSignedPct(row.distance_to_prior_55d_high_pct))}</b><small>To breakout</small></span>
         <span class="discover-metric"><b>${esc(fmtPercent(row.realized_volatility_20d_pct))}</b><small>20d vol</small></span>
-        <span class="discover-metric"><b>${esc(fmtSignedPct(row.distance_from_sma_200_pct))}</b><small>Vs 200d</small></span>
-        <span class="discover-metric"><b>${esc(compactDollar(row.average_dollar_volume_20d))}</b><small>Dollar volume</small></span>
-        <span class="discover-metric"><b class="analysis-negative">${esc(fmtSignedPct(row.max_drawdown_1y_pct))}</b><small>1y drawdown</small></span>
+        <span class="discover-metric"><b>${esc(fmtSignedPct(row.sma_200_slope_20d_pct))}</b><small>200d slope</small></span>
+        <span class="discover-metric"><b>${esc(row.volume_ratio_5d_to_prior_20d==null?"—":`${Number(row.volume_ratio_5d_to_prior_20d).toFixed(2)}x`)}</b><small>Volume ratio</small></span>
+        <span class="discover-metric"><b>${esc(compactDollar(row.average_dollar_volume_20d))}</b><small>Liquidity</small></span>
       </div>
-      <div class="coverage-strip"><span class="coverage-dots" aria-label="2 of 6 data pillars available">${[0,1,2,3,4,5].map(i=>`<i class="${i<2?"on":""}"></i>`).join("")}</span><span>2/6 data pillars · technical-only</span></div>
-      <div class="discover-actions"><button class="primary-action" type="button" data-analyze="${esc(row.symbol)}"><svg class="icon"><use href="#i-search"/></svg>Open dossier</button><button class="secondary-action" type="button" data-watch="${esc(row.symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg>${watched?"Saved":"Watch"}</button></div>
+      <div class="coverage-strip"><span class="coverage-dots" aria-label="Market evidence available; fundamental and event data unavailable">${[0,1,2,3,4,5].map(i=>`<i class="${i<2?"on":""}"></i>`).join("")}</span><span>Market evidence · configured-universe rank</span></div>
+      <div class="discover-actions"><button class="primary-action" type="button" data-analyze="${esc(row.symbol)}"><svg class="icon"><use href="#i-search"/></svg>Full analysis</button>${play.eligible?`<button class="secondary-action" type="button" data-thesis="${esc(row.symbol)}" data-play="${esc(play.key||"")}"><svg class="icon"><use href="#i-activity"/></svg>Build AI thesis</button>`:""}<button class="secondary-action" type="button" data-watch="${esc(row.symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg>${watched?"Saved":"Watch"}</button></div>
+      <div class="ai-thesis" data-thesis-output="${esc(row.symbol)}" hidden></div>
     </article>`;
   }).join("");
   output.querySelectorAll("[data-analyze]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.analyze)));
+  output.querySelectorAll("[data-thesis]").forEach(button=>button.addEventListener("click",()=>buildAIThesis(button)));
   output.querySelectorAll("[data-watch]").forEach(button=>button.addEventListener("click",()=>addToResearch(button.dataset.watch)));
+}
+function renderAIThesis(output,data){
+  const thesis=data.thesis||{};
+  output.innerHTML=`<div class="ai-thesis-head"><span class="ai-verdict">${esc(thesis.verdict||"RESEARCH")}</span><b>${esc(thesis.headline||"AI research thesis")}</b></div>
+    <p>${esc(thesis.thesis||"")}</p>
+    <b>Why now</b><ul>${(thesis.why_now||[]).map(item=>`<li>${esc(item)}</li>`).join("")}</ul>
+    <b>Key risks</b><ul>${(thesis.risks||[]).map(item=>`<li>${esc(item)}</li>`).join("")}</ul>
+    <b>Research next</b><ul>${(thesis.research_next||[]).map(item=>`<li>${esc(item)}</li>`).join("")}</ul>
+    <p><b>Confirmation:</b> ${esc(thesis.confirmation||"—")}<br><b>Invalidation:</b> ${esc(thesis.invalidation||"—")}</p>
+    <div class="ai-thesis-note">${esc(data.model||"OpenAI")} · ${data.web_search_used?"cited public web context used":data.web_research?"web research requested; no web source used":"supplied market evidence only"} · research aid, not an order</div>`;
+}
+async function buildAIThesis(button){
+  if(!ownerAuthenticated){ openOwnerDialog(); return; }
+  const card=button.closest(".discover-card"), output=card.querySelector("[data-thesis-output]");
+  output.hidden=false; output.textContent=`Building an evidence-grounded thesis for ${button.dataset.thesis}…`;
+  button.disabled=true;
+  try{
+    const data=await fetchJSON("/api/discover/thesis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({symbol:button.dataset.thesis,play_key:button.dataset.play,web_research:false})});
+    renderAIThesis(output,data);
+  }catch(error){ output.innerHTML=`<b>AI research unavailable.</b><p>${esc(error.message||"The deterministic candidate evidence above is unchanged.")}</p>`; if(error.status===401) openOwnerDialog(); }
+  finally{ button.disabled=false; }
 }
 async function runDiscovery(event){
   event?.preventDefault();
@@ -2479,7 +2540,7 @@ function analyzeCandidate(symbol){
 document.getElementById("discoverForm").addEventListener("submit",runDiscovery);
 document.querySelectorAll("[data-preset]").forEach(button=>button.addEventListener("click",()=>{
   selectedDiscoverPreset=button.dataset.preset;
-  document.querySelectorAll("[data-preset]").forEach(item=>item.classList.toggle("active",item===button));
+  document.querySelectorAll("[data-preset]").forEach(item=>{ const selected=item===button; item.classList.toggle("active",selected); item.setAttribute("aria-pressed",String(selected)); });
   applyPresetControls(selectedDiscoverPreset);
   runDiscovery();
 }));
