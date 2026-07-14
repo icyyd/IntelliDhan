@@ -160,9 +160,13 @@ Each Discover card shows, in order:
 3. three evidence facts;
 4. confirmation and invalidation rules;
 5. compact supporting market metrics;
-6. actions: full analysis, AI thesis, and watchlist.
+6. actions: full analysis, immediate in-app AI thesis, optional ChatGPT Workspace
+   Agent dispatch, and watchlist.
 
 The layout stays card- and alert-centric. Status always includes text and never relies on color alone. AI content expands inside the originating card and uses an `aria-live` status region.
+Workspace Agent dispatch is a separate fire-and-forget research path whose
+output cannot currently return through OpenAI's trigger API; see
+[ChatGPT Workspace Agent dispatch](23-chatgpt-workspace-agent-dispatch.md).
 
 ## 6. Strategies intentionally not activated
 

@@ -12,6 +12,9 @@
 #   INTELLIDHAN_INVITE_CODE # optional separate code for invited account signup
 #   AUTOTRADE_CONTROL_TOKEN # required only for agent/operator control endpoints
 #   AUTOTRADE_AGENT_TOKEN   # required only for Claude intent claim/receipt endpoints
+#   OPENAI_API_KEY          # optional — in-app, closed-schema AI thesis
+#   CHATGPT_WORKSPACE_AGENT_ID # optional — published agtch_ API channel identifier
+#   CHATGPT_WORKSPACE_AGENT_TOKEN # optional — Workspace Agents-scoped access token
 #   TELEGRAM_BOT_TOKEN     # optional — alerts print to Koyeb logs if unset
 #   TELEGRAM_CHAT_ID       # optional — required alongside the token above
 #
