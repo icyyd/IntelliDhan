@@ -534,7 +534,7 @@ async def dispatch_discovery_workspace_agent(request: Request, payload: dict = B
         scan = await asyncio.wait_for(discovery.universe_scan(), timeout=45)
         if scan.get("complete") is not True:
             raise WorkspaceAgentUnavailable(
-                "ChatGPT Work dispatch requires a complete configured-universe scan; "
+                "Workspace Agent dispatch requires a complete configured-universe scan; "
                 "retry after the listed provider failures recover"
             )
         candidate = next((row for row in scan["rows"] if row["symbol"] == symbol), None)
@@ -561,7 +561,7 @@ async def dispatch_discovery_workspace_agent(request: Request, payload: dict = B
     except WorkspaceAgentUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except TimeoutError as exc:
-        raise HTTPException(status_code=504, detail="ChatGPT Work dispatch timed out") from exc
+        raise HTTPException(status_code=504, detail="Workspace Agent dispatch timed out") from exc
 
 
 @app.get("/api/dossier/{symbol}")
