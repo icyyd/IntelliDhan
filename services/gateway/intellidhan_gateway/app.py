@@ -43,6 +43,7 @@ from intellidhan_gateway.stock_analysis import StockAnalysisService
 from intellidhan_gateway.workspace_agent import (
     WorkspaceAgentTriggerService,
     WorkspaceAgentUnavailable,
+    validate_dispatch_event_id,
 )
 
 WEB_DIR = Path(__file__).resolve().parents[3] / "web"
@@ -521,12 +522,13 @@ async def build_discovery_thesis(request: Request, payload: dict = Body(...)):
 
 @app.post("/api/discover/workspace-agent")
 async def dispatch_discovery_workspace_agent(request: Request, payload: dict = Body(...)):
-    """Queue server-verified candidate research in ChatGPT; never creates an order."""
+    """Queue server-verified research; this route has no local execution path."""
     principal = _require_personal(request, roles={"ADMIN", "TRADER"})
     rate_limiter.check(
-        _client_key(request, "discovery-workspace-agent"), limit=3, window_seconds=60
+        f"discovery-workspace-agent:{principal.user_id}", limit=3, window_seconds=60
     )
     try:
+        event_id = validate_dispatch_event_id(payload.get("event_id"))
         symbol = stock_analyzer.normalize_symbol(str(payload.get("symbol", "")))
         play_key = str(payload.get("play_key", "")).strip().upper() or None
         scan = await asyncio.wait_for(discovery.universe_scan(), timeout=45)
@@ -545,7 +547,11 @@ async def dispatch_discovery_workspace_agent(request: Request, payload: dict = B
                 raise ValueError("unknown smart-play setup")
             candidate["selected_play"] = play
         return await asyncio.wait_for(
-            workspace_agent_service.trigger(candidate, user_id=principal.user_id),
+            workspace_agent_service.trigger(
+                candidate,
+                user_id=principal.user_id,
+                event_id=event_id,
+            ),
             timeout=20,
         )
     except ValueError as exc:

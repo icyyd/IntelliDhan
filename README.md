@@ -27,9 +27,11 @@ must not be presented as implemented.
   a closed evidence-selection schema and server-rendered narrative; it cannot
   invent prose, alter rank, or create an execution intent.
 - Optional ADMIN/TRADER dispatch of a server-verified candidate to a published
-  ChatGPT Workspace Agent for deeper research. The run is queued in ChatGPT,
-  cannot place a broker order, and is reviewed there because the trigger API
-  does not yet return agent output.
+  ChatGPT Workspace Agent for deeper research. IntelliDhan requests analysis
+  only; production requires a dedicated agent with no broker tools and no
+  general write tools. A separately reviewed, destination-constrained result
+  delivery action is the only allowed exception. The trigger API queues the run
+  but does not yet return its output.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
   forward evidence and fixed-rule backtests.
 
