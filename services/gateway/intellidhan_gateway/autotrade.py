@@ -13,7 +13,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -51,6 +51,11 @@ TERMINAL_STATUSES = {
     IntentStatus.CANCELLED,
     IntentStatus.EXPIRED,
     IntentStatus.CLOSED,
+}
+
+BLOCKABLE_STATUSES = {
+    IntentStatus.AWAITING_APPROVAL,
+    IntentStatus.READY,
 }
 
 
@@ -136,12 +141,14 @@ class AutotradeManager:
         policy_path: str | Path = "config/autotrade.yaml",
         state_path: str | Path | None = None,
         state_store: SettingsStore | None = None,
+        symbol_gate: Callable[[str], str | None] | None = None,
     ) -> None:
         self.policy_path = Path(policy_path)
         self.state_path = Path(
             state_path or os.getenv("AUTOTRADE_STATE_PATH", "data/autotrade_state.json")
         )
         self.state_store = state_store
+        self.symbol_gate = symbol_gate
         self.policy = self._load_policy()
         self.intents: dict[str, ExecutionIntent] = self._load_state()
 
@@ -238,7 +245,13 @@ class AutotradeManager:
         now = now or datetime.now(timezone.utc)
         intent_id = f"ati_{alert.alert_id}"
         if intent_id in self.intents:
-            return self.intents[intent_id]
+            intent = self.intents[intent_id]
+            if alert.status != "ACTIVE":
+                return self._block_intent(intent, f"alert status is {alert.status.lower()}")
+            reason = self._symbol_gate_reason(intent.symbol)
+            if reason:
+                return self._block_intent(intent, reason)
+            return intent
         mode = self.effective_mode(now)
         if self.policy.mode == AutomationMode.OFF:
             return None
@@ -278,6 +291,8 @@ class AutotradeManager:
     def _eligibility_reasons(self, alert: Alert, now: datetime) -> list[str]:
         reasons: list[str] = []
         policy = self.policy
+        if alert.status != "ACTIVE":
+            reasons.append(f"alert status is {alert.status.lower()}")
         if alert.valid_until <= now:
             reasons.append("alert expired")
         if policy.allowed_symbols and alert.symbol.upper() not in policy.allowed_symbols:
@@ -294,6 +309,9 @@ class AutotradeManager:
             reasons.append("options automation disabled")
         if alert.action not in {Action.EQUITY_BUY, Action.BTO}:
             reasons.append("only long-opening orders are supported")
+        symbol_reason = self._symbol_gate_reason(alert.symbol)
+        if symbol_reason:
+            reasons.append(symbol_reason)
         calibration = CalibrationMap.load(alert.strategy)
         if policy.require_explicit_calibration:
             if not calibration.buckets:
@@ -358,6 +376,7 @@ class AutotradeManager:
                 "price is outside the entry zone",
                 "protective exit cannot be established",
                 "intent or alert has expired",
+                "symbol market data is stale, unavailable, or quarantined",
                 "Robinhood account is not the dedicated Agentic account",
             ],
         }
@@ -368,32 +387,63 @@ class AutotradeManager:
             raise ValueError("only AWAITING_APPROVAL intents can be approved")
         if intent.valid_until <= datetime.now(timezone.utc):
             return self._transition(intent, IntentStatus.EXPIRED)
+        reason = self._symbol_gate_reason(intent.symbol)
+        if reason:
+            return self._block_intent(intent, reason)
         return self._transition(intent, IntentStatus.READY)
 
     def reject(self, intent_id: str, reason: str) -> ExecutionIntent:
         intent = self._get(intent_id)
-        if intent.status in TERMINAL_STATUSES:
-            raise ValueError("intent is already terminal")
-        intent.reasons.append(reason or "rejected by operator")
+        detail = reason or "rejected by operator"
+        if intent.status == IntentStatus.CLAIMED:
+            return self._revoke_claim(intent, detail)
+        if intent.status not in BLOCKABLE_STATUSES:
+            raise ValueError("only pre-execution intents can be rejected")
+        intent.reasons.append(detail)
         return self._transition(intent, IntentStatus.REJECTED)
 
     def claim(self, intent_id: str, agent: str = "claude") -> ExecutionIntent:
         intent = self._get(intent_id)
         now = datetime.now(timezone.utc)
+        if intent.status not in {IntentStatus.READY, IntentStatus.CLAIMED}:
+            raise ValueError("only READY intents can be claimed")
         if intent.valid_until <= now:
+            if intent.status == IntentStatus.CLAIMED:
+                return self._revoke_claim(
+                    intent, "intent expired while broker outcome was pending"
+                )
             return self._transition(intent, IntentStatus.EXPIRED)
+        reason = self._symbol_gate_reason(intent.symbol)
+        if reason:
+            return self._block_intent(intent, reason)
         if intent.status == IntentStatus.CLAIMED:
+            if (intent.claim or {}).get("revoked_at"):
+                raise ValueError("intent claim was revoked; a fresh alert is required")
             lease = (intent.claim or {}).get("lease_until")
             if lease and datetime.fromisoformat(lease) > now:
                 raise ValueError("intent already has an active claim")
-        elif intent.status != IntentStatus.READY:
-            raise ValueError("only READY intents can be claimed")
         intent.claim = {
             "agent": agent,
             "claimed_at": now.isoformat(),
             "lease_until": (now + timedelta(minutes=2)).isoformat(),
         }
         return self._transition(intent, IntentStatus.CLAIMED)
+
+    def block_symbol(self, symbol: str, reason: str) -> list[ExecutionIntent]:
+        """Block unplaced work without overwriting in-flight broker truth."""
+        changed: list[ExecutionIntent] = []
+        for intent in self.intents.values():
+            if intent.symbol.upper() != symbol.upper():
+                continue
+            if intent.status in BLOCKABLE_STATUSES:
+                self._mutate_blocked(intent, reason)
+                changed.append(intent)
+            elif intent.status == IntentStatus.CLAIMED:
+                if self._mutate_revoked_claim(intent, reason):
+                    changed.append(intent)
+        if changed:
+            self._persist_state()
+        return changed
 
     def record_receipt(self, intent_id: str, payload: dict[str, Any]) -> ExecutionIntent:
         intent = self._get(intent_id)
@@ -408,6 +458,9 @@ class AutotradeManager:
                 IntentStatus.FAILED,
                 IntentStatus.CANCELLED,
             },
+            # A broker may report a late fill after acknowledging cancellation.
+            # Exposure truth must win over the earlier local terminal state.
+            IntentStatus.CANCELLED: {IntentStatus.EXECUTED},
             IntentStatus.EXECUTED: {IntentStatus.CLOSED, IntentStatus.FAILED},
         }
         if status not in allowed.get(intent.status, set()):
@@ -446,11 +499,17 @@ class AutotradeManager:
         now = datetime.now(timezone.utc)
         changed = False
         for intent in self.intents.values():
-            if intent.status not in TERMINAL_STATUSES and intent.valid_until <= now:
+            if intent.status in BLOCKABLE_STATUSES and intent.valid_until <= now:
                 intent.status = IntentStatus.EXPIRED
                 intent.updated_at = now
                 intent.revision += 1
                 changed = True
+            elif intent.status == IntentStatus.CLAIMED and intent.valid_until <= now:
+                if not (intent.claim or {}).get("revoked_at"):
+                    self._mutate_revoked_claim(
+                        intent, "intent expired while broker outcome was pending", now=now
+                    )
+                    changed = True
         if changed:
             self._persist_state()
 
@@ -459,6 +518,58 @@ class AutotradeManager:
             return self.intents[intent_id]
         except KeyError as exc:
             raise KeyError(f"unknown intent {intent_id}") from exc
+
+    def _symbol_gate_reason(self, symbol: str) -> str | None:
+        if self.symbol_gate is None:
+            return None
+        try:
+            return self.symbol_gate(symbol)
+        except Exception:
+            return "symbol data safety check is unavailable"
+
+    def _block_intent(self, intent: ExecutionIntent, reason: str) -> ExecutionIntent:
+        if intent.status in BLOCKABLE_STATUSES:
+            self._mutate_blocked(intent, reason)
+            self._persist_state()
+        elif intent.status == IntentStatus.CLAIMED:
+            if self._mutate_revoked_claim(intent, reason):
+                self._persist_state()
+        return intent
+
+    @staticmethod
+    def _mutate_blocked(intent: ExecutionIntent, reason: str) -> None:
+        if reason not in intent.reasons:
+            intent.reasons.append(reason)
+        intent.status = IntentStatus.BLOCKED
+        intent.updated_at = datetime.now(timezone.utc)
+        intent.revision += 1
+
+    @staticmethod
+    def _mutate_revoked_claim(
+        intent: ExecutionIntent,
+        reason: str,
+        *,
+        now: datetime | None = None,
+    ) -> bool:
+        """Revoke placement authority while retaining a late-receipt path."""
+        if (intent.claim or {}).get("revoked_at"):
+            return False
+        if reason not in intent.reasons:
+            intent.reasons.append(reason)
+        revoked_at = now or datetime.now(timezone.utc)
+        claim = dict(intent.claim or {})
+        claim.setdefault("revoked_at", revoked_at.isoformat())
+        claim.setdefault("revoked_reason", reason)
+        claim["cancel_requested"] = True
+        intent.claim = claim
+        intent.updated_at = revoked_at
+        intent.revision += 1
+        return True
+
+    def _revoke_claim(self, intent: ExecutionIntent, reason: str) -> ExecutionIntent:
+        if self._mutate_revoked_claim(intent, reason):
+            self._persist_state()
+        return intent
 
     def _transition(self, intent: ExecutionIntent, status: IntentStatus) -> ExecutionIntent:
         intent.status = status

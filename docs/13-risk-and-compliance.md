@@ -10,7 +10,7 @@
 | G4 | **Daily kill switch.** Module halts new alerts at 100% daily-budget loss; platform-wide halt at configured account-level daily loss (default 3% of account). Reset requires next session + explicit re-arm. |
 | G5 | **Cooldowns.** 2 consecutive stops per module/day → 90-min cooldown (anti-revenge, Discipline #4). |
 | G6 | **Budget integrity.** Sizing never exceeds module budget or live buying power; zero-contract fits suppress the alert rather than stretch risk. |
-| G7 | **Data honesty.** Degraded/stale data suppresses affected symbols; every published number carries source + timestamp; the engine never alerts on quarantined data. |
+| G7 | **Data honesty.** Empty, stale, gapped, mismatched, timed-out, or otherwise degraded data quarantines the affected symbol. Existing plans are retired; intent creation, approval, and claim fail closed. A claimed intent is placement-revoked without destroying the late broker-receipt path, and executed/closed broker truth is immutable under later data failures. Healthy symbols may continue, but partial health is never reported as fully ready. |
 | G8 | **Calibration honesty.** Realized-vs-claimed stats are always user-visible; strategies auto-demote on drift (doc 03 §4.3); sample sizes always shown. |
 | G9 | **Event lockouts.** Tier-1 macro prints and open/close windows block new entries (RULE-T12). |
 | G10 | **LOTTO quarantine.** Asymmetric lottery plays are hard-capped at 5% of 0DTE budget, loudly labeled, excluded from headline stats. |

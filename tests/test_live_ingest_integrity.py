@@ -16,8 +16,9 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from intellidhan_engine.composer import Budgets, Composer
-from intellidhan_gateway.live import LiveLoop
+from intellidhan_gateway.live import BAR_PUBLICATION_GRACE, LiveLoop
 from intellidhan_gateway.terminal_store import TerminalStore
+from intellidhan_ingestor.market_clock import ET
 from intellidhan_learning.paper import Outcome, PaperExecutor, PaperTrade
 from intellidhan_schemas import Bar, Timeframe
 from intellidhan_schemas.signals import Direction, Module, Setup
@@ -156,7 +157,7 @@ async def test_ingest_skips_future_bars_and_leaves_them_undeduped():
 
 @pytest.mark.asyncio
 async def test_boot_replay_suppresses_delivery_but_live_polling_delivers(monkeypatch):
-    loop = LiveLoop()
+    loop = LiveLoop(symbols=["QQQ"])
     now = datetime.now(timezone.utc)
     delivered, notified = [], []
 
@@ -316,7 +317,7 @@ async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(tm
     class MigrationProvider:
         async def get_bars(self, symbol, timeframe, start, end, **kwargs):
             if timeframe == Timeframe.M5:
-                return []
+                return [bar5(end - timedelta(minutes=5), 100, 101, 99, 100.5)]
             return [
                 Bar(
                     symbol=symbol,
@@ -347,9 +348,7 @@ async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(tm
 
 
 def test_snapshot_is_json_serializable_when_ready():
-    """Regression: health() datetimes embedded in snapshot().readiness must be
-    ISO strings — /api/state serializes with plain json.dumps (no encoder),
-    so a raw datetime 500s the dashboard the moment the system turns READY."""
+    """The in-process snapshot contract remains JSON-native for every consumer."""
     import json
 
     loop = LiveLoop()
@@ -364,23 +363,217 @@ def test_snapshot_is_json_serializable_when_ready():
 
 
 @pytest.mark.asyncio
-async def test_one_bad_symbol_is_quarantined_not_fatal(monkeypatch):
+async def test_partial_quarantine_survives_poll_and_keeps_healthy_symbol_running(
+    monkeypatch,
+):
     """Regression: a single symbol's DQ failure (halt gap, feed hole) must not
     discard every other symbol's bars for the poll."""
     loop = LiveLoop(symbols=["QQQ", "SPY"])
-    now = datetime.now(timezone.utc)
+    now = datetime(2026, 7, 10, 14, 2, tzinfo=timezone.utc)
 
     class HalfBadProvider:
         async def get_bars(self, symbol, timeframe, start, end, **kw):
             if symbol == "SPY":
                 raise RuntimeError("data quality rejected SPY:5m: gap 45m")
-            return [bar5(now - timedelta(minutes=5), 100, 101, 99, 100.5)]
+            return [bar5(now - timedelta(minutes=2), 100, 101, 99, 100.5)]
 
     loop.provider = HalfBadProvider()
-    monkeypatch.setattr(loop, "_accept_quality", lambda key, sym, bars: None)
-    await loop._ingest_recent(days=1)  # must not raise
-    assert ("QQQ", (now - timedelta(minutes=5))) in loop.seen_bars  # QQQ processed
-    assert "SPY" in (loop.last_error or "")  # quarantine surfaced for health
+    loop.started_at = now - timedelta(hours=1)
+    loop.boot_state = "READY"
+    loop.persistence_ready = True
+
+    async def no_brief(_now):
+        return None
+
+    monkeypatch.setattr(loop, "maybe_brief", no_brief)
+    await loop.poll_once(now)
+
+    assert ("QQQ", (now - timedelta(minutes=2))) in loop.seen_bars
+    assert loop.symbol_health["QQQ"]["actionable"] is True
+    assert loop.symbol_health["SPY"]["status"] == "QUARANTINED"
+    assert loop.provider_state == "PARTIAL"
+    assert loop.loop_state == "DEGRADED"
+    assert loop.last_successful_poll is None
+    assert loop.last_partial_poll == now
+    assert "SPY" in (loop.last_error or "")
+    assert loop.health()["ok"] is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("now", "final_close"),
+    [
+        (
+            datetime(2026, 7, 10, 16, 2, tzinfo=ET),
+            datetime(2026, 7, 10, 16, 0, tzinfo=ET),
+        ),
+        (
+            datetime(2026, 11, 27, 13, 2, tzinfo=ET),
+            datetime(2026, 11, 27, 13, 0, tzinfo=ET),
+        ),
+    ],
+)
+async def test_post_close_poll_catches_final_bar_once(
+    now, final_close, monkeypatch
+):
+    loop = LiveLoop(symbols=["QQQ"])
+    loop.started_at = now - timedelta(hours=1)
+    loop.boot_state = "READY"
+    loop.persistence_ready = True
+
+    class ClosingProvider:
+        calls = 0
+
+        async def get_bars(self, symbol, timeframe, start, end, **kw):
+            self.calls += 1
+            return [bar5(final_close, 100, 101, 99, 100.5)]
+
+    provider = ClosingProvider()
+    loop.provider = provider
+
+    monkeypatch.setattr(loop.runner, "on_bar_5m", lambda _bar: [object()])
+
+    def reject_after_close(_setup):
+        raise AssertionError("post-close catch-up attempted to compose a new entry")
+
+    monkeypatch.setattr(loop.composer, "compose", reject_after_close)
+
+    async def no_brief(_now):
+        return None
+
+    monkeypatch.setattr(loop, "maybe_brief", no_brief)
+    await loop.poll_once(now)
+
+    assert provider.calls == 1
+    assert ("QQQ", final_close) in loop.seen_bars
+    assert loop.last_close_catchup_at == final_close
+    assert loop.symbol_health["QQQ"]["status"] == "MARKET_CLOSED"
+    assert loop.symbol_health["QQQ"]["actionable"] is False
+
+    await loop.poll_once(now + timedelta(minutes=1))
+    assert provider.calls == 1
+
+
+@pytest.mark.asyncio
+async def test_symbol_actionability_stays_off_until_next_session_has_a_fresh_bar(
+    monkeypatch,
+):
+    final_close = datetime(2026, 7, 10, 16, 0, tzinfo=ET)
+    post_close = datetime(2026, 7, 10, 16, 2, tzinfo=ET)
+    first_close = datetime(2026, 7, 13, 9, 35, tzinfo=ET)
+    loop = LiveLoop(symbols=["QQQ"])
+    loop.started_at = post_close - timedelta(hours=1)
+    loop.boot_state = "READY"
+    loop.persistence_ready = True
+
+    class SessionProvider:
+        starts = []
+
+        async def get_bars(self, symbol, timeframe, start, end, **kw):
+            self.starts.append(start)
+            bars = [bar5(final_close, 100, 101, 99, 100.5)]
+            if end >= first_close + BAR_PUBLICATION_GRACE:
+                bars.append(bar5(first_close, 100.5, 102, 100, 101.5))
+            return bars
+
+    loop.provider = SessionProvider()
+
+    async def no_brief(_now):
+        return None
+
+    monkeypatch.setattr(loop, "maybe_brief", no_brief)
+    await loop.poll_once(post_close)
+    assert loop.symbol_health["QQQ"]["status"] == "MARKET_CLOSED"
+
+    await loop.poll_once(datetime(2026, 7, 13, 9, 32, tzinfo=ET))
+    assert loop.symbol_health["QQQ"]["status"] == "WAITING"
+    assert loop.symbol_health["QQQ"]["actionable"] is False
+    assert loop.provider.starts[-1] <= final_close - timedelta(days=1)
+
+    await loop.poll_once(datetime(2026, 7, 13, 9, 37, tzinfo=ET))
+    assert loop.symbol_health["QQQ"]["status"] == "OK"
+    assert loop.symbol_health["QQQ"]["actionable"] is True
+
+
+@pytest.mark.asyncio
+async def test_empty_live_feed_is_quarantined_then_recovers_on_fresh_bar(monkeypatch):
+    loop = LiveLoop(symbols=["QQQ"])
+    now = datetime(2026, 7, 10, 14, 2, tzinfo=timezone.utc)
+    loop.started_at = now - timedelta(hours=1)
+    setup = Setup(
+        setup_id="stp_dq_cancel",
+        module=Module.SWING,
+        strategy="DAILY_BREAKOUT",
+        symbol="QQQ",
+        direction=Direction.LONG,
+        trigger_tf=Timeframe.M5,
+        ts=now,
+        mtf_matrix={"5m": 80.0, "D": 70.0},
+        factors={"F1_trend": 80.0},
+        composite=82.0,
+        confidence=0.8,
+        entry_underlying=100.0,
+        stop_underlying=99.0,
+        targets_underlying=[101.0, 102.0, 103.0],
+        reward_risk=2.0,
+        explain="Fixture breakout confirmation.",
+        invalidation="Close below support.",
+    )
+    alert = loop.composer.compose(setup)
+    assert alert is not None
+    loop.alerts.append(alert)
+    loop.persistence_ready = True
+
+    def fail_retirement(_payload):
+        raise RuntimeError("store unavailable")
+
+    monkeypatch.setattr(loop.store, "upsert_alert", fail_retirement)
+
+    class RecoveringProvider:
+        healthy = False
+
+        async def get_bars(self, symbol, timeframe, start, end, **kw):
+            if not self.healthy:
+                return []
+            return [bar5(now - timedelta(minutes=2), 100, 101, 99, 100.5)]
+
+    provider = RecoveringProvider()
+    loop.provider = provider
+    with pytest.raises(RuntimeError, match="no bars returned"):
+        await loop._ingest_recent(days=1, now=now)
+    assert loop.symbol_health["QQQ"]["status"] == "QUARANTINED"
+    assert loop.symbol_health["QQQ"]["consecutive_failures"] == 1
+    assert loop.symbol_block_reason("QQQ") is not None
+    assert loop.persistence_ready is False
+    assert loop.alerts[0].status == "CANCELLED"
+    assert any("market-data quarantine" in risk for risk in loop.alerts[0].risks)
+
+    provider.healthy = True
+    result = await loop._ingest_recent(days=1, now=now)
+    assert result.accepted == ("QQQ",)
+    assert loop.symbol_health["QQQ"]["status"] == "OK"
+    assert loop.symbol_health["QQQ"]["actionable"] is True
+    assert loop.symbol_health["QQQ"]["last_recovered_at"] == now.isoformat()
+    assert loop.symbol_block_reason("QQQ") is None
+    assert loop.alerts[0].status == "CANCELLED"  # recovery requires a fresh plan
+
+
+@pytest.mark.asyncio
+async def test_boundary_stale_bar_is_quarantined():
+    loop = LiveLoop(symbols=["QQQ"])
+    now = datetime(2026, 7, 10, 15, 2, tzinfo=timezone.utc)
+    loop.started_at = now - timedelta(hours=1)
+
+    class StaleProvider:
+        async def get_bars(self, symbol, timeframe, start, end, **kw):
+            return [bar5(now - timedelta(minutes=12), 100, 101, 99, 100.5)]
+
+    loop.provider = StaleProvider()
+    with pytest.raises(RuntimeError, match="latest bar is stale"):
+        await loop._ingest_recent(days=1, now=now)
+    state = loop.symbol_health["QQQ"]
+    assert state["failure_kind"] == "DATA_QUALITY"
+    assert state["actionable"] is False
 
 
 @pytest.mark.asyncio
