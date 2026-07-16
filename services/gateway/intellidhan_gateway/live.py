@@ -249,6 +249,23 @@ class LiveLoop:
                 if not replay:
                     await self._deliver(alert)
 
+    def _claim_send(self, key: str) -> bool:
+        """Cross-instance exactly-once gate for outbound Telegram.
+
+        Koyeb's rolling deploys briefly run two instances at once; each keeps its
+        own in-memory bar/plan dedup, so without a shared claim both would send
+        the same alert (the duplicate-Telegram bug). The first instance to claim
+        the key in the shared store sends; the rest skip. Fail OPEN: if the store
+        is unavailable we send anyway — a rare duplicate beats a missed alert,
+        and single-process/no-DB runs have their own in-memory dedup."""
+        if not self.persistence_ready:
+            return True
+        try:
+            return self.store.claim_delivery(key)
+        except Exception as exc:
+            print(f"[deliver] delivery claim failed, sending anyway: {exc}")
+            return True
+
     async def _notify_settlement(self, trade) -> None:
         """Stop/TP/flatten follow-ups (doc 05 §4 lifecycle, v1)."""
         if self.persistence_ready:
@@ -261,7 +278,10 @@ class LiveLoop:
                f"{trade.outcome.value.replace('_', ' ').title()} at {r} "
                f"(entry {trade.entry:.2f}, tranches exited {trade.tranches_exited}/3)\n"
                f"⚠️ Educational tool — not financial advice.")
-        await self.telegram.send(msg)
+        settle_key = trade.plan_key or stable_plan_key(
+            trade.created_at, trade.symbol, trade.module, trade.strategy)
+        if self._claim_send(f"settle:{settle_key}:{trade.outcome.value}"):
+            await self.telegram.send(msg)
         self.publish_ws({"type": "settlement", "data": trade.model_dump(mode="json")})
 
     async def _deliver(self, alert: Alert) -> None:
@@ -270,7 +290,10 @@ class LiveLoop:
             intent = self.autotrade.on_alert(alert)
         except Exception as exc:  # automation must fail closed without blocking alerts
             print(f"[autotrade] intent creation failed: {exc}")
-        await self.telegram.send(format_alert(alert))
+        alert_key = alert.plan_key or stable_plan_key(
+            alert.created_at, alert.symbol, alert.module, alert.strategy)
+        if self._claim_send(f"alert:{alert_key}"):
+            await self.telegram.send(format_alert(alert))
         self.publish_ws({"type": "alert", "data": alert.model_dump(mode="json")})
         if intent is not None:
             self.publish_ws(
@@ -300,7 +323,8 @@ class LiveLoop:
         self.last_briefing = briefing["web"]
         if self.persistence_ready:
             self.store.put_briefing(self.last_briefing)
-        await self.telegram.send(briefing["telegram"])
+        if self._claim_send(f"briefing:{day}"):
+            await self.telegram.send(briefing["telegram"])
         self._briefed_on = day
 
     async def run_forever(self) -> None:

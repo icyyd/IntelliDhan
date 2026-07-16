@@ -153,6 +153,10 @@ CREATE TABLE IF NOT EXISTS user_saved_screens (
     UNIQUE (user_id, name),
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+CREATE TABLE IF NOT EXISTS delivery_log (
+    delivery_key TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL
+);
 """
 
 
@@ -788,6 +792,27 @@ class TerminalStore:
         for row in rows:
             row["filters"] = json.loads(row["filters"])
         return rows
+
+    def claim_delivery(self, delivery_key: str) -> bool:
+        """Atomically claim a one-time outbound delivery across ALL instances.
+
+        Returns True if this caller won the claim (it should send), False if the
+        key was already claimed (another instance — e.g. an overlapping rolling
+        deploy — or an earlier boot already sent it). The INSERT ... ON CONFLICT
+        DO NOTHING RETURNING is atomic in both SQLite (>=3.35) and PostgreSQL, so
+        exactly one concurrent caller ever gets a returned row.
+        """
+        self._ensure()
+        with self._connection() as connection:
+            rows = connection.execute(
+                self._sql(
+                    "INSERT INTO delivery_log (delivery_key, created_at) "
+                    "VALUES (?, ?) ON CONFLICT(delivery_key) DO NOTHING "
+                    "RETURNING delivery_key"
+                ),
+                (delivery_key, _now()),
+            ).fetchall()
+        return len(rows) == 1
 
     def readiness(self) -> dict[str, Any]:
         return {
