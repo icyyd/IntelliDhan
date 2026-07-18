@@ -556,6 +556,59 @@ body{
 .sym-row .tf-chips{grid-column:1/-1; margin-top:4px}
 .tf-chip{border-radius:99px; padding:3px 7px}
 .brief-plan{line-height:1.6}
+.daily-setup{
+  position:relative; overflow:hidden; padding:22px; border:1px solid rgba(145,164,255,.25);
+  border-radius:28px; background:linear-gradient(145deg,rgba(41,50,82,.82),rgba(18,25,43,.92) 55%,rgba(25,48,55,.72));
+  box-shadow:var(--shadow-card);
+}
+.daily-setup::after{content:""; position:absolute; width:260px; height:260px; right:-95px; top:-135px; border-radius:50%; background:rgba(94,234,212,.08); pointer-events:none}
+.daily-setup-head{position:relative; z-index:1; display:flex; align-items:flex-start; gap:14px; margin-bottom:18px}
+.daily-setup-icon{display:grid; place-items:center; width:44px; height:44px; flex:none; border-radius:17px; color:var(--cyan); background:rgba(145,164,255,.14)}
+.daily-setup-icon .icon{width:20px; height:20px}
+.daily-setup-title{min-width:0; flex:1}
+.daily-setup-kicker{color:var(--cyan); font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase}
+.daily-setup-title h2{margin:3px 0 3px; max-width:850px; font-size:21px; line-height:1.25; letter-spacing:-.025em}
+.daily-setup-meta{display:flex; align-items:center; gap:7px; flex-wrap:wrap; color:var(--text-faint); font-size:11.5px}
+.daily-status{display:inline-flex; align-items:center; gap:6px; padding:4px 9px; border-radius:99px; background:rgba(94,234,212,.11); color:var(--teal); font-weight:750; letter-spacing:.03em}
+.daily-status::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor}
+.daily-status.stale{background:rgba(246,200,107,.11); color:var(--gold)}
+.daily-status.unavailable{background:rgba(251,113,133,.11); color:var(--red)}
+.daily-source{position:relative; z-index:1; padding:8px 12px; border:1px solid var(--border); border-radius:12px; color:var(--text-dim); font-size:11.5px; text-decoration:none; white-space:nowrap}
+.daily-source:hover{color:var(--cyan); border-color:rgba(145,164,255,.44)}
+.daily-setup-grid{position:relative; z-index:1; display:grid; grid-template-columns:minmax(250px,.72fr) minmax(0,1.28fr); gap:14px}
+.daily-overview,.daily-setups,.daily-risk-strip{border:1px solid var(--border); border-radius:21px; background:rgba(5,10,20,.24)}
+.daily-overview{padding:17px}
+.daily-overview h3,.daily-setups h3{margin:0 0 7px; font-size:13px; letter-spacing:.01em}
+.daily-overview p{margin:0; color:var(--text-dim); font-size:12.5px; line-height:1.6}
+.daily-market{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-top:14px}
+.daily-market-item{padding:9px 10px; border-radius:14px; background:rgba(255,255,255,.04)}
+.daily-market-item span{display:block; color:var(--text-faint); font-size:10px; text-transform:uppercase; letter-spacing:.05em}
+.daily-market-item b{font:700 12px var(--mono)}
+.daily-market-item .up{color:var(--teal)}
+.daily-market-item .down{color:var(--red)}
+.daily-setups{padding:17px}
+.daily-setup-list{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px}
+.daily-play{display:flex; flex-direction:column; min-width:0; padding:13px; border:1px solid var(--border-soft); border-radius:17px; background:rgba(255,255,255,.035)}
+.daily-play-top{display:flex; align-items:center; gap:7px}
+.daily-play-symbol{font:750 16px var(--mono)}
+.daily-module,.daily-conviction{padding:3px 7px; border-radius:99px; font-size:10px; font-weight:750; letter-spacing:.04em}
+.daily-module{background:rgba(145,164,255,.11); color:var(--cyan)}
+.daily-conviction{margin-left:auto; color:var(--text-dim); background:rgba(114,125,153,.12)}
+.daily-conviction.high{color:var(--teal); background:rgba(94,234,212,.10)}
+.daily-conviction.medium{color:var(--gold); background:rgba(246,200,107,.10)}
+.daily-conviction.low{color:var(--red); background:rgba(251,113,133,.10)}
+.daily-play p{margin:9px 0; color:var(--text-dim); font-size:12.5px; line-height:1.5}
+.daily-play-context{color:var(--text-faint); font-size:11.5px; line-height:1.45}
+.daily-play-foot{display:flex; align-items:center; gap:8px; margin-top:auto; padding-top:10px}
+.daily-play-foot span{color:var(--text-faint); font:10.5px var(--mono)}
+.daily-analyze{margin-left:auto; padding:7px 10px; border:1px solid var(--border); border-radius:10px; background:rgba(145,164,255,.08); color:var(--cyan); cursor:pointer; font-size:11.5px; font-weight:700}
+.daily-analyze:hover{border-color:rgba(145,164,255,.45)}
+.daily-empty{padding:15px; border:1px dashed var(--border); border-radius:15px; color:var(--text-dim); font-size:11.5px}
+.daily-risk-strip{position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,.45fr); gap:14px; margin-top:14px; padding:14px 16px}
+.daily-risk-strip h3{margin:0 0 5px; color:var(--gold); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase}
+.daily-risk-strip p{margin:0; color:var(--text-dim); font-size:12px; line-height:1.5}
+.daily-risk-strip small{display:block; color:var(--text-faint); font-size:11.5px; line-height:1.45}
+.daily-loading{padding:22px; color:var(--text-dim); font-size:12px}
 .risk-panel{position:sticky; top:88px}
 .risk-row{padding:11px; border-radius:16px; background:rgba(255,255,255,.03)}
 .risk-bar{height:8px; border-radius:99px}
@@ -612,6 +665,7 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   .tape{display:none}
   .desk-hero{display:block}
   .desk-stats{margin:14px 0 0; width:100%}
+  .daily-setup-grid{grid-template-columns:1fr}
 }
 @media (max-width:700px){
   #queueTracking{grid-template-columns:1fr}
@@ -623,6 +677,8 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   .decision-cell:last-child{border-right:1px solid var(--border)}
   .market-panel #matrix{grid-template-columns:repeat(2,minmax(0,1fr))}
   .decision-rail{grid-template-columns:1fr}
+  .daily-setup-list{grid-template-columns:1fr}
+  .daily-risk-strip{grid-template-columns:1fr}
 }
 @media (max-width:480px){
   .topbar{margin:8px; padding:0 10px; height:56px}
@@ -651,6 +707,13 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   .auto-form{grid-template-columns:1fr; padding:15px; max-height:66vh}
   .auto-wide{grid-column:1}
   dialog#autotrade-dialog .bd-foot2{flex-wrap:wrap}
+  .daily-setup{padding:16px; border-radius:22px}
+  .daily-setup::after{width:140px; height:140px; right:0; top:-70px}
+  .daily-setup-head{flex-wrap:wrap; margin-bottom:14px}
+  .daily-setup-icon{width:38px; height:38px; border-radius:14px}
+  .daily-setup-title h2{font-size:18px}
+  .daily-source{width:100%; text-align:center}
+  .daily-market{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 /* ── Module views (0DTE / Swings) ─────────────────────────────────────── */
@@ -1053,6 +1116,10 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       </div>
     </section>
 
+    <section class="daily-setup" id="dailySetup" aria-labelledby="dailySetupTitle" hidden>
+      <div class="daily-loading">Loading today's analysis and setup…</div>
+    </section>
+
     <section class="data-quality-notice" id="dataQualityNotice" role="status" aria-live="polite" hidden>
       <span class="stat-bubble"><svg class="icon"><use href="#i-alert"/></svg></span>
       <div><b id="dataQualityTitle">Market data paused</b><p id="dataQualityDetail"></p><div class="data-quality-symbols" id="dataQualitySymbols"></div></div>
@@ -1283,7 +1350,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 
   <aside class="decision-rail" aria-label="Daily context">
     <section class="panel" id="briefPanel" hidden>
-      <div class="panel-head"><h2>Today's focus</h2></div>
+      <div class="panel-head"><h2>Engine focus</h2></div>
       <div id="briefBody"></div>
     </section>
 
@@ -1442,7 +1509,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 const ARROWS = {STRONG_UP:"strong-up",UP:"up",NEUTRAL:"",DOWN:"down",STRONG_DOWN:"strong-down"};
 const ICON = {STRONG_UP:"i-up",UP:"i-up",NEUTRAL:"i-minus",DOWN:"i-down",STRONG_DOWN:"i-down"};
 const tfOrder = ["M","W","D","4H","1H","15m","5m"];
-let lastState = null, calibration = {}, briefing = null;
+let lastState = null, calibration = {}, briefing = null, dailyBrief = null, dailyBriefRenderKey = null;
 let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
@@ -1463,6 +1530,11 @@ function esc(value){
   return String(value ?? "").replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
 function fmtPx(value){ return Number.isFinite(Number(value)) ? Number(value).toFixed(2) : "—"; }
+function finiteNumber(value){
+  if(value===null||value===undefined||value==="") return null;
+  const parsed=Number(value);
+  return Number.isFinite(parsed)?parsed:null;
+}
 function symbolDataQuality(s,symbol){
   return s?.symbols?.[symbol]?.data_quality || s?.readiness?.symbols?.[symbol] || null;
 }
@@ -1583,6 +1655,17 @@ async function refreshBriefing(){
     renderBriefing();
   }catch(e){}
 }
+async function refreshDailyBrief(){
+  if(!ownerAuthenticated){ dailyBrief=null; renderDailyBrief(); return; }
+  if(!dailyBrief){
+    const panel=document.getElementById("dailySetup");
+    panel.hidden=false; panel.setAttribute("aria-busy","true");
+    panel.innerHTML=`<div class="daily-loading" role="status">Loading today's analysis and setup…</div>`;
+  }
+  try{ dailyBrief=await fetchJSON("/api/daily-brief"); }
+  catch(error){ dailyBrief={status:"UNAVAILABLE",headline:"Today's setup is not available yet.",notice:error.message,setups:[],market:[],risks:[]}; }
+  renderDailyBrief();
+}
 
 function setHealth(mode){
   const el = document.getElementById("dataHealth");
@@ -1598,7 +1681,7 @@ function setHealth(mode){
 function clearPersonalState(reason="Sign in required."){
   ownerAuthenticated=false;
   accountUser=null; preferencesCache=null; preferencesApplied=false;
-  lastState=null; briefing=null; watchlistsCache=[]; savedScreensCache=[];
+  lastState=null; briefing=null; dailyBrief=null; dailyBriefRenderKey=null; watchlistsCache=[]; savedScreensCache=[];
   symbolOrder=[]; selectedSymbol=null; selectedAlertId=null; selectedSwingSymbol=null;
   currentDossier=null; selectionTouched=false;
   if(typeof autotradeCache!=="undefined") autotradeCache=null;
@@ -1621,6 +1704,7 @@ function clearPersonalState(reason="Sign in required."){
   document.getElementById("session").textContent="—";
   document.getElementById("briefPanel").hidden=true;
   document.getElementById("briefBody").replaceChildren();
+  document.getElementById("dailySetup").hidden=true;
   document.getElementById("autotradeMode").textContent="OFF";
   document.getElementById("autotradeMode").className="auto-mode off";
   document.getElementById("autotradeReady").textContent="0";
@@ -1898,6 +1982,53 @@ function renderBriefing(){
     <div class="brief-bias"><b style="color:${biasColor}">${briefing.bias}</b><span class="num" style="color:var(--text-faint)">D-trend ${briefing.bias_score>0?'+':''}${briefing.bias_score}</span></div>
     <ul class="brief-plan">${(briefing.game_plan||[]).map(p=>`<li>${esc(plainBriefingText(p))}</li>`).join("")}</ul>
     <div style="margin-top:8px;color:var(--gold);font-size:11.5px">${esc(briefing.discipline_card||"")}</div>`;
+}
+function renderDailyBrief(){
+  const panel=document.getElementById("dailySetup");
+  if(!ownerAuthenticated||!dailyBrief){ panel.hidden=true; panel.replaceChildren(); dailyBriefRenderKey=null; return; }
+  const nextRenderKey=JSON.stringify(dailyBrief);
+  if(!panel.hidden&&dailyBriefRenderKey===nextRenderKey) return;
+  dailyBriefRenderKey=nextRenderKey;
+  panel.hidden=false; panel.removeAttribute("aria-busy");
+  const status=String(dailyBrief.status||"UNAVAILABLE").toUpperCase();
+  const statusClass=status==="CURRENT"?"":status==="STALE"?"stale":"unavailable";
+  const generated=dailyBrief.generated_at?new Date(dailyBrief.generated_at).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"}):"Not generated yet";
+  const market=(dailyBrief.market||[]).map(item=>{
+    const change=finiteNumber(item.change_pct), valueNumber=finiteNumber(item.value), tone=change===null?"":change>0?"up":change<0?"down":"";
+    const value=valueNumber===null?"—":valueNumber.toLocaleString(undefined,{maximumFractionDigits:2});
+    return `<div class="daily-market-item"><span>${esc(item.name)}</span><b>${esc(value)} <i class="${tone}" style="font-style:normal">${change===null?"":`${change>0?"+":""}${change.toFixed(2)}%`}</i></b></div>`;
+  }).join("");
+  const setups=(dailyBrief.setups||[]).slice(0,4);
+  const setupCards=setups.map(setup=>{
+    const rawConviction=String(setup.conviction||"NONE").toLowerCase();
+    const conviction=["high","medium","low"].includes(rawConviction)?rawConviction:"";
+    const gap=finiteNumber(setup.gap_pct), rvol=finiteNumber(setup.rvol);
+    const metrics=[setup.rule_eligible?"Rules passed":"Eligibility unconfirmed",gap===null?"":`${gap>0?"+":""}${gap.toFixed(1)}% gap`,rvol===null?"":`${rvol.toFixed(2)}× RVOL`].filter(Boolean).join(" · ");
+    return `<article class="daily-play">
+      <div class="daily-play-top"><span class="daily-play-symbol">${esc(setup.symbol)}</span><span class="daily-module">${esc(setup.module)} WATCH</span><span class="daily-conviction ${conviction}">${esc(setup.conviction||"UNRATED")}</span></div>
+      <p>${esc(setup.plan||setup.catalyst||"Wait for the report's confirmation conditions before considering this setup.")}</p>
+      <div class="daily-play-context">${esc(setup.context||setup.catalyst||"")}</div>
+      <div class="daily-play-foot"><span>${esc(metrics||"Rule-screen candidate")}</span><button class="daily-analyze" type="button" data-daily-symbol="${esc(setup.symbol)}">Analyze</button></div>
+    </article>`;
+  }).join("");
+  const dayCount=setups.filter(item=>item.module==="DAY").length;
+  const noDay=dayCount===0?`<div class="daily-empty"><b>No intraday setup passed today's rules.</b><br>Standing aside is a valid setup; do not turn a watchlist into a signal.</div>`:"";
+  const firstEvent=(dailyBrief.economic_events||[])[0];
+  const risk=firstEvent?`${firstEvent.time_et||firstEvent.time||"Scheduled event"}: ${firstEvent.event||"Market event"}${firstEvent.forecast_vs_previous?` — ${firstEvent.forecast_vs_previous}`:""}`:(dailyBrief.risks||[])[0]||dailyBrief.notice||"Check the economic calendar, live data quality, and each setup's invalidation before acting.";
+  const limitation=dailyBrief.data_quality?.limitations?.[0]||dailyBrief.disclaimer||"Research brief only.";
+  const sourceUrl=dailyBrief.source?.url;
+  panel.innerHTML=`
+    <div class="daily-setup-head">
+      <span class="daily-setup-icon"><svg class="icon"><use href="#i-sun"/></svg></span>
+      <div class="daily-setup-title"><div class="daily-setup-kicker">Today's analysis and setup</div><h2 id="dailySetupTitle">${esc(dailyBrief.headline||"Premarket game plan")}</h2><div class="daily-setup-meta"><span class="daily-status ${statusClass}" role="status" aria-live="polite">${esc(dailyBrief.freshness_label||(status==="CURRENT"?"Current brief":status==="STALE"?"Previous brief":"Brief unavailable"))}</span><span>${esc(generated)}</span><span>Research, not a live signal</span></div></div>
+      ${sourceUrl?`<a class="daily-source" href="${esc(sourceUrl)}" target="_blank" rel="noopener noreferrer">Open full report</a>`:""}
+    </div>
+    <div class="daily-setup-grid">
+      <div class="daily-overview"><h3>Market read</h3><p>${esc((dailyBrief.summary||[])[1]||(dailyBrief.summary||[])[0]||dailyBrief.notice||"The daily report has not loaded.")}</p><div class="daily-market">${market}</div></div>
+      <div class="daily-setups"><h3>Setups worth attention</h3><div class="daily-setup-list">${setupCards||noDay||`<div class="daily-empty">No rule-screen setups were published for this brief.</div>`}${setupCards&&noDay?noDay:""}</div></div>
+    </div>
+    <div class="daily-risk-strip"><div><h3>Main risk to respect</h3><p>${esc(risk)}</p></div><div><h3>Data check</h3><small>${esc(limitation)}</small></div></div>`;
+  panel.querySelectorAll("[data-daily-symbol]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.dailySymbol)));
 }
 function plainBriefingText(value){
   return String(value||"").replaceAll("calibrated","historically validated").replaceAll("calibration","historical reliability").replaceAll("auction","market balance");
@@ -2268,7 +2399,7 @@ async function openOwnerDialog(){
 async function completeAccountSignIn(message){
   await refreshOwnerSession();
   connectWS();
-  await Promise.all([refresh(),refreshBriefing(),refreshAutotrade()]);
+  await Promise.all([refresh(),refreshBriefing(),refreshDailyBrief(),refreshAutotrade()]);
   const status=document.getElementById("ownerStatus");
   status.textContent=message; status.className="bd-status ok";
 }
@@ -3098,12 +3229,13 @@ window.addEventListener("resize",()=>{
 loadDiscoveryPresets();
 refreshCalibration();
 refreshOwnerSession().then(session=>{
-  if(session.authenticated){ connectWS(); refresh(); refreshBriefing(); refreshAutotrade(); }
+  if(session.authenticated){ connectWS(); refresh(); refreshBriefing(); refreshDailyBrief(); refreshAutotrade(); }
   else setHealth("auth");
 });
 setInterval(refresh, 15000);
 setInterval(refreshCalibration, 60000);
 setInterval(refreshBriefing, 60000);
+setInterval(refreshDailyBrief, 300000);
 setInterval(refreshAutotrade, 15000);
 </script>
 </body>

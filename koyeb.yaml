@@ -15,6 +15,7 @@
 #   OPENAI_API_KEY          # optional — in-app, closed-schema AI thesis
 #   CHATGPT_WORKSPACE_AGENT_ID # optional — published agtch_ API channel identifier
 #   CHATGPT_WORKSPACE_AGENT_TOKEN # optional — Workspace Agents-scoped access token
+#   INTELLIDHAN_DAILY_BRIEF_GITHUB_TOKEN # fine-grained read-only token for private daily artifacts
 #   TELEGRAM_BOT_TOKEN     # optional — alerts print to Koyeb logs if unset
 #   TELEGRAM_CHAT_ID       # optional — required alongside the token above
 #

@@ -64,6 +64,11 @@ CREATE TABLE IF NOT EXISTS briefings (
     created_at TEXT NOT NULL,
     payload TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS daily_briefs (
+    briefing_id TEXT PRIMARY KEY,
+    fetched_at TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS watchlists (
     watchlist_id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -707,6 +712,23 @@ class TerminalStore:
     def latest_briefing(self) -> dict[str, Any] | None:
         rows = self._fetchall(
             "SELECT payload FROM briefings ORDER BY created_at DESC LIMIT 1"
+        )
+        return json.loads(rows[0]["payload"]) if rows else None
+
+    def put_daily_brief(self, payload: dict[str, Any]) -> None:
+        """Persist the normalized external research brief, never raw Markdown."""
+        briefing_id = str(payload.get("report_date") or payload.get("generated_at") or _now()[:10])
+        self._execute(
+            """INSERT INTO daily_briefs (briefing_id, fetched_at, payload)
+               VALUES (?, ?, ?)
+               ON CONFLICT(briefing_id) DO UPDATE SET
+                 fetched_at=excluded.fetched_at, payload=excluded.payload""",
+            (briefing_id, _now(), json.dumps(payload)),
+        )
+
+    def latest_daily_brief(self) -> dict[str, Any] | None:
+        rows = self._fetchall(
+            "SELECT payload FROM daily_briefs ORDER BY fetched_at DESC LIMIT 1"
         )
         return json.loads(rows[0]["payload"]) if rows else None
 

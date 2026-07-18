@@ -38,6 +38,7 @@ from intellidhan_gateway.auth import (
 )
 from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisService
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
+from intellidhan_gateway.daily_brief import DailyBriefService
 from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.stock_analysis import StockAnalysisService
 from intellidhan_gateway.workspace_agent import (
@@ -51,6 +52,7 @@ WEB_DIR = Path(__file__).resolve().parents[3] / "web"
 loop = LiveLoop()
 stock_analyzer = StockAnalysisService()
 discovery = DiscoveryService()
+daily_brief_service = DailyBriefService()
 ai_thesis_service = OpenAIThesisService()
 workspace_agent_service = WorkspaceAgentTriggerService()
 rate_limiter = RateLimiter()
@@ -392,6 +394,14 @@ async def calibration():
 async def briefing(request: Request):
     _require_personal(request)
     return loop.last_briefing or {"status": "not generated yet (8:30 ET on trading days)"}
+
+
+@app.get("/api/daily-brief")
+async def daily_brief(request: Request):
+    """Return the normalized external premarket report with last-good fallback."""
+    _require_personal(request)
+    rate_limiter.check(_client_key(request, "daily-brief"), limit=30, window_seconds=60)
+    return await daily_brief_service.get(loop.store)
 
 
 @app.get("/api/analyze/{symbol}")
