@@ -59,7 +59,7 @@ def test_agent_entrypoint_requires_codex_claim_and_safe_modes():
     assert "Never guess tool names or fields" in text
 
 
-def test_system_passes_require_same_commit_readme_maintenance():
+def test_readme_maintenance_documentation_contract_is_present():
     agents = (ROOT / "AGENTS.md").read_text()
     safety = (ROOT / "docs/28-platform-safety-and-data-integrity.md").read_text()
     readme = (ROOT / "README.md").read_text()
@@ -68,4 +68,5 @@ def test_system_passes_require_same_commit_readme_maintenance():
     assert required in agents
     assert "Every system-changing pass updates `README.md` in the same commit" in safety
     assert "## Repository change discipline" in readme
+    assert "Every system-changing pass must update this `README.md` in the same commit" in readme
     assert "**Last system pass:**" in readme

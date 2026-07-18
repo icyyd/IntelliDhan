@@ -65,7 +65,9 @@ Every system-changing pass must update this `README.md` in the same commit.
 Reconcile the date and last-system-pass marker, current capabilities, setup and
 deployment instructions, safety boundaries, and document index as applicable.
 `AGENT_CONTEXT.md` and pull-request notes supplement this README; they do not
-replace the README update.
+replace the README update. CI checks each commit after this policy is present on
+the base branch and rejects changes to runtime, configuration, UI, deployment,
+scripts, architecture, or active system documentation that omit `README.md`.
 
 ## Document Index
 
