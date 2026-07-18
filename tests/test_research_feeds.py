@@ -244,6 +244,39 @@ async def test_partial_sec_concepts_receive_partial_effective_weight(monkeypatch
     assert result["overall"]["score"] == 56.1
 
 
+@pytest.mark.asyncio
+async def test_security_search_prioritizes_exact_ticker_then_company(monkeypatch):
+    service = ResearchFeedService()
+
+    async def mapping():
+        return {
+            "AAPL": {"symbol": "AAPL", "name": "Apple Inc.", "cik": "0000320193"},
+            "APLE": {
+                "symbol": "APLE",
+                "name": "Apple Hospitality REIT, Inc.",
+                "cik": "0001418121",
+            },
+        }
+
+    monkeypatch.setattr(service, "_ticker_map", mapping)
+    result = await service.search("aapl")
+    assert result["status"] == "AVAILABLE"
+    assert result["results"][0]["symbol"] == "AAPL"
+
+
+@pytest.mark.asyncio
+async def test_security_search_reports_missing_sec_configuration(monkeypatch):
+    service = ResearchFeedService()
+
+    async def missing():
+        raise LookupError("INTELLIDHAN_SEC_USER_AGENT is not configured")
+
+    monkeypatch.setattr(service, "_ticker_map", missing)
+    result = await service.search("nvda")
+    assert result["status"] == "NOT_CONFIGURED"
+    assert result["results"] == []
+
+
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setattr(loop, "store", TerminalStore(tmp_path / "state.sqlite3"))

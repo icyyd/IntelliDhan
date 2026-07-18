@@ -42,6 +42,10 @@ from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.daily_brief import DailyBriefService
 from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.research_feeds import ResearchFeedService
+from intellidhan_gateway.research_consensus import (
+    build_research_consensus,
+    technical_score,
+)
 from intellidhan_gateway.stock_analysis import StockAnalysisService
 from intellidhan_gateway.workspace_agent import (
     WorkspaceAgentTriggerService,
@@ -407,6 +411,22 @@ async def daily_brief(request: Request):
     return await daily_brief_service.get(loop.store)
 
 
+@app.get("/api/search")
+async def search_securities(
+    request: Request,
+    q: str = Query(..., min_length=1, max_length=80),
+    limit: int = Query(8, ge=1, le=12),
+):
+    """Debounced ticker/company lookup for the on-demand research desk."""
+    rate_limiter.check(_client_key(request, "security-search"), limit=30, window_seconds=60)
+    try:
+        return await asyncio.wait_for(research_feed_service.search(q, limit=limit), timeout=12)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="security search timed out") from exc
+
+
 async def _focus_quote(symbol: str) -> dict:
     try:
         quote = await asyncio.wait_for(discovery.provider.get_quote(symbol), timeout=10)
@@ -704,13 +724,24 @@ async def stock_dossier(
     rate_limiter.check(_client_key(request, "dossier"), limit=30, window_seconds=60)
     principal = request_principal(request, loop.store)
 
-    async def optional_intelligence(normalized: str) -> dict | None:
+    async def optional_intelligence(
+        normalized: str, analysis: dict[str, object]
+    ) -> dict | None:
         if principal is None:
             return None
         try:
-            return await _configured_research_intelligence(normalized)
-        except LookupError:
-            return None
+            return await asyncio.wait_for(
+                research_feed_service.analyze(
+                    normalized,
+                    {
+                        "symbol": normalized,
+                        "technical_score": technical_score(analysis),
+                        "as_of": analysis.get("as_of"),
+                        "consensus": analysis.get("consensus"),
+                    },
+                ),
+                timeout=30,
+            )
         except Exception:
             return {
                 "symbol": normalized,
@@ -720,19 +751,17 @@ async def stock_dossier(
 
     try:
         normalized = stock_analyzer.normalize_symbol(symbol)
-        analysis, intelligence = await asyncio.gather(
-            asyncio.wait_for(
-                stock_analyzer.analyze(
-                    normalized,
-                    years=years,
-                    risk_budget=risk_budget,
-                    include_backtest=include_backtest,
-                    cost_bps=cost_bps,
-                ),
-                timeout=30,
+        analysis = await asyncio.wait_for(
+            stock_analyzer.analyze(
+                normalized,
+                years=years,
+                risk_budget=risk_budget,
+                include_backtest=include_backtest,
+                cost_bps=cost_bps,
             ),
-            optional_intelligence(normalized),
+            timeout=30,
         )
+        intelligence = await optional_intelligence(normalized, analysis)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except LookupError as exc:
@@ -749,10 +778,13 @@ async def stock_dossier(
         watchlists = []
     research_pillars = intelligence.get("pillars", {}) if intelligence else {}
     filings = intelligence.get("filings", {}) if intelligence else {}
+    if intelligence and intelligence.get("status") != "UNAVAILABLE":
+        intelligence["multi_brain"] = build_research_consensus(analysis, intelligence)
+    company = intelligence.get("company", {}) if intelligence else {}
     return {
         "security": loop.store.get_security(normalized) or {
             "symbol": normalized,
-            "name": normalized,
+            "name": company.get("name") or normalized,
             "source": "on-demand",
         },
         "watchlists": watchlists,

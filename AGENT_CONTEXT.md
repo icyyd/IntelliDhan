@@ -17,6 +17,22 @@
   social snapshots are explicitly excluded until point-in-time archives exist.
 - No merge or deployment is authorized by this checkpoint.
 
+### Backend checkpoint `multibrain-research-v1`
+
+- Added `research_consensus.py`: isolated price/risk, business-quality, and
+  catalyst/attention specialists plus deterministic `BUY` / `HOLD` / `SELL` /
+  `INSUFFICIENT_EVIDENCE` research posture. Sentiment cannot override price and
+  business evidence; the result cannot rank or execute.
+- Trend analysis is now `trend-analysis-v3` and exposes completed-daily 9EMA,
+  SMA50/200, 55-day confirmation, 20-day invalidation, 52-week range, and
+  two-ATR reference levels.
+- Added SEC registrant ticker/company search and SEC business identity fields.
+- Signed-in arbitrary ticker dossiers now receive current SEC/news/social
+  enrichment instead of restricting enrichment to the configured scan universe.
+- Focused verification: 27 tests passed; ruff passed. The shared repository
+  virtual environment was used read-only with this worktree's packages supplied
+  through `PYTHONPATH`.
+
 **Last updated:** 2026-07-18
 
 This is the concise handoff file for agents working on IntelliDhan. It

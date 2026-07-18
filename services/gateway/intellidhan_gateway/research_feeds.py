@@ -417,7 +417,7 @@ class ResearchFeedService:
             raise ValueError("research feed returned an unexpected payload")
         return parsed
 
-    async def _ticker_map(self) -> dict[str, str]:
+    async def _ticker_map(self) -> dict[str, dict[str, str]]:
         cached = self._read_cache("sec:ticker-map", 86_400, False)
         if cached is not None:
             return cached
@@ -434,13 +434,58 @@ class ResearchFeedService:
                 max_bytes=5_000_000,
             )
             mapping = {
-                str(item.get("ticker", "")).upper(): str(item.get("cik_str", "")).zfill(10)
+                str(item.get("ticker", "")).upper(): {
+                    "symbol": str(item.get("ticker", "")).upper(),
+                    "cik": str(item.get("cik_str", "")).zfill(10),
+                    "name": str(item.get("title", ""))[:160],
+                }
                 for item in payload.values()
                 if isinstance(item, dict)
                 and item.get("ticker")
                 and item.get("cik_str") is not None
             }
             return self._write_cache("sec:ticker-map", mapping)
+
+    async def search(self, query: str, *, limit: int = 8) -> dict[str, Any]:
+        """Search the authoritative SEC registrant index by ticker or company name."""
+        clean = " ".join(query.strip().upper().split())
+        if len(clean) < 1 or len(clean) > 80:
+            raise ValueError("search query must be 1-80 characters")
+        if not 1 <= limit <= 12:
+            raise ValueError("search limit must be between 1 and 12")
+        try:
+            mapping = await self._ticker_map()
+        except LookupError as exc:
+            return {
+                "query": clean,
+                "status": "NOT_CONFIGURED",
+                "results": [],
+                "reason": str(exc),
+                "source": "SEC company_tickers",
+            }
+        scored = []
+        for item in mapping.values():
+            symbol = item["symbol"]
+            name = item["name"].upper()
+            if symbol == clean:
+                rank = 0
+            elif symbol.startswith(clean):
+                rank = 1
+            elif name.startswith(clean):
+                rank = 2
+            elif clean in name:
+                rank = 3
+            else:
+                continue
+            scored.append((rank, len(symbol), symbol, item))
+        results = [item for *_, item in sorted(scored)[:limit]]
+        return {
+            "query": clean,
+            "status": "AVAILABLE",
+            "results": results,
+            "source": "SEC company_tickers",
+            "limitation": "US SEC registrants only; funds, indices, and some foreign listings may be absent.",
+        }
 
     async def _sec(self, symbol: str, *, refresh: bool) -> dict[str, Any]:
         user_agent = os.getenv("INTELLIDHAN_SEC_USER_AGENT", "").strip()
@@ -454,9 +499,10 @@ class ResearchFeedService:
             # Registrant mappings change slowly and are shared across symbols.
             # A manual data refresh must not fan out duplicate ticker-map calls.
             mapping = await self._ticker_map()
-            cik = mapping.get(symbol)
-            if not cik:
+            registrant = mapping.get(symbol)
+            if not registrant:
                 raise LookupError(f"No SEC registrant mapping was found for {symbol}.")
+            cik = registrant["cik"]
             key = f"sec:{symbol}"
             cached = self._read_cache(key, 21_600, refresh)
             if cached is not None:
@@ -481,6 +527,21 @@ class ResearchFeedService:
                     "as_of": datetime.now(timezone.utc).isoformat(),
                     "cik": cik,
                     "company_name": str(submissions.get("name", ""))[:160],
+                    "profile": {
+                        "name": str(submissions.get("name", ""))[:160],
+                        "sic": str(submissions.get("sic", ""))[:8] or None,
+                        "industry": str(submissions.get("sicDescription", ""))[:160] or None,
+                        "fiscal_year_end": str(submissions.get("fiscalYearEnd", ""))[:4] or None,
+                        "exchanges": [str(item)[:40] for item in submissions.get("exchanges", [])[:8]],
+                        "tickers": [str(item)[:20] for item in submissions.get("tickers", [])[:8]],
+                        "website": str(submissions.get("website", ""))[:240] or None,
+                        "investor_website": str(submissions.get("investorWebsite", ""))[:240] or None,
+                        "description": (
+                            "SEC registrant identity and filing profile. A plain-language business "
+                            "description is not available from this source."
+                        ),
+                        "source": "SEC submissions",
+                    },
                     "fundamentals": parse_sec_fundamentals(facts),
                     "filings": parse_sec_filings(submissions, cik),
                 },
@@ -644,6 +705,7 @@ class ResearchFeedService:
             "pillars": pillars,
             "technical": technical,
             "fundamentals": fundamental,
+            "company": sec.get("profile", {}),
             "filings": sec.get("filings", {"status": sec.get("status"), "items": []}),
             "news": news,
             "social": social,
