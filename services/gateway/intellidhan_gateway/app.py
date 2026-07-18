@@ -40,6 +40,11 @@ from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisServi
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.stock_analysis import StockAnalysisService
+from intellidhan_gateway.workspace_agent import (
+    WorkspaceAgentTriggerService,
+    WorkspaceAgentUnavailable,
+    validate_dispatch_event_id,
+)
 
 WEB_DIR = Path(__file__).resolve().parents[3] / "web"
 
@@ -47,6 +52,7 @@ loop = LiveLoop()
 stock_analyzer = StockAnalysisService()
 discovery = DiscoveryService()
 ai_thesis_service = OpenAIThesisService()
+workspace_agent_service = WorkspaceAgentTriggerService()
 rate_limiter = RateLimiter()
 
 DEFAULT_PREFERENCES = {
@@ -512,6 +518,50 @@ async def build_discovery_thesis(request: Request, payload: dict = Body(...)):
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except TimeoutError as exc:
         raise HTTPException(status_code=504, detail="AI thesis generation timed out") from exc
+
+
+@app.post("/api/discover/workspace-agent")
+async def dispatch_discovery_workspace_agent(request: Request, payload: dict = Body(...)):
+    """Queue server-verified research; this route has no local execution path."""
+    principal = _require_personal(request, roles={"ADMIN", "TRADER"})
+    rate_limiter.check(
+        f"discovery-workspace-agent:{principal.user_id}", limit=3, window_seconds=60
+    )
+    try:
+        event_id = validate_dispatch_event_id(payload.get("event_id"))
+        symbol = stock_analyzer.normalize_symbol(str(payload.get("symbol", "")))
+        play_key = str(payload.get("play_key", "")).strip().upper() or None
+        scan = await asyncio.wait_for(discovery.universe_scan(), timeout=45)
+        if scan.get("complete") is not True:
+            raise WorkspaceAgentUnavailable(
+                "Workspace Agent dispatch requires a complete configured-universe scan; "
+                "retry after the listed provider failures recover"
+            )
+        candidate = next((row for row in scan["rows"] if row["symbol"] == symbol), None)
+        if candidate is None:
+            raise LookupError(f"{symbol} is not in the configured discovery universe")
+        candidate = dict(candidate)
+        if play_key:
+            play = candidate.get("plays", {}).get(play_key)
+            if play is None:
+                raise ValueError("unknown smart-play setup")
+            candidate["selected_play"] = play
+        return await asyncio.wait_for(
+            workspace_agent_service.trigger(
+                candidate,
+                user_id=principal.user_id,
+                event_id=event_id,
+            ),
+            timeout=20,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except WorkspaceAgentUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="Workspace Agent dispatch timed out") from exc
 
 
 @app.get("/api/dossier/{symbol}")

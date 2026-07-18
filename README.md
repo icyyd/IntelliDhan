@@ -1,6 +1,6 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-13 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-07-14 · **Status:** Working personal-terminal foundation
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -26,6 +26,12 @@ must not be presented as implemented.
 - Optional, account-only OpenAI thesis synthesis from server evidence with
   a closed evidence-selection schema and server-rendered narrative; it cannot
   invent prose, alter rank, or create an execution intent.
+- Optional ADMIN/TRADER dispatch of a server-verified candidate to a published
+  ChatGPT Workspace Agent for deeper research. IntelliDhan requests analysis
+  only; production requires a dedicated agent with no broker tools and no
+  general write tools. A separately reviewed, destination-constrained result
+  delivery action is the only allowed exception. The trigger API queues the run
+  but does not yet return its output.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
   forward evidence and fixed-rule backtests.
 
@@ -63,6 +69,7 @@ the Account panel to create the first administrator. See
 | 20 | [One-Stop Terminal Gap Analysis](docs/20-one-stop-terminal-gap-analysis.md) | Full-solution audit and prioritized terminal roadmap |
 | 21 | [Accounts &amp; Personal Settings](docs/21-accounts-and-personal-settings.md) | Account/session architecture, roles, user-owned database state, APIs, and deployment requirements |
 | 22 | [Smart-Play Scanner &amp; AI Thesis](docs/22-smart-play-scanner-and-ai-thesis.md) | Fixed momentum/breakout/pullback rules, walk-forward diagnostic, OpenAI evidence contract, and card-first UX |
+| 23 | [ChatGPT Workspace Agent Dispatch](docs/23-chatgpt-workspace-agent-dispatch.md) | Published-agent API trigger, security boundary, setup, UX, and operational contract |
 
 ## Core Product Tenets
 

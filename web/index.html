@@ -858,6 +858,8 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
 .ai-thesis ul{margin:6px 0 9px; padding-left:17px}
 .ai-thesis a{color:var(--cyan); text-decoration:underline; text-underline-offset:2px}
 .ai-thesis-note{color:var(--text-dim); font-size:11px}
+.work-agent-queued{border-color:rgba(94,234,212,.3); background:linear-gradient(145deg,rgba(94,234,212,.09),rgba(145,164,255,.045))}
+.work-agent-queued .ai-verdict{background:rgba(94,234,212,.14); color:var(--teal)}
 .watch-panel{position:sticky; top:88px}
 .watch-status{min-height:18px; margin:8px 0; color:var(--text-faint); font-size:10px}
 .watch-status.err{color:var(--red)}
@@ -1205,6 +1207,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       </form>
       <div class="discover-note"><svg class="icon"><use href="#i-check"/></svg><span id="discoverEffectiveFilters">Loading effective preset rules…</span></div>
       <div class="discover-note"><svg class="icon"><use href="#i-alert"/></svg><span>Scores compare only the configured universe. AI research is optional, cannot change rank or trigger a trade, and keeps fundamental/event coverage visibly unavailable until point-in-time feeds are connected.</span></div>
+      <div class="discover-note"><svg class="icon"><use href="#i-activity"/></svg><span>Queue agent research sends the verified candidate to a published ChatGPT Workspace Agent. Its API does not return output to this app; use an explicitly configured delivery workflow, or Build AI thesis for an immediate result here.</span></div>
       <div class="screen-tools">
         <label class="analysis-field"><span>Save current screen</span><input id="discoverScreenName" type="text" maxlength="60" placeholder="My momentum screen"></label>
         <button class="secondary-action" id="saveScreenButton" type="button" onclick="saveCurrentScreen()"><svg class="icon"><use href="#i-bookmark"/></svg>Save screen</button>
@@ -2479,6 +2482,7 @@ function renderDiscovery(data){
   if(!rows.length){ output.innerHTML=`<div class="empty"><b>No names match this screen.</b>Loosen one filter or choose All names. A zero-result screen is a valid outcome.</div>`; return; }
   output.innerHTML=rows.map(row=>{
     const play=row.selected_play||row.best_play||{}, below=row.trend_state==="BELOW_200D", waiting=String(play.status||"").startsWith("WAIT"), watched=researchWatchlist()?.symbols?.includes(row.symbol);
+    const canQueueWorkspaceAgent=ownerAuthenticated&&["ADMIN","TRADER"].includes(accountUser?.role);
     const evidence=(play.evidence||[]).slice(0,3);
     return `<article class="discover-card">
       <div class="discover-card-head"><div><span class="play-kicker">${esc(play.label||"Research candidate")}</span><h3 class="discover-symbol">${esc(row.symbol)}</h3><span class="discover-price">$${esc(fmtPx(row.price))} · ${esc(play.horizon||"No active horizon")}</span></div><div class="score-bubble"><span><b>${esc(Math.round(play.score||0))}</b><small>Play score</small></span></div></div>
@@ -2494,12 +2498,13 @@ function renderDiscovery(data){
         <span class="discover-metric"><b>${esc(compactDollar(row.average_dollar_volume_20d))}</b><small>Liquidity</small></span>
       </div>
       <div class="coverage-strip"><span class="coverage-dots" aria-label="Market evidence available; fundamental and event data unavailable">${[0,1,2,3,4,5].map(i=>`<i class="${i<2?"on":""}"></i>`).join("")}</span><span>Market evidence · configured-universe rank</span></div>
-      <div class="discover-actions"><button class="primary-action" type="button" data-analyze="${esc(row.symbol)}"><svg class="icon"><use href="#i-search"/></svg>Full analysis</button>${play.eligible?`<button class="secondary-action" type="button" data-thesis="${esc(row.symbol)}" data-play="${esc(play.key||"")}"><svg class="icon"><use href="#i-activity"/></svg>Build AI thesis</button>`:""}<button class="secondary-action" type="button" data-watch="${esc(row.symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg>${watched?"Saved":"Watch"}</button></div>
+      <div class="discover-actions"><button class="primary-action" type="button" data-analyze="${esc(row.symbol)}"><svg class="icon"><use href="#i-search"/></svg>Full analysis</button>${play.eligible?`<button class="secondary-action" type="button" data-thesis="${esc(row.symbol)}" data-play="${esc(play.key||"")}"><svg class="icon"><use href="#i-activity"/></svg>Build AI thesis</button>${canQueueWorkspaceAgent?`<button class="secondary-action" type="button" data-work-agent="${esc(row.symbol)}" data-play="${esc(play.key||"")}" title="Queue independent research in the published ChatGPT Workspace Agent"><svg class="icon"><use href="#i-activity"/></svg>Queue agent research</button>`:""}`:""}<button class="secondary-action" type="button" data-watch="${esc(row.symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg>${watched?"Saved":"Watch"}</button></div>
       <div class="ai-thesis" data-thesis-output="${esc(row.symbol)}" hidden></div>
     </article>`;
   }).join("");
   output.querySelectorAll("[data-analyze]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.analyze)));
   output.querySelectorAll("[data-thesis]").forEach(button=>button.addEventListener("click",()=>buildAIThesis(button)));
+  output.querySelectorAll("[data-work-agent]").forEach(button=>button.addEventListener("click",()=>queueWorkspaceAgentResearch(button)));
   output.querySelectorAll("[data-watch]").forEach(button=>button.addEventListener("click",()=>addToResearch(button.dataset.watch)));
 }
 function renderAIThesis(output,data){
@@ -2515,12 +2520,29 @@ function renderAIThesis(output,data){
 async function buildAIThesis(button){
   if(!ownerAuthenticated){ openOwnerDialog(); return; }
   const card=button.closest(".discover-card"), output=card.querySelector("[data-thesis-output]");
-  output.hidden=false; output.textContent=`Building an evidence-grounded thesis for ${button.dataset.thesis}…`;
+  output.hidden=false; output.classList.remove("work-agent-queued"); output.textContent=`Building an evidence-grounded thesis for ${button.dataset.thesis}…`;
   button.disabled=true;
   try{
     const data=await fetchJSON("/api/discover/thesis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({symbol:button.dataset.thesis,play_key:button.dataset.play,web_research:false})});
     renderAIThesis(output,data);
   }catch(error){ output.innerHTML=`<b>AI research unavailable.</b><p>${esc(error.message||"The deterministic candidate evidence above is unchanged.")}</p>`; if(error.status===401) openOwnerDialog(); }
+  finally{ button.disabled=false; }
+}
+async function queueWorkspaceAgentResearch(button){
+  if(!ownerAuthenticated){ openOwnerDialog(); return; }
+  if(!["ADMIN","TRADER"].includes(accountUser?.role)) return;
+  const card=button.closest(".discover-card"), output=card.querySelector("[data-thesis-output]");
+  output.hidden=false; output.classList.remove("work-agent-queued");
+  output.textContent=`Queuing independent ChatGPT research for ${button.dataset.workAgent}…`;
+  const eventId=button.dataset.dispatchEvent||crypto.randomUUID();
+  button.dataset.dispatchEvent=eventId;
+  button.disabled=true;
+  try{
+    const data=await fetchJSON("/api/discover/workspace-agent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({symbol:button.dataset.workAgent,play_key:button.dataset.play,event_id:eventId})});
+    delete button.dataset.dispatchEvent;
+    output.classList.add("work-agent-queued");
+    output.innerHTML=`<div class="ai-thesis-head"><span class="ai-verdict">${esc(data.status||"QUEUED")}</span><b>Queued in ChatGPT Workspace Agent</b></div><p>${esc(data.message||"The research task was queued in ChatGPT.")}</p><div class="ai-thesis-note">${esc(data.symbol||button.dataset.workAgent)} · ${esc(String(data.setup_key||button.dataset.play||"").replaceAll("_"," "))} · analysis-only request · dedicated no-broker agent required</div>`;
+  }catch(error){ output.classList.remove("work-agent-queued"); output.innerHTML=`<b>Workspace Agent dispatch unavailable.</b><p>${esc(error.message||"The deterministic candidate evidence above is unchanged.")}</p>`; if(error.status===401) openOwnerDialog(); }
   finally{ button.disabled=false; }
 }
 async function runDiscovery(event){
