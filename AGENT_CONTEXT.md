@@ -163,8 +163,9 @@ At merged `main` commit `7c8e2a4`:
 - no browser console warnings/errors;
 - GitHub `test` and `account-postgres` jobs passed for every landed PR;
 - independent post-merge runtime review approved;
-- Koyeb detected the exact merge SHA and began its ordered auto-release; confirm
-  the final deployment is `HEALTHY` before treating this baseline as live.
+- Koyeb promoted the exact merge SHA and reported both deployment and service
+  `HEALTHY`; public liveness, protected-route 401 boundaries, desktop/mobile
+  overflow, and browser console checks passed against the live URL.
 
 Re-run proportionate checks after each material change and update this section
 only with observed results.
@@ -184,7 +185,10 @@ only with observed results.
 
 ## 10. Remaining priorities
 
-1. Confirm Koyeb server environment and final deployment health for `7c8e2a4`.
+1. Move any remaining literal Koyeb credentials to secret-backed references,
+   rotate them through the owning services, and configure the optional research
+   providers needed for multi-feed coverage. Never copy secret values into this
+   file, logs, issues, or pull requests.
 2. Add a licensed real-time provider router and field-level exchange timestamps.
 3. Add point-in-time broad-universe, sector/peer, earnings-calendar, estimates,
    transcript-change, and valuation datasets before claiming one-stop coverage.

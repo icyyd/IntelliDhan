@@ -1991,7 +1991,7 @@ function setHealth(mode){
   else { el.lastChild.textContent = " Connecting…"; }
 }
 
-function clearPersonalState(reason="Sign in required."){
+function clearPersonalState(reason="Sign in required.", reload=true){
   ownerAuthenticated=false;
   accountUser=null; preferencesCache=null; preferencesApplied=false;
   lastState=null; briefing=null; dailyBrief=null; dailyBriefRenderKey=null; focusData=null; focusIntelligence={}; focusAIResults={}; watchlistsCache=[]; savedScreensCache=[];
@@ -2041,7 +2041,7 @@ function clearPersonalState(reason="Sign in required."){
   renderWatchlists(); renderSavedScreens(); renderBriefing(); setHealth("auth");
   // Reload is the final privacy boundary: it discards every closure, event
   // handler, SVG node, and DOM fragment rather than relying on a partial list.
-  window.location.reload();
+  if(reload) window.location.reload();
 }
 
 function renderAll(){
@@ -3591,7 +3591,7 @@ loadDiscoveryPresets();
 refreshCalibration();
 refreshOwnerSession().then(session=>{
   if(session.authenticated){ connectWS(); refresh(); refreshBriefing(); refreshDailyBrief(); refreshFocus(); refreshAutotrade(); }
-  else setHealth("auth");
+  else clearPersonalState("Sign in required.", false);
 });
 setInterval(refresh, 15000);
 setInterval(refreshCalibration, 60000);
