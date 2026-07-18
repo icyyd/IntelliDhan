@@ -137,7 +137,19 @@ def test_news_and_social_scores_are_low_level_context_not_prose():
         now=datetime(2026, 7, 17, 20, 0, tzinfo=timezone.utc),
     )
     social = parse_finnhub_social(
-        {"reddit": [{"mention": 10, "positiveMention": 7, "negativeMention": 3}]}
+        {
+            "symbol": "AAPL",
+            "reddit": [
+                {
+                    "atTime": "2026-07-17T19:00:00Z",
+                    "mention": 10,
+                    "positiveMention": 7,
+                    "negativeMention": 3,
+                }
+            ],
+        },
+        "AAPL",
+        now=datetime(2026, 7, 17, 20, 0, tzinfo=timezone.utc),
     )
     assert news["score"] == 70.0
     assert news["article_count"] == 1
@@ -163,6 +175,35 @@ def test_company_overview_is_descriptive_and_keeps_estimates_display_only():
     assert result["profile"]["market_cap"] == 3_500_000_000_000
     assert result["profile"]["analyst_target_price"] == 250.0
     assert "display-only" in result["limitation"]
+
+
+def test_company_overview_rejects_a_mismatched_provider_symbol():
+    result = parse_alpha_overview(
+        {"Symbol": "MSFT", "Description": "Wrong company"}, "AAPL"
+    )
+    assert result["status"] == "UNAVAILABLE"
+    assert result["profile"] == {}
+
+
+def test_social_parser_rejects_wrong_stale_and_future_observations():
+    now = datetime(2026, 7, 17, 20, 0, tzinfo=timezone.utc)
+    wrong = parse_finnhub_social(
+        {"symbol": "MSFT", "reddit": []}, "AAPL", now=now
+    )
+    assert wrong["status"] == "UNAVAILABLE"
+    filtered = parse_finnhub_social(
+        {
+            "symbol": "AAPL",
+            "reddit": [
+                {"atTime": "2026-07-01T12:00:00Z", "mention": 100, "positiveMention": 100},
+                {"atTime": "2026-07-18T12:00:00Z", "mention": 100, "positiveMention": 100},
+            ],
+        },
+        "AAPL",
+        now=now,
+    )
+    assert filtered["status"] == "UNAVAILABLE"
+    assert filtered["mentions"] == 0
 
 
 def test_news_parser_excludes_stale_and_malformed_articles():
@@ -265,6 +306,44 @@ async def test_partial_sec_concepts_receive_partial_effective_weight(monkeypatch
 
 
 @pytest.mark.asyncio
+async def test_sec_identity_stays_authoritative_over_company_overview(monkeypatch):
+    service = ResearchFeedService()
+
+    async def sec(symbol, refresh=False):
+        return {
+            "status": "AVAILABLE",
+            "profile": {
+                "name": "SEC Registrant Name",
+                "industry": "SEC Industry",
+                "exchanges": ["Nasdaq"],
+            },
+            "fundamentals": {"status": "UNAVAILABLE", "coverage": 0},
+        }
+
+    async def overview(symbol, refresh=False):
+        return {
+            "status": "AVAILABLE",
+            "profile": {
+                "name": "Provider Alias",
+                "industry": "Provider Industry",
+                "description": "Plain-language business description.",
+            },
+        }
+
+    async def missing(symbol, refresh=False):
+        return {"status": "NOT_CONFIGURED"}
+
+    monkeypatch.setattr(service, "_sec", sec)
+    monkeypatch.setattr(service, "_overview", overview)
+    monkeypatch.setattr(service, "_news", missing)
+    monkeypatch.setattr(service, "_social", missing)
+    result = await service.analyze("AAPL", {"technical_score": 50.0})
+    assert result["company"]["name"] == "SEC Registrant Name"
+    assert result["company"]["industry"] == "SEC Industry"
+    assert result["company"]["description"] == "Plain-language business description."
+
+
+@pytest.mark.asyncio
 async def test_security_search_prioritizes_exact_ticker_then_company(monkeypatch):
     service = ResearchFeedService()
 
@@ -282,6 +361,8 @@ async def test_security_search_prioritizes_exact_ticker_then_company(monkeypatch
     result = await service.search("aapl")
     assert result["status"] == "AVAILABLE"
     assert result["results"][0]["symbol"] == "AAPL"
+    company = await service.search("apple")
+    assert company["results"][0]["symbol"] == "AAPL"
 
 
 @pytest.mark.asyncio
@@ -459,6 +540,10 @@ def test_landing_page_exposes_welcome_search_levels_and_multibrain_cards():
     assert 'id="deskSummary"' in source
     assert 'id="homeStockSearchForm"' in source
     assert 'id="homeSearchSuggestions" role="listbox"' in source
+    assert 'role="combobox"' in source
+    assert 'aria-expanded="false"' in source
+    assert 'event.key==="ArrowDown"' in source
+    assert "async function resolveHomeSearch" in source
     assert 'fetchJSON(`/api/search?q=${encodeURIComponent(query)}&limit=7`)' in source
     assert 'id="homeKeyLevels"' in source
     assert 'id="analysisKeyLevels"' in source

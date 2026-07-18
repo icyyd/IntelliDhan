@@ -1284,7 +1284,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
     <section class="home-search-card" aria-labelledby="homeSearchTitle">
       <div class="home-search-copy"><b id="homeSearchTitle">What are you watching?</b><small>Search a ticker or company for completed-bar levels, business quality, catalysts, and social attention.</small></div>
       <div class="home-search-wrap">
-        <form class="home-search-form" id="homeStockSearchForm"><input id="homeStockSearch" type="search" maxlength="80" autocomplete="off" placeholder="Search AAPL or Apple" aria-controls="homeSearchSuggestions" aria-autocomplete="list"><button type="submit">Get levels</button></form>
+        <form class="home-search-form" id="homeStockSearchForm"><input id="homeStockSearch" type="search" maxlength="80" autocomplete="off" placeholder="Search AAPL or Apple" aria-label="Ticker or company" role="combobox" aria-controls="homeSearchSuggestions" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false"><button type="submit">Get levels</button></form>
         <div class="search-suggestions" id="homeSearchSuggestions" role="listbox" hidden></div>
       </div>
       <div class="home-levels" id="homeKeyLevels" aria-live="polite" hidden></div>
@@ -1734,7 +1734,7 @@ let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
 let accountUser = null, preferencesCache = null, preferencesApplied = false;
 let selectedDiscoverPreset = "smart_momentum", currentDossier = null;
-let homeSearchTimer = null, homeSearchRequest = 0;
+let homeSearchTimer = null, homeSearchRequest = 0, homeSearchResults = [], homeSearchActive = -1;
 let discoverPresets = {
   smart_momentum:{play_type:"MOMENTUM_LEADER"},
   breakout_watch:{play_type:"BREAKOUT_WATCH"},
@@ -3058,6 +3058,33 @@ function analyzeCandidate(symbol){
 function homeSearchSymbol(value){
   return String(value||"").trim().toUpperCase().split(/\s+/)[0].replace(/[^A-Z0-9.\-]/g,"").slice(0,12);
 }
+function hideHomeSuggestions(){
+  const input=document.getElementById("homeStockSearch"), suggestions=document.getElementById("homeSearchSuggestions");
+  suggestions.hidden=true; homeSearchActive=-1; input.setAttribute("aria-expanded","false"); input.removeAttribute("aria-activedescendant");
+  suggestions.querySelectorAll('[role="option"]').forEach(option=>option.setAttribute("aria-selected","false"));
+}
+function setHomeSearchActive(index){
+  const input=document.getElementById("homeStockSearch"), options=[...document.querySelectorAll("#homeSearchSuggestions [role=option]")];
+  if(!options.length) return;
+  homeSearchActive=(index+options.length)%options.length;
+  options.forEach((option,position)=>option.setAttribute("aria-selected",String(position===homeSearchActive)));
+  input.setAttribute("aria-activedescendant",options[homeSearchActive].id);
+  options[homeSearchActive].scrollIntoView({block:"nearest"});
+}
+function chooseHomeSuggestion(item){
+  if(!item?.symbol) return;
+  document.getElementById("homeStockSearch").value=item.symbol; hideHomeSuggestions(); runHomeSearch(item.symbol);
+}
+async function resolveHomeSearch(value){
+  const query=String(value||"").trim();
+  if(!query) return "";
+  try{
+    const data=await fetchJSON(`/api/search?q=${encodeURIComponent(query)}&limit=7`), results=data.results||[], upper=query.toUpperCase();
+    const resolved=results.find(item=>item.symbol===upper)||results.find(item=>String(item.name||"").toUpperCase()===upper)||results[0];
+    if(resolved?.symbol) return resolved.symbol;
+  }catch(_error){ /* Exact ticker fallback remains available without SEC search. */ }
+  return homeSearchSymbol(query);
+}
 function renderHomeLevels(dossier){
   const output=document.getElementById("homeKeyLevels"), analysis=dossier.analysis||{}, levels=analysis.key_levels||{};
   const rows=[
@@ -3080,28 +3107,36 @@ async function runHomeSearch(symbol){
     renderHomeLevels(dossier);
   }catch(error){ output.innerHTML=`<div class="empty"><b>${esc(clean)} could not be analyzed.</b>${esc(error.message||"Try a listed US ticker.")}</div>`; }
 }
-document.getElementById("homeStockSearchForm").addEventListener("submit",event=>{
-  event.preventDefault(); document.getElementById("homeSearchSuggestions").hidden=true;
-  runHomeSearch(document.getElementById("homeStockSearch").value);
+document.getElementById("homeStockSearchForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(homeSearchActive>=0&&homeSearchResults[homeSearchActive]){ chooseHomeSuggestion(homeSearchResults[homeSearchActive]); return; }
+  const input=document.getElementById("homeStockSearch"), symbol=await resolveHomeSearch(input.value);
+  hideHomeSuggestions(); if(symbol){ input.value=symbol; runHomeSearch(symbol); }
 });
 document.getElementById("homeStockSearch").addEventListener("input",event=>{
   clearTimeout(homeSearchTimer);
   const query=event.target.value.trim(), suggestions=document.getElementById("homeSearchSuggestions"), request=++homeSearchRequest;
-  if(query.length<1){ suggestions.hidden=true; suggestions.replaceChildren(); return; }
+  homeSearchResults=[]; homeSearchActive=-1; event.target.removeAttribute("aria-activedescendant");
+  if(query.length<1){ hideHomeSuggestions(); suggestions.replaceChildren(); return; }
   homeSearchTimer=setTimeout(async()=>{
     try{
       const data=await fetchJSON(`/api/search?q=${encodeURIComponent(query)}&limit=7`);
       if(request!==homeSearchRequest) return;
-      suggestions.innerHTML=(data.results||[]).map(item=>`<button class="search-suggestion" type="button" role="option" data-search-symbol="${esc(item.symbol)}"><b>${esc(item.symbol)}</b><span>${esc(item.name)}</span></button>`).join("");
-      suggestions.hidden=!data.results?.length;
-      suggestions.querySelectorAll("[data-search-symbol]").forEach(button=>button.addEventListener("click",()=>{
-        document.getElementById("homeStockSearch").value=button.dataset.searchSymbol; suggestions.hidden=true; runHomeSearch(button.dataset.searchSymbol);
-      }));
-    }catch(_error){ suggestions.hidden=true; }
+      homeSearchResults=data.results||[];
+      suggestions.innerHTML=homeSearchResults.map((item,index)=>`<button class="search-suggestion" id="home-search-option-${index}" type="button" role="option" aria-selected="false" data-search-index="${index}"><b>${esc(item.symbol)}</b><span>${esc(item.name)}</span></button>`).join("");
+      suggestions.hidden=!homeSearchResults.length; event.target.setAttribute("aria-expanded",String(homeSearchResults.length>0));
+      suggestions.querySelectorAll("[data-search-index]").forEach(button=>button.addEventListener("click",()=>chooseHomeSuggestion(homeSearchResults[Number(button.dataset.searchIndex)])));
+    }catch(_error){ hideHomeSuggestions(); }
   },180);
 });
+document.getElementById("homeStockSearch").addEventListener("keydown",event=>{
+  const open=!document.getElementById("homeSearchSuggestions").hidden;
+  if(event.key==="Escape"&&open){ event.preventDefault(); hideHomeSuggestions(); }
+  else if((event.key==="ArrowDown"||event.key==="ArrowUp")&&open){ event.preventDefault(); setHomeSearchActive(homeSearchActive+(event.key==="ArrowDown"?1:-1)); }
+  else if(event.key==="Enter"&&open&&homeSearchActive>=0){ event.preventDefault(); chooseHomeSuggestion(homeSearchResults[homeSearchActive]); }
+});
 document.addEventListener("click",event=>{
-  if(!event.target.closest(".home-search-wrap")) document.getElementById("homeSearchSuggestions").hidden=true;
+  if(!event.target.closest(".home-search-wrap")) hideHomeSuggestions();
 });
 document.getElementById("discoverForm").addEventListener("submit",runDiscovery);
 document.querySelectorAll("[data-preset]").forEach(button=>button.addEventListener("click",()=>{

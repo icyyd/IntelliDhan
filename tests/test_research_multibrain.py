@@ -41,6 +41,9 @@ def test_panel_regression_is_chronological_and_discloses_trials():
     assert report["trials_disclosed"] == 2
     assert report["selection"]["selected_on_development_only"] in {"core", "risk_aware"}
     assert report["validation"]["fixed_vote"]["samples"] >= 30
+    if report["promotion_status"] == "EVIDENCE_POSITIVE_REQUIRES_FORWARD_PAPER":
+        assert report["validation_brier_improvement_vs_fixed_vote_pct"] > 0
+        assert report["validation_brier_improvement_vs_base_pct"] > 0
     assert report["promotion_status"] in {
         "EVIDENCE_POSITIVE_REQUIRES_FORWARD_PAPER",
         "NO_BENCHMARK_EDGE",

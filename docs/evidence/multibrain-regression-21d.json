@@ -75,6 +75,7 @@
     }
   },
   "validation_brier_improvement_vs_fixed_vote_pct": -0.94,
+  "validation_brier_improvement_vs_base_pct": -0.64,
   "per_symbol_validation": {
     "AAPL": {
       "selected": {

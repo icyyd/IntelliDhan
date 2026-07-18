@@ -341,11 +341,13 @@ def parse_alpha_news(
     }
 
 
-def parse_alpha_overview(payload: dict[str, Any]) -> dict[str, Any]:
+def parse_alpha_overview(
+    payload: dict[str, Any], expected_symbol: str | None = None
+) -> dict[str, Any]:
     """Extract bounded company context without turning estimates into signal inputs."""
     symbol = str(payload.get("Symbol", "")).strip().upper()
     description = str(payload.get("Description", "")).strip()[:2_000]
-    if not symbol or not description:
+    if not symbol or not description or (expected_symbol and symbol != expected_symbol.upper()):
         return {
             "status": "UNAVAILABLE",
             "profile": {},
@@ -391,14 +393,44 @@ def parse_alpha_overview(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def parse_finnhub_social(payload: dict[str, Any]) -> dict[str, Any]:
+def parse_finnhub_social(
+    payload: dict[str, Any],
+    expected_symbol: str | None = None,
+    *,
+    now: datetime | None = None,
+    max_age_days: int = 7,
+) -> dict[str, Any]:
+    returned_symbol = str(payload.get("symbol", "")).strip().upper()
+    if expected_symbol and returned_symbol != expected_symbol.upper():
+        return {
+            "status": "UNAVAILABLE",
+            "score": None,
+            "tier": "UNRATED",
+            "mentions": 0,
+            "platform_counts": {},
+            "content_as_of": None,
+            "limitation": "The provider returned social data for a different symbol.",
+        }
+    reference = now or datetime.now(timezone.utc)
     observations = []
+    observed_times: list[datetime] = []
     platform_counts: dict[str, int] = {}
     for platform in ("reddit", "twitter"):
         rows = payload.get(platform, [])
         if not isinstance(rows, list):
             continue
         for row in rows[:200]:
+            raw_time = str(row.get("atTime", "")).strip()
+            try:
+                observed = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+                if observed.tzinfo is None:
+                    observed = observed.replace(tzinfo=timezone.utc)
+                observed = observed.astimezone(timezone.utc)
+            except ValueError:
+                continue
+            age = reference - observed
+            if age.total_seconds() < -300 or age > timedelta(days=max_age_days):
+                continue
             positive = _finite(row.get("positiveMention")) or 0.0
             negative = _finite(row.get("negativeMention")) or 0.0
             mention = _finite(row.get("mention")) or positive + negative
@@ -406,6 +438,7 @@ def parse_finnhub_social(payload: dict[str, Any]) -> dict[str, Any]:
                 continue
             tone = (positive - negative) / max(positive + negative, 1.0)
             observations.append((mention, max(-1.0, min(1.0, tone))))
+            observed_times.append(observed)
             platform_counts[platform] = platform_counts.get(platform, 0) + int(mention)
     weight = sum(item[0] for item in observations)
     average = sum(mention * tone for mention, tone in observations) / weight if weight else None
@@ -416,6 +449,7 @@ def parse_finnhub_social(payload: dict[str, Any]) -> dict[str, Any]:
         "tier": score_tier(score),
         "mentions": int(weight),
         "platform_counts": platform_counts,
+        "content_as_of": max(observed_times).isoformat() if observed_times else None,
         "limitation": (
             "Social mood is attention/risk context, not financial strength; it is capped at "
             "5% of rank and never triggers a trade."
@@ -527,7 +561,7 @@ class ResearchFeedService:
                 rank = 3
             else:
                 continue
-            scored.append((rank, len(symbol), symbol, item))
+            scored.append((rank, len(name), len(symbol), symbol, item))
         results = [item for *_, item in sorted(scored)[:limit]]
         return {
             "query": clean,
@@ -673,7 +707,7 @@ class ResearchFeedService:
             )
             if payload.get("Information") or payload.get("Note"):
                 raise LookupError
-            result = parse_alpha_overview(payload)
+            result = parse_alpha_overview(payload, symbol)
             result.update(
                 {
                     "source": "Alpha Vantage company overview",
@@ -709,7 +743,8 @@ class ResearchFeedService:
         if cached is not None:
             return cached
         try:
-            end = date.today()
+            observed_at = datetime.now(timezone.utc)
+            end = observed_at.date()
             payload = await self._json(
                 FINNHUB_SOCIAL_URL,
                 params={
@@ -720,8 +755,8 @@ class ResearchFeedService:
                 headers={"X-Finnhub-Token": api_key},
                 max_bytes=2_000_000,
             )
-            result = parse_finnhub_social(payload)
-            result.update({"source": "Finnhub", "as_of": datetime.now(timezone.utc).isoformat()})
+            result = parse_finnhub_social(payload, symbol, now=observed_at)
+            result.update({"source": "Finnhub", "as_of": observed_at.isoformat()})
             return self._write_cache(key, result)
         except Exception:
             return {
@@ -791,9 +826,20 @@ class ResearchFeedService:
         overview_profile = (
             overview.get("profile", {}) if overview.get("status") == "AVAILABLE" else {}
         )
-        company = {**sec_profile, **overview_profile}
-        if sec_profile.get("exchanges"):
-            company["exchanges"] = sec_profile["exchanges"]
+        company = dict(overview_profile)
+        for key in (
+            "name",
+            "sic",
+            "industry",
+            "exchanges",
+            "tickers",
+            "website",
+            "investor_website",
+        ):
+            if sec_profile.get(key):
+                company[key] = sec_profile[key]
+        if not company.get("description") and sec_profile.get("description"):
+            company["description"] = sec_profile["description"]
         if sec_profile.get("fiscal_year_end"):
             company["fiscal_year_end_code"] = sec_profile["fiscal_year_end"]
         company["overview_status"] = overview.get("status")

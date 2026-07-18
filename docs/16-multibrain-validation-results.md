@@ -8,8 +8,9 @@ Artifacts: `docs/evidence/multibrain-regression-21d.json` and
 ## Outcome
 
 The regression candidates were **not promoted**. On both held-later validation
-windows, the development-selected `core` regression had worse Brier score than
-the existing transparent fixed-vote probability. The correct optimization is to
+windows, the development-selected `core` regression trailed the expanding base
+rate by 0.64% at 21 sessions and 4.12% at 63 sessions, and also had worse Brier
+score than the existing transparent fixed-vote probability. The correct optimization is to
 keep the simpler model authoritative, expose low confidence, and collect better
 point-in-time evidence rather than tune more parameters against the same sample.
 
@@ -38,6 +39,8 @@ quality. Accuracy alone would therefore be a misleading promotion metric.
   is the validation window.
 - Comparisons: expanding positive base rate, empirical-Bayes fixed-vote state,
   and the selected regression.
+- A positive label requires lower held-later Brier score than both the expanding
+  base rate and fixed vote, plus broad symbol-level improvement.
 - Current SEC filing facts, news, social attention, and earnings estimates were
   excluded because the repository has no point-in-time history for them.
 
@@ -65,4 +68,3 @@ quality. Accuracy alone would therefore be a misleading promotion metric.
 Do not add more thresholds or feature sets to these same validation windows and
 then call the winner out-of-sample. That would turn optimization into selection
 bias.
-

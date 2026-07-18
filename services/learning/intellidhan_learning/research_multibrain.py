@@ -217,10 +217,14 @@ def evaluate_panel_regression(
     }
     selected_brier = validation_metrics[selected]["brier_score"]
     benchmark_brier = validation_metrics["fixed_vote"]["brier_score"]
+    base_brier = validation_metrics["base"]["brier_score"]
     improvement = (
         (benchmark_brier - selected_brier) / benchmark_brier * 100.0
         if benchmark_brier
         else 0.0
+    )
+    improvement_vs_base = (
+        (base_brier - selected_brier) / base_brier * 100.0 if base_brier else 0.0
     )
     per_symbol = {}
     for symbol in sorted(histories):
@@ -235,7 +239,12 @@ def evaluate_panel_regression(
         for row in per_symbol.values()
     )
     broad = improved_symbols >= max(1, math.ceil(len(per_symbol) * 0.60))
-    positive = improvement > 0 and broad and len(validation) >= 30
+    positive = (
+        improvement > 0
+        and improvement_vs_base > 0
+        and broad
+        and len(validation) >= 30
+    )
     return {
         "model_version": MODEL_VERSION,
         "research_type": "chronological pooled technical probability diagnostic",
@@ -249,6 +258,7 @@ def evaluate_panel_regression(
         "development": development_metrics,
         "validation": validation_metrics,
         "validation_brier_improvement_vs_fixed_vote_pct": round(improvement, 2),
+        "validation_brier_improvement_vs_base_pct": round(improvement_vs_base, 2),
         "per_symbol_validation": per_symbol,
         "symbols_improved": improved_symbols,
         "promotion_status": (

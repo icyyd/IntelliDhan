@@ -146,6 +146,7 @@ def build_research_consensus(
     critical_blockers = []
     if technical["stance"] == "UNAVAILABLE":
         critical_blockers.append("Completed-bar technical evidence is unavailable.")
+    critical_blockers.extend(technical["blockers"])
     if fundamental["stance"] == "UNAVAILABLE" or len(fundamental["evidence"]) < 3:
         critical_blockers.append("Business-quality coverage is insufficient for a combined posture.")
 
@@ -155,18 +156,16 @@ def build_research_consensus(
         summary = "Wait for adequate price and filed business evidence."
     elif (
         technical["stance"] == "BULLISH"
-        and fundamental["stance"] in {"BULLISH", "NEUTRAL"}
+        and fundamental["stance"] == "BULLISH"
         and not bearish
-        and len(bullish) >= 2
     ):
         posture = "BUY"
         confidence = "MODERATE"
         summary = "Price and business evidence agree constructively; confirm the stated levels."
     elif (
         technical["stance"] == "BEARISH"
-        and fundamental["stance"] in {"BEARISH", "NEUTRAL"}
+        and fundamental["stance"] == "BEARISH"
         and not bullish
-        and len(bearish) >= 2
     ):
         posture = "SELL"
         confidence = "MODERATE"
@@ -199,4 +198,3 @@ def build_research_consensus(
             "size a position, or change execution mode."
         ),
     }
-

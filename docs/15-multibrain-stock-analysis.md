@@ -143,11 +143,10 @@ The effectiveness test is intentionally narrower than the live dossier:
 - non-overlapping 21- and 63-session outcomes;
 - regularization fit only on the training history;
 - scaler parameters fit only on the training history;
-- probability calibration fit only on prior predictions/outcomes;
 - benchmark against the expanding unconditional base rate and the existing
   fixed vote;
 - report Brier score, log loss, directional accuracy, calibration error,
-  sample count, and bootstrap uncertainty where practical;
+  and sample count;
 - record every tried model/threshold in the report to expose selection risk;
 - no per-ticker tuning, no present-day fundamentals, no current sentiment, no
   overlapping-label leakage, and no claim of profitability from classification

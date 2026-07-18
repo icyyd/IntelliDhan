@@ -17,6 +17,24 @@
   social snapshots are explicitly excluded until point-in-time archives exist.
 - No merge or deployment is authorized by this checkpoint.
 
+### Independent review corrections
+
+- Attention/news/social can no longer create a directional posture: `BUY` and
+  `SELL` require matching technical and filed-business stances.
+- An unvalidated forward context is now a critical blocker, so it cannot appear
+  as a prominent directional posture.
+- Regression promotion now requires held-later Brier improvement over both the
+  expanding unconditional base rate and the fixed-vote benchmark.
+- Alpha company overviews must match the requested symbol; SEC identity remains
+  authoritative. Finnhub rows must match the symbol and fall inside a bounded,
+  nonfuture seven-day window.
+- Homepage company submissions resolve through SEC search, with direct-ticker
+  fallback plus combobox labeling, expanded state, Arrow navigation, Enter,
+  and Escape behavior.
+- Re-review verification baseline: `240 passed, 5 deselected`; Ruff and inline
+  script parsing clean; `git diff --check` clean. Live SEC-backed “Apple” search
+  resolved to AAPL, keyboard behavior passed, and the browser console was clean.
+
 ### Backend checkpoint `multibrain-research-v1`
 
 - Added `research_consensus.py`: isolated price/risk, business-quality, and

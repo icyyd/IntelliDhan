@@ -3,12 +3,17 @@
 from intellidhan_gateway.research_consensus import build_research_consensus
 
 
-def analysis(net_vote=4, validation="OUTPERFORMS_BASE", volatility=25):
+def analysis(
+    net_vote=4,
+    validation="OUTPERFORMS_BASE",
+    volatility=25,
+    context="VALIDATED_CONTEXT",
+):
     return {
         "consensus": {"label": "STRONG_UPTREND", "net_vote": net_vote},
         "risk": {"realized_volatility_20d_annualized_pct": volatility},
         "forecast": {
-            "strategy_context_status": "VALIDATED_CONTEXT",
+            "strategy_context_status": context,
             "horizons": {
                 "one_month": {"walk_forward_validation": {"status": validation}}
             },
@@ -54,6 +59,25 @@ def test_social_enthusiasm_cannot_override_weak_price_and_business():
     assert result["agreement"]["conflict"] is True
 
 
+def test_attention_cannot_turn_neutral_business_evidence_into_buy_or_sell():
+    bullish_attention = build_research_consensus(
+        analysis(net_vote=4), intelligence(fundamental_score=50, news=100, social=100)
+    )
+    bearish_attention = build_research_consensus(
+        analysis(net_vote=-4), intelligence(fundamental_score=50, news=0, social=0)
+    )
+    assert bullish_attention["posture"] == "HOLD"
+    assert bearish_attention["posture"] == "HOLD"
+
+
+def test_unvalidated_forward_context_blocks_directional_posture():
+    result = build_research_consensus(
+        analysis(context="UNCONFIRMED"), intelligence()
+    )
+    assert result["posture"] == "INSUFFICIENT_EVIDENCE"
+    assert any("base-rate benchmark" in item for item in result["critical_blockers"])
+
+
 def test_missing_filed_business_evidence_fails_closed():
     result = build_research_consensus(analysis(), intelligence(coverage=1))
     assert result["posture"] == "INSUFFICIENT_EVIDENCE"
@@ -64,4 +88,3 @@ def test_high_volatility_reduces_technical_conviction():
     normal = build_research_consensus(analysis(net_vote=2), intelligence())
     stressed = build_research_consensus(analysis(net_vote=2, volatility=100), intelligence())
     assert normal["specialists"][0]["score"] > stressed["specialists"][0]["score"]
-
