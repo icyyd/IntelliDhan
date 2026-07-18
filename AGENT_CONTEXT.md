@@ -1,5 +1,22 @@
 # IntelliDhan Agent Context
 
+## 2026-07-18 — Multi-brain stock analysis work in progress
+
+- Active isolated branch/worktree: `codex/multibrain-stock-analysis` at
+  `/Users/dhanvin/Documents/IntelliDhan-multibrain`; the shared checkout remains
+  untouched because it contains other agents' work.
+- New implementation contract:
+  `docs/15-multibrain-stock-analysis.md`.
+- The daily-brief pattern is being adapted as three evidence-isolated specialist
+  passes plus a deterministic reconciler. AI remains analysis-only and cannot
+  rank, create an intent, or touch execution.
+- Planned product work: dynamic SEC-backed ticker/company search, richer company
+  dossier, auditable research posture, homepage welcome/search/key levels, and
+  chronological no-lookahead validation.
+- Historical testing must use completed adjusted bars only. Current SEC/news/
+  social snapshots are explicitly excluded until point-in-time archives exist.
+- No merge or deployment is authorized by this checkpoint.
+
 **Last updated:** 2026-07-18
 
 This is the concise handoff file for agents working on IntelliDhan. It
