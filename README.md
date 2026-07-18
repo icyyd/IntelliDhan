@@ -86,6 +86,7 @@ For broker automation, trust the repository, authenticate the declared MCP with
 | 25 | [Signal Terminal Redesign](docs/25-signal-terminal-redesign.md) | Agent-readable Today hierarchy, multi-feed rank contract, rich alerts, strategy evidence boundaries, and rollout plan |
 | 26 | [UI Decluttering Pass](docs/26-ui-declutter-pass.md) | Reduced Today hierarchy, removed duplicate panels, and progressive-disclosure contract |
 | 27 | [Codex + Robinhood Execution](docs/27-codex-robinhood-execution.md) | Codex-only claim contract, official MCP setup, decommission migration, and fail-closed execution loop |
+| 28 | [Platform Safety &amp; Data Integrity](docs/28-platform-safety-and-data-integrity.md) | Active token, research-isolation, persistence, no-lookahead, GitOps, and deployment controls |
 
 ## Core Product Tenets
 

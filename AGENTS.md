@@ -1,8 +1,10 @@
 # IntelliDhan Codex + Robinhood Agent Contract
 
 OpenAI Codex is the only active execution agent. Read
-`docs/27-codex-robinhood-execution.md` in full before changing or operating
-automation, intent, risk, broker, or receipt code.
+`docs/27-codex-robinhood-execution.md` and
+`docs/28-platform-safety-and-data-integrity.md` in full before changing or
+operating automation, intent, risk, broker, research-ranking, authentication,
+data-integrity, or receipt code.
 
 ## Robinhood Trading MCP
 
@@ -48,8 +50,6 @@ intent creation and execution.
 
 ## GitOps
 
-Treat the repository as shared. Fetch and inspect collaborator changes before
-editing, use a `codex/*` feature branch, stage only in-scope files, run the full
-relevant suite, open a draft PR, and obtain independent review. Never merge,
-delete a branch, deploy, or change live execution mode without explicit user
-authorization.
+The complete shared-repository workflow and deployment gates are mandatory in
+doc 28. Never merge, delete a branch, deploy, or change live execution mode
+without explicit user authorization.

@@ -63,6 +63,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(loop, "autotrade", isolated)
     monkeypatch.delenv("AUTOTRADE_CONTROL_TOKEN", raising=False)
     monkeypatch.delenv("AUTOTRADE_AGENT_TOKEN", raising=False)
+    monkeypatch.delenv("AUTOTRADE_CODEX_AGENT_TOKEN", raising=False)
     return TestClient(app)
 
 
@@ -95,7 +96,7 @@ def test_agent_endpoints_503_when_token_unset(client):
 
 def test_status_endpoint_requires_owner_and_hides_secrets(client, monkeypatch):
     monkeypatch.setenv("AUTOTRADE_CONTROL_TOKEN", "ctrl-secret-value")
-    monkeypatch.setenv("AUTOTRADE_AGENT_TOKEN", "agent-secret-value")
+    monkeypatch.setenv("AUTOTRADE_CODEX_AGENT_TOKEN", "agent-secret-value")
     monkeypatch.setenv("INTELLIDHAN_OWNER_TOKEN", "owner-token-that-is-long-enough")
     assert client.get("/api/autotrade").status_code == 401
     r = client.get(
@@ -126,7 +127,7 @@ def test_control_endpoint_rejects_wrong_or_missing_token(client, monkeypatch):
 
 
 def test_agent_endpoint_requires_bearer_scheme(client, monkeypatch):
-    monkeypatch.setenv("AUTOTRADE_AGENT_TOKEN", "correct-agent-token")
+    monkeypatch.setenv("AUTOTRADE_CODEX_AGENT_TOKEN", "correct-agent-token")
     r = client.get("/api/autotrade/intents")
     assert r.status_code == 401  # no Authorization header
     r = client.get("/api/autotrade/intents",
@@ -138,11 +139,31 @@ def test_agent_endpoint_requires_bearer_scheme(client, monkeypatch):
     assert r.json()["contract_version"] == "1.1"
 
 
+def test_retired_agent_token_variable_cannot_authenticate(client, monkeypatch):
+    monkeypatch.setenv("AUTOTRADE_AGENT_TOKEN", "retired-token")
+    unavailable = client.get(
+        "/api/autotrade/intents",
+        headers={"Authorization": "Bearer retired-token"},
+    )
+    assert unavailable.status_code == 503
+    assert "AUTOTRADE_CODEX_AGENT_TOKEN" in unavailable.json()["detail"]
+
+    monkeypatch.setenv("AUTOTRADE_CODEX_AGENT_TOKEN", "new-codex-token")
+    assert client.get(
+        "/api/autotrade/intents",
+        headers={"Authorization": "Bearer retired-token"},
+    ).status_code == 401
+    assert client.get(
+        "/api/autotrade/intents",
+        headers={"Authorization": "Bearer new-codex-token"},
+    ).status_code == 200
+
+
 def test_control_token_does_not_grant_agent_access(client, monkeypatch):
     """The two token types must not be interchangeable, even if an operator
     accidentally reuses the same secret value for both env vars."""
     monkeypatch.setenv("AUTOTRADE_CONTROL_TOKEN", "shared-value")
-    monkeypatch.setenv("AUTOTRADE_AGENT_TOKEN", "different-value")
+    monkeypatch.setenv("AUTOTRADE_CODEX_AGENT_TOKEN", "different-value")
     r = client.get("/api/autotrade/intents", headers={"Authorization": "Bearer shared-value"})
     assert r.status_code == 401
     r = client.put("/api/autotrade/policy", json=live_policy("OFF"),
@@ -154,7 +175,7 @@ def test_control_token_does_not_grant_agent_access(client, monkeypatch):
 
 def test_supervised_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated):
     monkeypatch.setenv("AUTOTRADE_CONTROL_TOKEN", "ctrl")
-    monkeypatch.setenv("AUTOTRADE_AGENT_TOKEN", "agent")
+    monkeypatch.setenv("AUTOTRADE_CODEX_AGENT_TOKEN", "agent")
     ctrl = {CONTROL_HEADER: "ctrl"}
     agent = {"Authorization": "Bearer agent"}
 
@@ -175,12 +196,17 @@ def test_supervised_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
                     json={}, headers=agent)
     assert r.status_code == 422
-    assert "claim agent must be codex" in r.json()["detail"]
+    assert r.json()["detail"][0]["type"] == "missing"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
                     json={"agent": "retired-agent"}, headers=agent)
     assert r.status_code == 422
-    assert "claim agent must be codex" in r.json()["detail"]
+    assert r.json()["detail"][0]["type"] == "literal_error"
+
+    r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
+                    json={"agent": "codex", "unexpected": True}, headers=agent)
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["type"] == "extra_forbidden"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
                     json={"agent": "codex"}, headers=agent)
@@ -191,6 +217,22 @@ def test_supervised_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated
                           "average_price": 500.1, "filled_quantity": 10},
                     headers=agent)
     assert r.status_code == 200 and r.json()["status"] == "EXECUTED"
+
+
+def test_claim_openapi_requires_exact_codex_body(client):
+    schema = client.get("/openapi.json").json()
+    operation = schema["paths"]["/api/autotrade/intents/{intent_id}/claim"]["post"]
+    request_body = operation["requestBody"]
+    assert request_body["required"] is True
+    body_schema = request_body["content"]["application/json"]["schema"]
+    component_name = body_schema["$ref"].rsplit("/", 1)[-1]
+    component = schema["components"]["schemas"][component_name]
+    assert component["required"] == ["agent"]
+    assert component["additionalProperties"] is False
+    agent_schema = component["properties"]["agent"]
+    assert agent_schema.get("const") == "codex" or agent_schema.get("enum") == [
+        "codex"
+    ]
 
 
 def test_from_alert_endpoint_404_for_unknown_alert(client, monkeypatch):

@@ -42,7 +42,7 @@ for host configuration and OAuth behavior.
    `actionable: true`. A 503 may continue only for the existing, narrowly
    documented `PARTIAL` per-symbol case.
 2. Poll `GET /api/autotrade/intents?status=READY` with
-   `Authorization: Bearer $AUTOTRADE_AGENT_TOKEN`.
+   `Authorization: Bearer $AUTOTRADE_CODEX_AGENT_TOKEN`.
 3. Reconfirm the symbol is actionable; `WAITING`, `MARKET_CLOSED`, and
    `QUARANTINED` are hard blocks.
 4. Require effective mode `ARMED`, or an explicitly approved intent created in
@@ -78,20 +78,29 @@ for host configuration and OAuth behavior.
 
 The migration is deliberately fail-closed:
 
-1. Keep policy mode `OFF` during deployment.
-2. Rotate `AUTOTRADE_AGENT_TOKEN`. Do not give the replacement token to the
-   retired runner or reuse its previous token.
-3. Contract v1.1 accepts only the explicit `codex` claim identity. Missing or
-   different identities fail with 422.
-4. When a pre-Codex policy is loaded, IntelliDhan normalizes its agent to Codex,
-   disarms it, clears `armed_until`, increments the revision, and persists it.
+1. Keep policy mode `OFF` before, during, and after deployment.
+2. Create a new `AUTOTRADE_CODEX_AGENT_TOKEN`. The retired
+   `AUTOTRADE_AGENT_TOKEN` variable is not read by contract v1.1 and must be
+   removed from deployment configuration after rollback review. Never copy its
+   value into the new variable or give the replacement bearer to the retired
+   runner.
+3. Contract v1.1 requires a Pydantic-validated body containing only the literal
+   `codex` agent field. Missing, different, or extra fields fail with 422.
+4. When a policy without `contract_version: "1.1"` is loaded, IntelliDhan sets
+   the v1.1 version and Codex identity, disarms it, clears `armed_until`,
+   increments the revision, and persists it. This applies even when a legacy
+   arbitrary agent field already said `codex`.
 5. Existing claims owned by a different agent remain `CLAIMED` for broker-truth
    reconciliation but receive `cancel_requested` and `revoked_at`. Codex must not
    place them. Late receipts remain accepted so live exposure is not hidden.
-6. Authenticate the official Robinhood MCP in Codex and verify the dedicated
-   Agentic account plus current tool schemas.
-7. Validate the full loop in `SHADOW`, then review outcomes and risk limits.
-8. Use `SUPERVISED` only with explicit per-intent approval. `ARMED` requires a
+6. Deploy the reviewed commit from `main`, then verify `/api/liveness` and the
+   authenticated intent-list endpoint. Require contract `1.1`, effective mode
+   `OFF`, rejection of the retired bearer, and acceptance of only the newly
+   provisioned bearer. These checks are non-trading operations.
+7. Authenticate the official Robinhood MCP in Codex and verify the dedicated
+   Agentic account plus current tool schemas without placing an order.
+8. Validate the full loop in `SHADOW`, then review outcomes and risk limits.
+9. Use `SUPERVISED` only with explicit per-intent approval. `ARMED` requires a
    separate explicit user instruction after policy, account, tools, and shadow
    results are reviewed.
 

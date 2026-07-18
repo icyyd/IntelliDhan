@@ -9,6 +9,7 @@ from threading import Barrier
 
 import pytest
 
+from intellidhan_gateway.autotrade import AutomationMode, AutotradeManager
 from intellidhan_gateway.terminal_store import TerminalStore
 
 
@@ -22,6 +23,43 @@ def _clean_accounts(store: TerminalStore) -> None:
                         user_saved_screens, user_capital_limits,
                         user_preferences, user_sessions, users CASCADE"""
         )
+
+
+def _clean_autotrade_settings(store: TerminalStore) -> None:
+    with store._connection() as connection:
+        connection.execute(
+            "DELETE FROM runtime_settings WHERE setting_key IN (%s, %s)",
+            ("autotrade_policy", "autotrade_intents"),
+        )
+
+
+def test_postgres_pre_codex_policy_is_disarmed_and_versioned():
+    url = os.getenv("TEST_POSTGRES_URL")
+    if not url:
+        pytest.skip("TEST_POSTGRES_URL is not configured")
+
+    store = TerminalStore(url)
+    store.init_schema()
+    _clean_autotrade_settings(store)
+    try:
+        store.put_setting(
+            "autotrade_policy",
+            {
+                "mode": "ARMED",
+                "armed_until": "2099-01-01T00:00:00Z",
+                "agent": "codex",
+                "revision": 11,
+            },
+        )
+        manager = AutotradeManager(state_store=store)
+        assert manager.policy.mode == AutomationMode.OFF
+        assert manager.policy.contract_version == "1.1"
+        assert manager.policy.revision == 12
+        persisted = store.get_setting("autotrade_policy")
+        assert persisted["mode"] == "OFF"
+        assert persisted["contract_version"] == "1.1"
+    finally:
+        _clean_autotrade_settings(store)
 
 
 def test_postgres_account_transactions_locking_and_personal_state():

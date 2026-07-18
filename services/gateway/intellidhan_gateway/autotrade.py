@@ -72,6 +72,7 @@ class SettingsStore(Protocol):
 class AutotradePolicy(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    contract_version: Literal["1.1"] = "1.1"
     mode: AutomationMode = AutomationMode.OFF
     armed_until: datetime | None = None
     min_confidence: float = Field(default=0.75, ge=0.50, le=0.95)
@@ -171,7 +172,11 @@ class AutotradeManager:
         again under the new agent token.
         """
         clean = dict(payload or {})
-        if clean.get("agent") != EXECUTION_AGENT:
+        if (
+            clean.get("contract_version") != AUTOTRADE_CONTRACT_VERSION
+            or clean.get("agent") != EXECUTION_AGENT
+        ):
+            clean["contract_version"] = AUTOTRADE_CONTRACT_VERSION
             clean["agent"] = EXECUTION_AGENT
             clean["mode"] = AutomationMode.OFF.value
             clean["armed_until"] = None

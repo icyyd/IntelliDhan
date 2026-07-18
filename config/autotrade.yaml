@@ -1,4 +1,5 @@
 autotrade:
+  contract_version: "1.1"
   # OFF creates no execution intents. SHADOW records non-executable intents.
   # SUPERVISED requires approval per intent. ARMED is time-limited and lets
   # Codex claim eligible intents without per-order UI approval.

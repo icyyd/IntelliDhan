@@ -8,23 +8,41 @@
 - Active agent contract: `AGENTS.md` and
   `docs/27-codex-robinhood-execution.md`. The project-scoped, credential-free
   MCP declaration is `.codex/config.toml`.
-- Auto-trade contract v1.1 requires an explicit `{"agent":"codex"}` claim.
-  Missing or other identities fail closed. The default policy remains `OFF`.
-- Loading any pre-Codex policy normalizes it to Codex, disarms it, clears the
-  arming window, increments its revision, and persists the safe state.
+- Auto-trade contract v1.1 requires a new
+  `AUTOTRADE_CODEX_AGENT_TOKEN` bearer plus an exact
+  `{"agent":"codex"}` body. The retired variable is never read; missing,
+  different, or extra body fields fail closed. The default policy remains
+  `OFF`.
+- Loading any policy without contract version 1.1 normalizes it to Codex,
+  disarms it, clears the arming window, increments its revision, and persists
+  the safe state—even when a legacy policy's arbitrary agent label already
+  said `codex`. SQLite and PostgreSQL persistence paths are covered.
 - Existing non-Codex claims retain broker-receipt reconciliation but receive
   `cancel_requested` and `revoked_at`; they cannot be used for a new placement.
 - The retired contract moved to
   `docs/decommissioned/claude-robinhood-agent-contract.md`. Historical,
   read-only daily-brief provider labels remain isolated from execution.
-- Deployment cutover requires rotating `AUTOTRADE_AGENT_TOKEN`, authenticating
-  Codex to the official Robinhood MCP, and validating `SHADOW` before any
-  separately authorized supervised or armed use.
-- Verification baseline: 253 tests passed (5 deselected), Ruff passed, both
-  inline scripts parsed, project MCP TOML parsed, and `git diff --check` is
-  clean. A local isolated-state smoke test returned liveness 200, contract v1.1
-  with effective mode `OFF`, and 422 for a retired-agent claim. No Robinhood MCP
-  login or broker tool was invoked.
+- Deployment cutover requires creating a new
+  `AUTOTRADE_CODEX_AGENT_TOKEN` (the retired variable is ignored),
+  authenticating Codex to the official Robinhood MCP, and validating `SHADOW`
+  before any separately authorized supervised or armed use.
+- Active platform-wide safety rules that are unrelated to Claude were retained
+  in `docs/28-platform-safety-and-data-integrity.md`; the decommissioned file is
+  now historical only. `GO-LIVE.md` and `ARCHITECTURE.md` describe the existing
+  bridge and its gated cutover rather than calling it future or manual-only.
+- Initial independent review of commit `e8d8fef` found five blockers: a reusable
+  legacy bearer, incomplete persisted-policy migration, over-broad contract
+  archival, a loose claim schema, and stale architecture/go-live claims. The
+  follow-up hardening addresses each finding; clean re-review is still required
+  before merge.
+- Local verification baseline after hardening: 256 tests passed (6 deselected),
+  Ruff passed, both inline scripts parsed, project MCP TOML parsed, and
+  `git diff --check` is clean. An isolated-state smoke test returned liveness
+  200, rejected the retired bearer with 401, accepted the new bearer, reported
+  contract v1.1 with effective mode `OFF`, and returned 422 for a non-Codex
+  claim. The PostgreSQL migration test is included for CI.
+- Draft PR #13 tracks the branch:
+  https://github.com/icyyd/IntelliDhan/pull/13
 - No merge, deployment, secret rotation, MCP authentication, policy arming, or
   broker action is authorized by this checkpoint.
 

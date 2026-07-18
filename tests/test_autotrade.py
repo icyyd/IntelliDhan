@@ -8,6 +8,7 @@ import yaml
 
 from intellidhan_engine.calibration import CalibrationMap
 from intellidhan_gateway.autotrade import AutomationMode, AutotradeManager, IntentStatus
+from intellidhan_gateway.terminal_store import TerminalStore
 from intellidhan_schemas.signals import (
     Action,
     Alert,
@@ -290,7 +291,7 @@ def test_pre_codex_policy_is_disarmed_and_normalized(tmp_path):
         """autotrade:
   mode: ARMED
   armed_until: 2099-01-01T00:00:00Z
-  agent: retired-agent
+  agent: codex
   revision: 9
 """
     )
@@ -298,12 +299,41 @@ def test_pre_codex_policy_is_disarmed_and_normalized(tmp_path):
     manager = AutotradeManager(policy, tmp_path / "state.json")
 
     assert manager.policy.agent == "codex"
+    assert manager.policy.contract_version == "1.1"
     assert manager.policy.mode == AutomationMode.OFF
     assert manager.policy.armed_until is None
     assert manager.policy.revision == 10
     persisted = yaml.safe_load(policy.read_text())["autotrade"]
     assert persisted["agent"] == "codex"
+    assert persisted["contract_version"] == "1.1"
     assert persisted["mode"] == "OFF"
+
+
+def test_pre_codex_policy_in_settings_store_is_disarmed(tmp_path):
+    store = TerminalStore(tmp_path / "settings.sqlite3")
+    store.init_schema()
+    store.put_setting(
+        "autotrade_policy",
+        {
+            "mode": "ARMED",
+            "armed_until": "2099-01-01T00:00:00Z",
+            "agent": "codex",
+            "revision": 4,
+        },
+    )
+
+    manager = AutotradeManager(
+        tmp_path / "policy.yaml",
+        tmp_path / "state.json",
+        state_store=store,
+    )
+
+    assert manager.policy.mode == AutomationMode.OFF
+    assert manager.policy.contract_version == "1.1"
+    assert manager.policy.revision == 5
+    persisted = store.get_setting("autotrade_policy")
+    assert persisted["mode"] == "OFF"
+    assert persisted["contract_version"] == "1.1"
 
 
 def test_retired_agent_claim_is_revoked_but_keeps_receipt_path(

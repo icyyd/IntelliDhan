@@ -13,10 +13,12 @@ import time
 from contextlib import asynccontextmanager, suppress
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
-from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, ConfigDict
 
 from intellidhan_gateway.auth import (
     OWNER_COOKIE,
@@ -77,6 +79,12 @@ _DUMMY_PASSWORD_HASH = hash_password("not-a-real-account-password")
 WS_SESSION_RECHECK_SECONDS = 30.0
 
 
+class CodexClaimRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent: Literal["codex"]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
@@ -131,6 +139,10 @@ def _require_control(request: Request) -> None:
     if principal:
         raise HTTPException(status_code=403, detail="administrator access is required")
     _require_token(request, "AUTOTRADE_CONTROL_TOKEN", control=True)
+
+
+def _require_codex_agent(request: Request) -> None:
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
 
 
 def _require_personal(request: Request, *, roles: set[str] | None = None):
@@ -975,7 +987,7 @@ async def reject_autotrade_intent(
 
 @app.get("/api/autotrade/intents")
 async def list_autotrade_intents(request: Request, status: str | None = None):
-    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
     try:
         intents = loop.autotrade.list_intents(status)
     except ValueError as exc:
@@ -989,11 +1001,13 @@ async def list_autotrade_intents(request: Request, status: str | None = None):
 
 @app.post("/api/autotrade/intents/{intent_id}/claim")
 async def claim_autotrade_intent(
-    intent_id: str, request: Request, payload: dict = Body(default={})
+    intent_id: str,
+    request: Request,
+    payload: CodexClaimRequest = Body(...),
+    _agent_auth: None = Depends(_require_codex_agent),
 ):
-    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
     try:
-        return loop.autotrade.claim(intent_id, payload.get("agent", "")).model_dump(
+        return loop.autotrade.claim(intent_id, payload.agent).model_dump(
             mode="json"
         )
     except (ValueError, KeyError) as exc:
@@ -1004,7 +1018,7 @@ async def claim_autotrade_intent(
 async def record_autotrade_receipt(
     intent_id: str, request: Request, payload: dict = Body(...)
 ):
-    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
     try:
         return loop.autotrade.record_receipt(intent_id, payload).model_dump(mode="json")
     except (ValueError, KeyError) as exc:
