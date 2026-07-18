@@ -13,7 +13,7 @@ intellidhan/
 │   ├── behavior/            # Behavior plane: error detectors, intervention ladder, mental game
 │   ├── learning/            # Learning plane: trade log, paper executor, settlement, calibration
 │   ├── delivery/            # Delivery plane: outbox workers (WS/Telegram/push), briefings
-│   └── gateway/             # API gateway: FastAPI REST+WS, auth, order-staging confirm flow
+│   └── gateway/             # API gateway: REST+WS, auth, auto-trade policy/intents/receipts
 ├── web/                     # React app (Vite, TanStack, Zustand, TradingView/Lightweight charts)
 ├── config/                  # universe.yaml, strategies/, glossary.yaml, budgets — versioned data
 ├── fixtures/                # Golden sessions, hand-labeled profiles, indicator test vectors

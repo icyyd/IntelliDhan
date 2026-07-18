@@ -38,7 +38,10 @@
   still claimed every order required per-order confirmation. Docs 00, 13, and
   20 now accurately distinguish default `OFF`, non-executing `SHADOW`,
   per-intent `SUPERVISED`, and separately authorized, time-limited `ARMED` use.
-  A final clean re-review remains required before merge.
+  A wider follow-up sweep applied the same truth to the architecture, data
+  source, UI, roadmap, and enhancement-review docs; doc 27 is authoritative,
+  IntelliDhan holds no broker credentials/tools, and runtime MCP schemas are
+  never assumed. A final clean re-review remains required before merge.
 - Local verification baseline after hardening: 256 tests passed (6 deselected),
   Ruff passed, both inline scripts parsed, project MCP TOML parsed, and
   `git diff --check` is clean. An isolated-state smoke test returned liveness

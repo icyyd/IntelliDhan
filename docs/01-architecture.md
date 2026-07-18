@@ -148,7 +148,7 @@ events ─▶ L2-macro-context ────────────────�
 - **Replay/backtest harness**: same DAG + Signal plane fed from recorded `md.*` streams at accelerated clock; CI runs the 20 curated sessions; walk-forward backtests for new strategies (doc 08 §4 governance) run here too.
 
 ### ⑦ Experience Plane (doc 11)
-- **API Gateway** (FastAPI): REST for CRUD/history, WebSocket with topic-scoped subscriptions mirroring the bus (`state.composite.{symbol}`, `alert.*`, `discipline.state`, briefing channel). Auth (passkey/TOTP) + the order-staging confirm flow (G1) live here — the *only* write path to RH MCP, structurally.
+- **API Gateway** (FastAPI): REST for CRUD/history, WebSocket with topic-scoped subscriptions mirroring the bus (`state.composite.{symbol}`, `alert.*`, `discipline.state`, briefing channel). Auth plus the fail-closed auto-trade policy, intent, claim, and receipt contract live here. Robinhood credentials and MCP write tools do not: Codex owns the only active broker write path under doc 27.
 - **React app**: TanStack Query for REST, WS client hydrating Zustand stores per topic; all payload types generated from `shared-schemas`. Chart racks (TradingView Advanced + Lightweight), profile panes, pattern overlays, mental-game surfaces per doc 11.
 
 ## 3. Storage Model
@@ -202,7 +202,7 @@ intellidhan/
 │   ├── behavior/            # error detectors, intervention ladder, mental-game API
 │   ├── learning/            # trade log, paper executor, settlement, calibration, replay
 │   ├── delivery/            # outbox workers: ws, telegram, push; briefing generator
-│   └── gateway/             # FastAPI REST+WS, auth, RH order-staging confirm flow
+│   └── gateway/             # FastAPI REST+WS, auth, auto-trade intent/receipt contract
 ├── web/                     # React app (Vite, TanStack, Zustand, charts, design system)
 ├── config/                  # universe.yaml, strategies/, glossary.yaml, budgets
 ├── fixtures/                # golden sessions, labeled profiles, indicator test vectors
@@ -216,7 +216,7 @@ v1 deploys as **one Docker Compose host** (services are separate containers shar
 - **Determinism contract:** no service reads wall-clock or random directly; market clock + seeded IDs injected. Any recorded day replays to byte-identical alerts — this is CI's core assertion and the accuracy claim's foundation.
 - **Config as data:** universes, strategy defs, factor weights, glossary, budgets are versioned YAML in `config/`, hot-reloaded via a config service with schema validation; every alert records the config version that produced it (full auditability).
 - **Observability:** RED metrics per service + domain metrics (`signal_latency_seconds`, `alerts_emitted_total`, `veto_total{gate}`, `calibration_gap`, `delivery_lag_seconds`, `detector_fires_total{tag}`); one Grafana board per plane; ops alerts to owner Telegram.
-- **Security:** single-user auth at the gateway; secrets in env/keychain; Telegram chat-ID lock; RH write scope isolated to the gateway's confirm flow (G1) — no other service holds write capability; backups encrypted.
+- **Security:** account auth at the gateway; application secrets in the deployment environment; Telegram chat-ID lock. Robinhood credentials remain in the authenticated Codex host, and official-MCP write scope is isolated to the doc 27 execution loop and dedicated Agentic account—no IntelliDhan service holds broker credentials or tools. Backups are encrypted.
 - **Testing pyramid:** schema round-trip tests → analytics golden files (indicators vs TA-Lib, profiles vs hand labels) → strategy unit tests on fixture snapshots → full-session replay assertions → calibration regression checks → UI 5-second-rule + Lighthouse budgets.
 
 ## 8. Traceability Matrix (doc → component)
@@ -232,7 +232,7 @@ v1 deploys as **one Docker Compose host** (services are separate containers shar
 | 10 trade log | Learning plane: log writer, paper executor, settlement, views API |
 | 11 UI/UX | Web app, design system, WS topic map |
 | 12 briefing | Briefing generator, fact-binding composer, scheduler |
-| 13 guardrails | Gateway confirm flow, veto wall, kill switches, DQ sentinel, linter |
+| 13 guardrails | Gateway policy/intent controls, Codex execution loop, veto wall, kill switches, DQ sentinel, linter |
 | 15 technical playbook | L1 patterns/candles/levels nodes, stage model, pressure score |
 | 16 market profile | Profile builder state machine, auction vetoes, profile pane API |
 | 17 psychology | Behavior plane end-to-end, copy linter rules, mental-game store |
