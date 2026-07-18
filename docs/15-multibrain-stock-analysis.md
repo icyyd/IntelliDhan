@@ -42,12 +42,24 @@ It records agreement, conflicts, source coverage, blockers, and the exact rule
 version. It cannot rank the configured universe, create an execution intent, or
 change auto-trade state.
 
-An optional LLM explanation may later restate this closed evidence packet. If
-enabled, each specialist call must use the same immutable packet, strict
-Structured Outputs, evidence IDs, no browsing, no invented values, and no
-visibility into the other calls. The server remains the reconciler. This follows
-OpenAI's current guidance to provide relevant context, clear outcome-level
-instructions, structured output, and evals before prompt iteration.
+An optional Claude review is implemented after deterministic reconciliation.
+Claude receives one bounded, immutable public-research packet with stable
+evidence IDs. It uses Anthropic's JSON-schema structured output, low effort, no
+tools, no browsing, no MCP servers, and no automation state. Claude may say the
+packet supports, challenges, or gives mixed support to the posture, surface
+risks, and ask diligence questions. It cannot change the three specialist
+scores, deterministic posture, universe rank, sizing, intent state, or execution
+mode. Missing configuration, timeout, refusal, truncation, malformed output, or
+an invented evidence ID visibly disables only the Claude review.
+
+The default is the current `claude-sonnet-5` API ID and can be pinned with
+`CLAUDE_MULTIBRAIN_MODEL`. The server reads `ANTHROPIC_API_KEY`; never paste the
+key into the web app, a prompt, repository file, Claude Code, or Robinhood MCP.
+Responses are cached against the packet hash for 15 minutes to bound latency and
+cost. See Anthropic's official [Messages API](https://platform.claude.com/docs/en/api/messages),
+[structured output](https://platform.claude.com/docs/en/build-with-claude/structured-outputs),
+and [model ID](https://platform.claude.com/docs/en/about-claude/models/overview)
+documentation.
 
 ## Manager-style evidence model
 

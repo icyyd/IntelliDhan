@@ -48,6 +48,13 @@ Read-only ingestion of old multi-brain daily-brief artifacts that happen to
 carry a Claude label is not a broker integration and must remain isolated from
 intent creation and execution.
 
+The Claude API is permitted only for server-side, research-only multi-brain
+review under doc 15. `ANTHROPIC_API_KEY` never enters the browser, Claude Code,
+Codex prompts, Robinhood MCP, execution intents, or receipts. Claude receives a
+bounded public-research packet with no tools or MCP servers; its structured
+review cannot alter deterministic specialists, posture, rank, sizing, policy,
+or execution. A Claude API key is never a Robinhood execution credential.
+
 ## GitOps
 
 The complete shared-repository workflow and deployment gates are mandatory in

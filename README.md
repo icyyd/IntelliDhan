@@ -2,9 +2,9 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-07-18 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** Codex-only Robinhood execution contract v1.1 plus
-commit-level README maintenance enforcement; former Claude execution contract
-decommissioned and archived
+**Last system pass:** Codex-only Robinhood execution contract v1.1, isolated
+Claude multi-brain research review, and commit-level README maintenance
+enforcement; former Claude execution contract decommissioned and archived
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -35,6 +35,12 @@ must not be presented as implemented.
 - Optional, account-only OpenAI thesis synthesis from server evidence with
   a closed evidence-selection schema and server-rendered narrative; it cannot
   invent prose, alter rank, or create an execution intent.
+- Optional, signed-in Claude review of the immutable multi-brain dossier packet.
+  Claude uses server-side structured output without tools, browsing, MCP, or
+  automation state. It can surface conflicts, risks, and diligence questions,
+  but cannot change deterministic specialist scores, posture, rank, sizing, or
+  execution. Configure only the deployment secret `ANTHROPIC_API_KEY`; never
+  paste the key into the browser or repository.
 - Optional ADMIN/TRADER dispatch of a server-verified candidate to a published
   ChatGPT Workspace Agent for deeper research. IntelliDhan requests analysis
   only; production requires a dedicated agent with no broker tools and no
@@ -95,6 +101,7 @@ requires the same-commit README update.
 | 13 | [Risk, Guardrails & Compliance](docs/13-risk-and-compliance.md) | Capital protection rules, kill switches, disclaimers, data licensing |
 | 14 | [Roadmap & Milestones](docs/14-roadmap.md) | Phased build plan from MVP to full platform |
 | 15 | [Technical Playbook](docs/15-technical-playbook.md) | Price action (4 stages, M.A.E., candlestick reading), chart-pattern library, MACD sheet, tape proxies |
+| 15a | [Multi-Brain Stock Analysis](docs/15-multibrain-stock-analysis.md) | Deterministic specialist reconciliation plus isolated, advisory Claude review contract |
 | 16 | [Market Profile Layer](docs/16-market-profile.md) | Dalton auction theory: value areas, open types, day types, failed auctions, p/b shape vetoes |
 | 17 | [Trader Psychology Layer](docs/17-trader-psychology.md) | Douglas probabilistic voice + consistency framework; Tendler mental-game toolkit & error detection |
 | 18 | [Enhancement Review](docs/18-enhancement-review.md) | Post-implementation audit: research/production parity, risk-state wiring, evidence vocabulary, UX direction — living document, agent-readable implementation brief |

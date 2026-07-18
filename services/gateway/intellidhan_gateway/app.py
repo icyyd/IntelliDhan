@@ -41,6 +41,7 @@ from intellidhan_gateway.auth import (
 )
 from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisService
 from intellidhan_gateway.autotrade import AUTOTRADE_CONTRACT_VERSION
+from intellidhan_gateway.claude_research import ClaudeResearchReviewer
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.daily_brief import DailyBriefService
 from intellidhan_gateway.live import LiveLoop
@@ -64,6 +65,7 @@ discovery = DiscoveryService()
 daily_brief_service = DailyBriefService()
 research_feed_service = ResearchFeedService()
 ai_thesis_service = OpenAIThesisService()
+claude_research_reviewer = ClaudeResearchReviewer()
 workspace_agent_service = WorkspaceAgentTriggerService()
 rate_limiter = RateLimiter()
 
@@ -792,7 +794,23 @@ async def stock_dossier(
     research_pillars = intelligence.get("pillars", {}) if intelligence else {}
     filings = intelligence.get("filings", {}) if intelligence else {}
     if intelligence and intelligence.get("status") != "UNAVAILABLE":
-        intelligence["multi_brain"] = build_research_consensus(analysis, intelligence)
+        multi_brain = build_research_consensus(analysis, intelligence)
+        try:
+            multi_brain["claude_review"] = await asyncio.wait_for(
+                claude_research_reviewer.review(
+                    normalized,
+                    analysis,
+                    intelligence,
+                    multi_brain,
+                ),
+                timeout=25,
+            )
+        except Exception:
+            multi_brain["claude_review"] = claude_research_reviewer.status(
+                "UNAVAILABLE",
+                "Claude research review is temporarily unavailable; deterministic research is unchanged.",
+            )
+        intelligence["multi_brain"] = multi_brain
     company = intelligence.get("company", {}) if intelligence else {}
     return {
         "security": loop.store.get_security(normalized) or {

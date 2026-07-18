@@ -38,7 +38,9 @@ def test_active_robinhood_surfaces_have_no_retired_agent_identity():
         "web/index.html",
     ]
     for relative in runtime_paths:
-        assert "claude" not in (ROOT / relative).read_text().lower()
+        text = (ROOT / relative).read_text().lower()
+        assert '{"agent":"claude"}' not in text
+        assert "autotrade_claude" not in text
 
 
 def test_retired_contract_is_archived_not_active():
@@ -57,6 +59,7 @@ def test_agent_entrypoint_requires_codex_claim_and_safe_modes():
     assert "`SHADOW` is the safe validation path" in text
     assert "dedicated Robinhood Agentic account" in text
     assert "Never guess tool names or fields" in text
+    assert "Claude API is permitted only for server-side, research-only" in text
 
 
 def test_readme_maintenance_documentation_contract_is_present():

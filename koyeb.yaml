@@ -13,6 +13,8 @@
 #   AUTOTRADE_CONTROL_TOKEN # required only for agent/operator control endpoints
 #   AUTOTRADE_CODEX_AGENT_TOKEN # new Codex-only claim/receipt secret; do not reuse retired token
 #   OPENAI_API_KEY          # optional — in-app, closed-schema AI thesis
+#   ANTHROPIC_API_KEY       # optional — server-only Claude multi-brain research review
+#   CLAUDE_MULTIBRAIN_MODEL # optional — defaults to claude-sonnet-5
 #   INTELLIDHAN_SEC_USER_AGENT # required for SEC filing context; include contact email
 #   ALPHA_VANTAGE_API_KEY   # optional — current ticker news/sentiment context
 #   FINNHUB_API_KEY         # optional — capped social-attention context

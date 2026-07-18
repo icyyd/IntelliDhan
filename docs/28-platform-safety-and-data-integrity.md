@@ -16,6 +16,9 @@ The Codex bearer and operator control tokens are independent secrets:
   shared with a retired runner.
 - `AUTOTRADE_CONTROL_TOKEN` authenticates operator policy, disarm, intent
   creation, approval, and rejection endpoints when an ADMIN session is not used.
+- `ANTHROPIC_API_KEY` is an optional server-only research credential. It may
+  call Claude only with the bounded multi-brain evidence packet in doc 15 and
+  never authenticates an agent, broker action, intent, receipt, or MCP server.
 - The browser uses a separate HttpOnly account session and never receives either
   automation token.
 
@@ -44,6 +47,11 @@ bearer is the credential boundary and the literal claim body is defense in depth
   return bounded research labels. It cannot change deterministic rank, create an
   intent, or invent evidence. Require a complete universe scan and exact
   evidence-ID matches; fail closed on any mismatch.
+- Claude is an optional independent review layer over the deterministic
+  multi-brain packet. It has no tools, browsing, MCP connection, or visibility
+  into automation state; it cannot modify the reconciled posture or any rank.
+  Provider failure or a citation outside the supplied evidence IDs leaves the
+  deterministic dossier unchanged and visibly marks the review unavailable.
 - A ChatGPT Workspace Agent research dispatch must use a dedicated no-broker,
   no-general-write agent. Its output cannot rank, signal, claim, approve, or
   execute.

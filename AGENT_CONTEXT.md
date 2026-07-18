@@ -2,6 +2,17 @@
 
 ## 2026-07-18 — Codex becomes the sole Robinhood execution agent
 
+- Claude is retained as an optional, server-side multi-brain research reviewer,
+  not an execution agent. `ANTHROPIC_API_KEY` enables a structured-output review
+  of the signed-in dossier's bounded evidence packet with no tools, browsing,
+  MCP servers, broker data, or automation state. Claude cannot change the
+  deterministic specialists, posture, rank, sizing, or execution; failures
+  leave deterministic research intact. No API key is stored in the repository.
+- Claude-review verification covers strict structured output, bounded evidence
+  IDs, provider request shape, no tools or MCP servers, cache behavior, missing
+  configuration, malformed output, invented citations, truncation, and
+  endpoint-level failure isolation. The full local baseline is 284 tests passed
+  (6 deselected); Ruff, both inline browser scripts, and diff checks pass.
 - Repository maintenance is now explicit and tested: every system-changing pass
   must update `README.md` in the same commit, including its last-system-pass
   marker and affected capability, setup, deployment, safety, and document-index

@@ -128,6 +128,12 @@ The former contract is retained only at
 artifacts may still contain historical provider labels; that read-only analysis
 path has no claim, receipt, credential, or broker authority.
 
+Claude may remain active as the optional server-side research reviewer defined
+in doc 15. That API path receives only a bounded public-research packet, declares
+no tools or MCP servers, and cannot read or mutate auto-trade state. Its
+`ANTHROPIC_API_KEY` is unrelated to the retired execution contract and never
+grants Robinhood authority.
+
 Restoring another execution agent is not a config flip. It requires a new
 versioned contract, identity validation, rotated credentials, explicit migration
 of in-flight claims, regression tests, shadow validation, independent review,
