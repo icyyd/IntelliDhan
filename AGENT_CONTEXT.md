@@ -59,15 +59,18 @@
   issues and approved the change. The reviewer confirmed the complete active
   documentation set has no remaining authoritative hard-coded Robinhood tool or
   IntelliDhan-held MCP credential/write/poller claim.
-- Local verification baseline after hardening: 256 tests passed (6 deselected),
-  Ruff passed, both inline scripts parsed, project MCP TOML parsed, and
-  `git diff --check` is clean. An isolated-state smoke test returned liveness
-  200, rejected the retired bearer with 401, accepted the new bearer, reported
+- Local verification baseline after README-policy hardening: 277 tests passed
+  (6 deselected), including 25 focused contract/policy tests. Ruff passed, both
+  inline scripts parsed, project MCP TOML parsed, and `git diff --check` is
+  clean. Independent review of exact system head `de1a57c` found no actionable
+  README-enforcement, Codex-cutover, security, or documentation issue. An
+  isolated-state smoke test returned liveness 200, rejected the retired bearer
+  with 401, accepted the new bearer, reported
   contract v1.1 with effective mode `OFF`, and returned 422 for a non-Codex
   claim. The PostgreSQL migration test is included for CI.
 - Draft PR #13 tracks the branch:
   https://github.com/icyyd/IntelliDhan/pull/13
-- GitHub CI at independently reviewed head `129679f` is green: `test` and
+- GitHub CI at independently reviewed system head `de1a57c` is green: `test` and
   `account-postgres` both passed. The PR is mergeable but remains draft and
   unmerged pending explicit user confirmation.
 - No merge, deployment, secret rotation, MCP authentication, policy arming, or
