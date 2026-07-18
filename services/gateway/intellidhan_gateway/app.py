@@ -11,6 +11,7 @@ import os
 import secrets
 import time
 from contextlib import asynccontextmanager, suppress
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
@@ -40,6 +41,7 @@ from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisServi
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.daily_brief import DailyBriefService
 from intellidhan_gateway.live import LiveLoop
+from intellidhan_gateway.research_feeds import ResearchFeedService
 from intellidhan_gateway.stock_analysis import StockAnalysisService
 from intellidhan_gateway.workspace_agent import (
     WorkspaceAgentTriggerService,
@@ -53,6 +55,7 @@ loop = LiveLoop()
 stock_analyzer = StockAnalysisService()
 discovery = DiscoveryService()
 daily_brief_service = DailyBriefService()
+research_feed_service = ResearchFeedService()
 ai_thesis_service = OpenAIThesisService()
 workspace_agent_service = WorkspaceAgentTriggerService()
 rate_limiter = RateLimiter()
@@ -404,6 +407,121 @@ async def daily_brief(request: Request):
     return await daily_brief_service.get(loop.store)
 
 
+async def _focus_quote(symbol: str) -> dict:
+    try:
+        quote = await asyncio.wait_for(discovery.provider.get_quote(symbol), timeout=10)
+        return {
+            "symbol": symbol,
+            "price": quote.last,
+            "as_of": None,
+            "observed_at": quote.ts.isoformat(),
+            "source": quote.source,
+            "status": "INDICATIVE",
+            "latency": "UNVERIFIED",
+        }
+    except Exception:
+        live_symbol = loop.snapshot().get("symbols", {}).get(symbol, {})
+        last = live_symbol.get("last")
+        return {
+            "symbol": symbol,
+            "price": last,
+            "as_of": None,
+            "observed_at": loop.last_poll.isoformat() if loop.last_poll else None,
+            "source": "IntelliDhan last-known" if last is not None else None,
+            "status": "STALE" if last is not None else "UNAVAILABLE",
+            "reason": "The benchmark quote feed could not be refreshed.",
+        }
+
+
+@app.get("/api/focus")
+async def market_focus(request: Request, refresh: bool = Query(False)):
+    """Current benchmark pulse plus three deterministic research candidates."""
+    _require_personal(request)
+    rate_limiter.check(_client_key(request, "focus"), limit=12, window_seconds=60)
+    try:
+        scan, anchors = await asyncio.gather(
+            asyncio.wait_for(discovery.universe_scan(refresh=refresh), timeout=45),
+            asyncio.gather(*(_focus_quote(symbol) for symbol in ("SPX", "SPY", "QQQ"))),
+        )
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="focus scan timed out") from exc
+    rows = list(scan.get("rows", []))
+    eligible = [
+        row
+        for row in rows
+        if row.get("symbol") not in {"SPX", "SPY", "QQQ"}
+        and row.get("best_play", {}).get("eligible") is True
+    ]
+    fallbacks = [
+        row
+        for row in rows
+        if row.get("symbol") not in {"SPX", "SPY", "QQQ"} and row not in eligible
+    ]
+    complete = scan.get("complete") is True
+    # A failed constituent can change cross-sectional order. Never turn a
+    # partial configured-universe scan into a decision rank.
+    focus = (eligible + fallbacks)[:3] if complete else []
+    curated = (eligible + fallbacks)[:8] if complete else []
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "completed_session": scan.get("completed_session"),
+        "complete": complete,
+        "errors": scan.get("errors", {}),
+        "anchors": anchors,
+        "focus": focus,
+        "curated_watchlist": curated,
+        "ranking": "smart-play-v1",
+        "ranking_scope": "configured-live universe only",
+        "ai_policy": (
+            "OpenAI may review supplied evidence after an explicit account action; "
+            "it cannot change rank or create a trade."
+        ),
+    }
+
+
+@app.get("/api/intelligence/{symbol}")
+async def research_intelligence(
+    request: Request,
+    symbol: str,
+    refresh: bool = Query(False),
+):
+    """Multi-source research rank for one configured-universe symbol."""
+    _require_personal(request)
+    rate_limiter.check(_client_key(request, "intelligence"), limit=12, window_seconds=60)
+    normalized = stock_analyzer.normalize_symbol(symbol)
+    try:
+        return await _configured_research_intelligence(normalized, refresh=refresh)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="research feeds timed out") from exc
+
+
+async def _configured_research_intelligence(
+    normalized: str,
+    *,
+    refresh: bool = False,
+) -> dict:
+    """Enrich one configured-universe row without forcing another scan."""
+    # /api/focus owns technical-universe refresh. Reuse that cached snapshot so
+    # one UI refresh does not fan out four full universe scans.
+    scan = await asyncio.wait_for(discovery.universe_scan(refresh=False), timeout=45)
+    row = next((item for item in scan.get("rows", []) if item["symbol"] == normalized), None)
+    if row is None:
+        raise LookupError(
+            f"{normalized} is not in the configured research universe; use Analyze instead"
+        )
+    result = await asyncio.wait_for(
+        research_feed_service.analyze(normalized, row, refresh=refresh),
+        timeout=30,
+    )
+    result["universe_scan_complete"] = scan.get("complete") is True
+    result["universe_errors"] = scan.get("errors", {})
+    return result
+
+
 @app.get("/api/analyze/{symbol}")
 async def analyze_stock(
     request: Request,
@@ -584,16 +702,36 @@ async def stock_dossier(
     cost_bps: float = Query(10.0, ge=0, le=100),
 ):
     rate_limiter.check(_client_key(request, "dossier"), limit=30, window_seconds=60)
+    principal = request_principal(request, loop.store)
+
+    async def optional_intelligence(normalized: str) -> dict | None:
+        if principal is None:
+            return None
+        try:
+            return await _configured_research_intelligence(normalized)
+        except LookupError:
+            return None
+        except Exception:
+            return {
+                "symbol": normalized,
+                "status": "UNAVAILABLE",
+                "reason": "Current research enrichment could not be loaded.",
+            }
+
     try:
-        analysis = await asyncio.wait_for(
-            stock_analyzer.analyze(
-                symbol,
-                years=years,
-                risk_budget=risk_budget,
-                include_backtest=include_backtest,
-                cost_bps=cost_bps,
+        normalized = stock_analyzer.normalize_symbol(symbol)
+        analysis, intelligence = await asyncio.gather(
+            asyncio.wait_for(
+                stock_analyzer.analyze(
+                    normalized,
+                    years=years,
+                    risk_budget=risk_budget,
+                    include_backtest=include_backtest,
+                    cost_bps=cost_bps,
+                ),
+                timeout=30,
             ),
-            timeout=30,
+            optional_intelligence(normalized),
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -603,27 +741,37 @@ async def stock_dossier(
         raise HTTPException(status_code=504, detail="stock analysis provider timed out") from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail="stock analysis provider failed") from exc
-    principal = request_principal(request, loop.store)
     if principal and principal.legacy:
-        watchlists = loop.store.watchlists_for_symbol(symbol)
+        watchlists = loop.store.watchlists_for_symbol(normalized)
     elif principal:
-        watchlists = loop.store.user_watchlists_for_symbol(principal.user_id, symbol)
+        watchlists = loop.store.user_watchlists_for_symbol(principal.user_id, normalized)
     else:
         watchlists = []
+    research_pillars = intelligence.get("pillars", {}) if intelligence else {}
+    filings = intelligence.get("filings", {}) if intelligence else {}
     return {
-        "security": loop.store.get_security(symbol) or {
-            "symbol": symbol.upper(),
-            "name": symbol.upper(),
+        "security": loop.store.get_security(normalized) or {
+            "symbol": normalized,
+            "name": normalized,
             "source": "on-demand",
         },
         "watchlists": watchlists,
         "analysis": analysis,
+        "intelligence": intelligence,
         "coverage": {
             "technicals": "AVAILABLE",
             "forward_outlook": "AVAILABLE",
-            "fundamentals": "NOT_CONNECTED",
+            "fundamentals": research_pillars.get("fundamentals", {}).get(
+                "status", "NOT_CONNECTED"
+            ),
             "estimates": "NOT_CONNECTED",
-            "events": "NOT_CONNECTED",
+            "events": (
+                "FILING_CONTEXT_AVAILABLE"
+                if filings.get("items")
+                else "NOT_CONNECTED"
+            ),
+            "news": research_pillars.get("news", {}).get("status", "NOT_CONNECTED"),
+            "social": research_pillars.get("social", {}).get("status", "NOT_CONNECTED"),
         },
     }
 

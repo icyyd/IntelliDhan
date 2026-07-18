@@ -4,6 +4,12 @@ Claude is the primary execution agent. Robinhood MCP authentication stays in
 Claude; IntelliDhan never receives Robinhood credentials, account numbers, or
 MCP tokens.
 
+After reading this contract, read `AGENT_CONTEXT.md` for the current branch,
+pull-request, architecture, evidence, validation, and handoff state. Keep that
+summary current when a material implementation decision, dependency, test
+result, or next step changes. Never place credentials, tokens, account details,
+or personal data in the context file.
+
 ## Auto-trade boundary
 
 IntelliDhan owns signal eligibility, evidence state, risk caps, allowlists,

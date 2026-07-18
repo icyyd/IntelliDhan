@@ -1,0 +1,202 @@
+# IntelliDhan Agent Context
+
+**Last updated:** 2026-07-17
+
+This is the concise handoff file for agents working on IntelliDhan. It
+summarizes current implementation state and does not replace `CLAUDE.md` or the
+detailed documents under `docs/`.
+
+## 1. Git and review state
+
+- Feature branch: `codex/signal-terminal-redesign`
+- Current implementation commit before this context update: `5696a22`
+- Draft pull request: [#9 — Redesign the signal terminal](https://github.com/icyyd/IntelliDhan/pull/9)
+- PR base: `codex/daily-brief-landing` (stacked on PR #7 and the earlier account,
+  data-quality, scanner, Workspace Agent, and daily-brief work)
+- Local implementation worktree:
+  `/Users/dhanvin/Documents/IntelliDhan-signal-terminal-redesign`
+- The original shared checkout may contain collaborator changes. Never discard,
+  reset, stage, or rewrite changes outside the isolated worktree.
+- PR #9 passed both GitHub CI jobs at commit `5696a22` and received an
+  independent agent approval with no remaining findings.
+- Do not merge, retarget, remove, or deploy this stack without user confirmation.
+
+## 2. Product direction
+
+IntelliDhan is a card- and alert-first stock research and signal terminal. The
+Today screen prioritizes:
+
+1. market/data state;
+2. indicative SPX, SPY, and QQQ context;
+3. a fail-closed deterministic Top 3 focus rank;
+4. an eight-name curated radar;
+5. complete risk-defined signal cards;
+6. held-back reasons and source freshness;
+7. optional chart detail after a plan is selected.
+
+Charts are supporting context, not the primary home-screen hierarchy. The UI is
+rounded, modern, dark-first with a verified light theme, responsive at 390 px,
+keyboard accessible, and free of horizontal overflow in the tested layouts.
+
+## 3. Implemented APIs and data contract
+
+### `GET /api/focus`
+
+- Requires an authenticated personal session.
+- Returns indicative SPX/SPY/QQQ prices plus deterministic focus candidates.
+- Ranking version: `smart-play-v1` over the configured live universe only.
+- A partial configured-universe scan returns **no** Top 3 or curated rank because
+  a failed constituent can change cross-sectional order.
+- Yahoo fallback prices are `INDICATIVE`; its request-observation timestamp is
+  not presented as an exchange price timestamp.
+- Manual UI refresh forces one universe scan, then intelligence calls reuse that
+  cached technical snapshot.
+
+### `GET /api/intelligence/{symbol}`
+
+- Requires authentication and a configured-universe symbol.
+- Returns `research-rank-v1`; this is a research ordering score, not a
+  probability of profit, forecast, signal, or order instruction.
+- Current maximum weights:
+
+| Pillar | Maximum weight | Source |
+|---|---:|---|
+| Technical | 50% | completed IntelliDhan daily scan |
+| Financial | 35% | SEC EDGAR company facts |
+| News | 10% | Alpha Vantage `NEWS_SENTIMENT` |
+| Social | 5% | Finnhub social sentiment |
+
+- Missing pillars are excluded and remaining weights are renormalized.
+- Financial effective weight is additionally multiplied by its available count
+  out of five filing metrics. One metric therefore receives only 20% of the
+  maximum financial weight.
+- SEC financial v1 uses annual revenue growth, gross margin, net margin,
+  free-cash-flow margin, and same-period liabilities/assets.
+- News is restricted by request and parser to the last seven days. Malformed,
+  stale, and materially future-dated articles are excluded.
+- Social is capped at 5% and never triggers a trade.
+
+### `GET /api/dossier/{symbol}`
+
+- Historical technical analysis remains available for arbitrary supported
+  tickers.
+- Signed-in configured-universe dossiers also reuse and render the intelligence
+  snapshot: score coverage, financial metrics, official SEC links, recent news,
+  and social-attention context.
+- Fundamentals, events, estimates, and point-in-time research must remain
+  separately labeled; the current filing screen is not sector-relative or a
+  survivorship-safe historical factor model.
+
+## 4. Signal-card unit contract
+
+An alert card must make units unambiguous:
+
+- options show expiry, strike/type, premium entry, option entry zone, and the
+  estimated option-premium stop;
+- stop and target levels derived from the underlying are labeled **Underlying
+  stop** and **Underlying T1/targets**;
+- equity cards show equity size and limit;
+- every card shows action, age, validity, max dollar risk, reward versus risk,
+  staged targets/trim percentages, evidence status, score, and thesis;
+- score labels must not imply a guaranteed probability;
+- research-only or unvalidated strategies remain visibly blocked.
+
+## 5. AI and trading boundary
+
+- AI curation is an explicit user action using the existing closed-schema thesis
+  endpoint.
+- Allowed thesis verdicts are `RESEARCH`, `WATCH`, and `AVOID`; only explicit
+  `RESEARCH` or `WATCH` results can be added to the Research watchlist.
+- AI cannot change deterministic rank, invent evidence, create an execution
+  intent, or place an order.
+- Execution defaults to `OFF`. Robinhood execution must follow `CLAUDE.md`, use
+  only the official Trading MCP, run pre-trade review, and preserve the required
+  claim/receipt/reconciliation loop.
+
+## 6. Latest frozen evidence
+
+The fixed diagnostics were rerun on 2026-07-17 without parameter tuning:
+
+- Smart momentum: 153.34% total return versus SPY 103.60%, but Sharpe was lower
+  (0.880 versus 1.172) and maximum drawdown was materially worse (-43.41% versus
+  -18.76%).
+- SMA200, 12-month time-series momentum, Donchian 55/20, and two-of-three trend
+  consensus beat buy-and-hold CAGR on 0 of 12 configured names.
+- Only 1 of 12 one-month conditional forecasts had positive walk-forward Brier
+  skill; no three-month context cleared validation.
+
+Interpretation: momentum and trend remain useful candidate-ranking and risk
+context. They are not evidence that the combined signal stack is live-qualified
+or reliably profitable. ORB, 9EMA, RVOL, VWAP, earnings, and filing quality are
+evidence families awaiting exact-path, cost-aware, out-of-sample and forward
+`SHADOW` validation. LEAPS remains gated.
+
+## 7. Configuration
+
+Server-only optional research settings:
+
+```dotenv
+INTELLIDHAN_SEC_USER_AGENT=IntelliDhan research admin@example.com
+ALPHA_VANTAGE_API_KEY=
+FINNHUB_API_KEY=
+```
+
+SEC needs a descriptive contact-bearing user agent but no API key. Missing
+optional providers stay visibly unscored and reduce displayed coverage. Never
+expose provider secrets to the browser, reflected errors, snapshots, logs, or
+this file.
+
+## 8. Validation baseline
+
+At PR commit `5696a22`:
+
+- `217 passed, 5 deselected`;
+- Ruff clean;
+- both inline scripts parsed;
+- `git diff --check` clean;
+- desktop, 390 px mobile, light theme, and dark theme inspected;
+- authenticated Today and Analyze evidence flows exercised locally;
+- no browser console warnings/errors;
+- GitHub `test` and `account-postgres` jobs passed;
+- independent review approved.
+
+Re-run proportionate checks after each material change and update this section
+only with observed results.
+
+## 9. Important files
+
+- `docs/25-signal-terminal-redesign.md` — detailed design, research, scoring,
+  safety, backtest, and rollout contract.
+- `web/index.html` — current single-file terminal UI.
+- `services/gateway/intellidhan_gateway/research_feeds.py` — bounded SEC, news,
+  and social clients plus research scoring.
+- `services/gateway/intellidhan_gateway/app.py` — focus, intelligence, dossier,
+  authentication, and gateway APIs.
+- `tests/test_research_feeds.py` — data parsing, score, privacy, fail-closed rank,
+  and dossier integration tests.
+- `.env.example` and `koyeb.yaml` — deployment configuration contract.
+
+## 10. Remaining priorities
+
+1. Land the lower PR stack in order, then retarget/review PR #9.
+2. Confirm Koyeb server environment and deployment health after merge.
+3. Add a licensed real-time provider router and field-level exchange timestamps.
+4. Add point-in-time broad-universe, sector/peer, earnings-calendar, estimates,
+   transcript-change, and valuation datasets before claiming one-stop coverage.
+5. Persist research snapshots and evaluate ranking realization over time.
+6. Add reliable historical options chains and production-path 0DTE/LEAPS fill
+   modeling before any strategy-promotion proposal.
+7. Build compare, portfolio-conflict, and durable review/journal workflows.
+
+## 11. Checkpoint protocol
+
+For each coherent work unit:
+
+1. fetch and inspect current remote/working-tree state;
+2. preserve collaborator changes and work only in the feature worktree;
+3. update this file when context materially changes;
+4. run proportionate tests and inspect the diff;
+5. commit the coherent checkpoint with explicit paths;
+6. push the feature branch and keep the draft PR current;
+7. request independent review for material or risk-sensitive changes;
+8. never merge or deploy without the user's confirmation.
