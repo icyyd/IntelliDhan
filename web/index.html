@@ -802,6 +802,21 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
 .forecast-foot{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; color:var(--text-faint); font-size:10px}
 .forecast-foot .chip{font-size:9px; padding:3px 7px}
 .forecast-note{margin-top:12px; color:var(--text-dim); font-size:10.5px; line-height:1.55}
+.research-rank-top{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-bottom:12px}
+.research-rank-score{padding:12px; border-radius:16px; background:var(--tint-d)}
+.research-rank-score b{display:block; font:800 18px var(--mono)}
+.research-rank-score small{display:block; margin-top:3px; color:var(--text-faint); font-size:9px; text-transform:uppercase; letter-spacing:.04em}
+.research-evidence-grid{display:grid; grid-template-columns:1.1fr .9fr 1fr; gap:10px}
+.research-evidence-card{min-width:0; padding:14px; border:1px solid var(--border); border-radius:17px; background:var(--card-gradient)}
+.research-evidence-card h3{margin:0 0 8px; font-size:12px}
+.research-evidence-card>p{margin:0; color:var(--text-faint); font-size:10px; line-height:1.5}
+.research-fact-list{display:flex; flex-direction:column; gap:6px}
+.research-fact{display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px solid var(--border-soft); color:var(--text-dim); font-size:10px}
+.research-fact:last-child{border-bottom:0}
+.research-fact b{flex:none; font:700 10px var(--mono)}
+.research-link{display:block; padding:7px 0; border-bottom:1px solid var(--border-soft); color:var(--cyan); font-size:10px; text-decoration:none}
+.research-link:last-child{border-bottom:0}
+.research-link small{display:block; color:var(--text-faint); margin-top:2px}
 .analysis-methods{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
 .method-card{position:relative; overflow:hidden; padding:18px; border:1px solid var(--border); border-radius:22px; background:var(--card-gradient); min-height:190px}
 .method-card.bullish{border-top-color:rgba(94,234,212,.42)}
@@ -844,6 +859,7 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
 }
 @media (max-width:700px){
   .forecast-grid{grid-template-columns:1fr}
+  .research-evidence-grid{grid-template-columns:1fr}
   .analysis-methods{grid-template-columns:1fr}
   .analysis-risk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -858,6 +874,7 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   .analysis-vote{padding:10px}
   .method-metrics{grid-template-columns:1fr}
   .forecast-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .research-rank-top{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 /* ── Light theme (toggle in topbar; dark stays the default) ───────────── */
@@ -1040,6 +1057,141 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 :root[data-compact="true"] .ac-thesis{margin:9px 0; min-height:0}
 :root[data-compact="true"] .level-bubble{padding:7px}
 :root[data-reduce-motion="true"] *{scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important}
+
+/* ── Signal terminal home ─────────────────────────────────────────────
+   Playful surfaces, disciplined hierarchy. Live decisions stay opaque and
+   readable; gradients decorate structure rather than market meaning. */
+.terminal-hero{
+  position:relative; overflow:hidden; display:grid; grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);
+  gap:22px; padding:26px; border:1px solid rgba(145,164,255,.22); border-radius:30px;
+  background:linear-gradient(135deg,rgba(43,52,88,.88),rgba(18,25,43,.95) 52%,rgba(19,57,59,.74));
+  box-shadow:var(--shadow-card);
+}
+.terminal-hero::before,.terminal-hero::after{content:""; position:absolute; border-radius:50%; pointer-events:none}
+.terminal-hero::before{width:260px; height:260px; right:-85px; top:-130px; background:rgba(94,234,212,.10)}
+.terminal-hero::after{width:170px; height:170px; left:38%; bottom:-125px; background:rgba(145,164,255,.10)}
+.terminal-hero-copy,.terminal-stats{position:relative; z-index:1}
+.terminal-kicker{display:flex; align-items:center; gap:8px; color:var(--cyan); font-size:10.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase}
+.terminal-kicker::before{content:""; width:8px; height:8px; border-radius:50%; background:var(--teal); box-shadow:0 0 0 5px rgba(94,234,212,.09)}
+.terminal-hero h1{max-width:760px; margin:10px 0 9px; font-size:clamp(30px,4vw,48px); line-height:1.02; letter-spacing:-.045em}
+.terminal-hero h1,.terminal-stat b{color:#F7F9FF}
+.terminal-hero p{max-width:700px; margin:0; color:#B7C0D8; font-size:13.5px; line-height:1.65}
+.terminal-stats{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-self:end; gap:9px}
+.terminal-stat{min-width:0; padding:13px; border:1px solid rgba(255,255,255,.08); border-radius:18px; background:rgba(4,9,20,.23)}
+.terminal-stat b{display:block; font:750 18px var(--mono); color:#F7F9FF}
+.terminal-stat small{display:block; margin-top:3px; color:#B7C0D8; font-size:10px; line-height:1.25}
+
+.anchor-strip{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px}
+.anchor-card{position:relative; overflow:hidden; min-height:108px; padding:16px; border:1px solid var(--border); border-radius:22px; background:var(--card-gradient)}
+.anchor-card::after{content:""; position:absolute; width:84px; height:84px; right:-30px; bottom:-42px; border-radius:50%; background:rgba(145,164,255,.08)}
+.anchor-head{display:flex; align-items:center; gap:8px}
+.anchor-symbol{font:800 16px var(--mono)}
+.anchor-role{color:var(--text-faint); font-size:10px}
+.anchor-price{display:block; margin-top:13px; font:750 22px var(--mono); letter-spacing:-.025em}
+.anchor-foot{display:flex; align-items:center; gap:7px; margin-top:4px; color:var(--text-faint); font-size:10px}
+.anchor-foot .dot{width:6px; height:6px}
+
+.focus-shell{display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:14px; align-items:start}
+.focus-main,.curated-panel,.strategy-shelf{border:1px solid var(--border); border-radius:26px; background:var(--panel-gradient); box-shadow:var(--shadow-card)}
+.focus-main{padding:20px}
+.focus-heading{display:flex; align-items:flex-start; gap:14px; margin-bottom:15px}
+.focus-heading-copy{min-width:0; flex:1}
+.focus-heading h2{margin:0; font-size:18px; letter-spacing:-.025em}
+.focus-heading p{margin:3px 0 0; color:var(--text-faint); font-size:11.5px}
+.focus-actions{display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end}
+.focus-button{display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; padding:8px 12px; border:1px solid var(--border); border-radius:13px; background:rgba(145,164,255,.07); color:var(--cyan); cursor:pointer; font-size:11px; font-weight:750}
+.focus-button.primary{border-color:transparent; background:var(--cyan); color:var(--on-accent)}
+.focus-button:hover{border-color:rgba(145,164,255,.42)}
+.focus-button:disabled{opacity:.55; cursor:not-allowed}
+.focus-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+.focus-card{position:relative; overflow:hidden; min-width:0; padding:15px; border:1px solid var(--border); border-radius:21px; background:rgba(255,255,255,.035)}
+.focus-card::before{content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--cyan)}
+.focus-card.no-setup::before{background:var(--slate)}
+.focus-card-top{display:flex; align-items:flex-start; gap:9px}
+.focus-rank{display:grid; place-items:center; width:26px; height:26px; flex:none; border-radius:10px; background:rgba(145,164,255,.12); color:var(--cyan); font:800 11px var(--mono)}
+.focus-symbol{font:800 20px var(--mono); line-height:1}
+.focus-price{display:block; margin-top:4px; color:var(--text-dim); font:11px var(--mono)}
+.tier-badge{margin-left:auto; display:grid; place-items:center; min-width:38px; height:38px; padding:0 7px; border-radius:14px; color:var(--teal); background:rgba(94,234,212,.10); font:800 14px var(--mono)}
+.tier-badge.unrated{color:var(--text-faint); background:rgba(114,125,153,.10)}
+.focus-play{display:inline-flex; margin:12px 0 7px; padding:4px 8px; border-radius:99px; background:rgba(246,200,107,.10); color:var(--gold); font-size:9.5px; font-weight:750; text-transform:uppercase; letter-spacing:.05em}
+.focus-card p{min-height:51px; margin:0; color:var(--text-dim); font-size:11.5px; line-height:1.5}
+.pillar-row{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; margin:12px 0}
+.pillar-chip{min-width:0; padding:7px 6px; border-radius:11px; background:rgba(255,255,255,.04)}
+.pillar-chip b{display:block; overflow:hidden; text-overflow:ellipsis; font:750 11px var(--mono)}
+.pillar-chip small{display:block; color:var(--text-faint); font-size:8.5px; text-transform:uppercase; letter-spacing:.04em}
+.focus-rule{padding-top:9px; border-top:1px solid var(--border-soft); color:var(--text-faint); font-size:10.5px; line-height:1.4}
+.focus-rule b{color:var(--text-dim)}
+.focus-card-actions{display:flex; gap:6px; margin-top:11px}
+.focus-card-actions button{flex:1; min-width:0; min-height:40px; padding:8px 6px; border:1px solid var(--border); border-radius:11px; background:rgba(145,164,255,.06); color:var(--text-dim); cursor:pointer; font-size:10px; font-weight:700}
+.focus-card-actions button:hover{color:var(--cyan); border-color:rgba(145,164,255,.4)}
+.focus-ai-result{margin-top:10px; padding:9px; border-radius:12px; background:rgba(94,234,212,.06); color:var(--text-dim); font-size:10.5px; line-height:1.45}
+
+.curated-panel{padding:17px; position:sticky; top:88px}
+.curated-panel h2{margin:0; font-size:14px}
+.curated-panel>p{margin:3px 0 13px; color:var(--text-faint); font-size:10.5px; line-height:1.45}
+.curated-list{display:flex; flex-direction:column; gap:6px}
+.curated-row{display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; width:100%; min-height:44px; padding:9px; border:1px solid transparent; border-radius:13px; background:rgba(255,255,255,.03); color:var(--text); text-align:left; cursor:pointer}
+.curated-row:hover{border-color:var(--border); background:rgba(145,164,255,.06)}
+.curated-row .rank{color:var(--text-faint); font:10px var(--mono)}
+.curated-row b{font:750 12px var(--mono)}
+.curated-row small{display:block; color:var(--text-faint); font-size:9.5px}
+.curated-row .score{font:700 11px var(--mono); color:var(--cyan)}
+.feed-stack{display:flex; flex-wrap:wrap; gap:6px; margin-top:13px; padding-top:12px; border-top:1px solid var(--border-soft)}
+.feed-pill{display:inline-flex; align-items:center; gap:5px; padding:4px 7px; border-radius:99px; background:rgba(114,125,153,.08); color:var(--text-faint); font-size:9px}
+.feed-pill.live{color:var(--teal); background:rgba(94,234,212,.08)}
+.feed-pill.pending{color:var(--gold); background:rgba(246,200,107,.08)}
+
+.strategy-shelf{padding:17px}
+.strategy-shelf-head{display:flex; align-items:end; gap:12px; margin-bottom:12px}
+.strategy-shelf-head h2{margin:0; font-size:14px}
+.strategy-shelf-head p{margin:0 0 1px auto; color:var(--text-faint); font-size:10px}
+.strategy-lanes{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px}
+.strategy-lane{padding:13px; border:1px solid var(--border); border-radius:17px; background:rgba(255,255,255,.03)}
+.strategy-lane-top{display:flex; align-items:center; gap:8px}
+.strategy-lane-top b{font-size:12px}
+.strategy-lane-top span{margin-left:auto; color:var(--text-faint); font:700 10px var(--mono)}
+.strategy-lane p{margin:7px 0 8px; color:var(--text-faint); font-size:10.5px; line-height:1.45}
+.method-chips{display:flex; flex-wrap:wrap; gap:5px}
+.method-chips span{padding:3px 7px; border-radius:99px; background:rgba(145,164,255,.08); color:var(--text-dim); font-size:9px}
+
+.signal-score-pill{display:flex; flex-direction:column; align-items:flex-end; min-width:60px; flex:none}
+.signal-score-pill b{font:800 20px var(--mono); color:var(--cyan)}
+.signal-score-pill small{color:var(--text-faint); font-size:8.5px; text-transform:uppercase; letter-spacing:.05em}
+.contract-strip{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:10px 0 0}
+.contract-cell{min-width:0; padding:8px; border-radius:12px; background:rgba(145,164,255,.055)}
+.contract-cell span{display:block; color:var(--text-faint); font-size:8.5px; text-transform:uppercase; letter-spacing:.05em}
+.contract-cell b{display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:700 10.5px var(--mono)}
+.profit-map{display:flex; gap:8px; align-items:flex-start; margin-top:8px; padding:9px 10px; border-radius:12px; background:rgba(94,234,212,.055); color:var(--text-dim); font-size:10px; line-height:1.45}
+.profit-map b{flex:none; color:var(--teal); font-size:9px; text-transform:uppercase; letter-spacing:.05em}
+.profit-map span{min-width:0}
+
+@media (max-width:1360px){
+  .focus-shell{grid-template-columns:1fr}
+  .curated-panel{position:static}
+  .curated-list{display:grid; grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width:900px){
+  .terminal-hero{grid-template-columns:1fr}
+  .focus-grid,.strategy-lanes{grid-template-columns:1fr}
+  .focus-card p{min-height:0}
+  .curated-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:600px){
+  .terminal-hero{padding:19px; border-radius:24px}
+  .terminal-stats{grid-template-columns:1fr}
+  .terminal-stat{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .terminal-stat small{margin:0; text-align:right}
+  .anchor-strip{grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px}
+  .anchor-card{min-height:0; padding:12px 10px; border-radius:16px}
+  .anchor-role{display:none}
+  .anchor-price{margin-top:9px; font-size:14px}
+  .anchor-foot{gap:4px; font-size:8px; white-space:nowrap}
+  .focus-main{padding:15px; border-radius:22px}
+  .focus-heading{display:block}
+  .focus-actions{justify-content:flex-start; margin-top:11px}
+  .curated-list{grid-template-columns:1fr}
+  .contract-strip{grid-template-columns:1fr}
+}
 </style>
 <script>try{if(localStorage.getItem("id-theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
 </head>
@@ -1078,7 +1230,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 </header>
 
 <nav class="mobile-nav" aria-label="Primary tasks">
-  <button class="mobile-nav-item active" data-view="signals" aria-pressed="true">Signals</button>
+  <button class="mobile-nav-item active" data-view="signals" aria-pressed="true">Today</button>
   <button class="mobile-nav-item" data-view="discover" aria-pressed="false">Discover</button>
   <button class="mobile-nav-item" data-view="analysis" aria-pressed="false">Analyze</button>
   <button class="mobile-nav-item" data-view="0dte" aria-pressed="false">0DTE</button>
@@ -1087,7 +1239,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 
 <div class="shell">
   <nav class="navrail" aria-label="Primary">
-    <button class="nav-item active" data-view="signals" title="Signals" aria-label="Signals" aria-pressed="true"><svg class="icon"><use href="#i-activity"/></svg></button>
+    <button class="nav-item active" data-view="signals" title="Today" aria-label="Today" aria-pressed="true"><svg class="icon"><use href="#i-activity"/></svg></button>
     <button class="nav-item" data-view="discover" title="Discover stocks" aria-label="Discover stocks" aria-pressed="false"><svg class="icon"><use href="#i-grid"/></svg></button>
     <button class="nav-item" data-view="0dte" title="0DTE desk" aria-label="0DTE desk" aria-pressed="false">0D</button>
     <button class="nav-item" data-view="swings" title="Swing desk" aria-label="Swing desk" aria-pressed="false">SW</button>
@@ -1103,16 +1255,50 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 
   <main class="workspace" id="main">
    <div id="view-signals">
-    <section class="desk-hero" aria-labelledby="deskTitle">
-      <div class="desk-copy">
-        <div class="desk-eyebrow">Decision-ready insights</div>
-        <h1 id="deskTitle">Signal inbox</h1>
-        <p>Current opportunities, historical reliability, and risk context—without the noise.</p>
+    <section class="terminal-hero" aria-labelledby="deskTitle">
+      <div class="terminal-hero-copy">
+        <div class="terminal-kicker">Real-time signal engine</div>
+        <h1 id="deskTitle">The market, distilled into decisions.</h1>
+        <p>Start with what needs attention now: benchmark direction, three ranked focus names, complete trade plans, and the evidence that can invalidate them.</p>
       </div>
-      <div class="desk-stats" aria-label="Signal summary">
-        <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="summarySignals">—</b><small>Active signals</small></span></div>
-        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summarySuppressed">—</b><small>Held-back candidates</small></span></div>
-        <div class="desk-stat"><span class="stat-bubble mint"><svg class="icon"><use href="#i-clock"/></svg></span><span><b id="summaryNext">—</b><small>Next evaluation</small></span></div>
+      <div class="terminal-stats" aria-label="Signal summary">
+        <div class="terminal-stat"><b id="summarySignals">—</b><small>Active plans</small></div>
+        <div class="terminal-stat"><b id="summarySuppressed">—</b><small>Held back honestly</small></div>
+        <div class="terminal-stat"><b id="summaryNext">—</b><small>Next scan</small></div>
+      </div>
+    </section>
+
+    <section class="anchor-strip" id="focusAnchors" aria-label="SPX, SPY and QQQ market pulse">
+      <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPX</span><span class="anchor-role">Broad market</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading current context</div></div>
+      <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPY</span><span class="anchor-role">Liquidity proxy</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading current context</div></div>
+      <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">QQQ</span><span class="anchor-role">Growth leadership</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading current context</div></div>
+    </section>
+
+    <section class="focus-shell" aria-label="Current focus and curated watchlist">
+      <div class="focus-main">
+        <div class="focus-heading">
+          <div class="focus-heading-copy"><h2>Top 3 in focus</h2><p>Deterministic setup rank first; filings, news and social context enrich—but never override—the market evidence.</p></div>
+          <div class="focus-actions">
+            <button class="focus-button" id="refreshFocusButton" type="button" onclick="refreshFocus(true)"><svg class="icon"><use href="#i-activity"/></svg>Refresh feeds</button>
+            <button class="focus-button primary" id="curateFocusButton" type="button" onclick="curateFocusWithAI()"><svg class="icon"><use href="#i-bookmark"/></svg>Run AI curation</button>
+          </div>
+        </div>
+        <div class="focus-grid" id="focusGrid" aria-live="polite"><div class="empty">Building the current focus list…</div></div>
+      </div>
+      <aside class="curated-panel" aria-labelledby="curatedTitle">
+        <h2 id="curatedTitle">Curated radar</h2>
+        <p>Best current research candidates across the configured universe. Open a name for the complete dossier.</p>
+        <div class="curated-list" id="curatedFocusList"><div class="empty">Loading candidates…</div></div>
+        <div class="feed-stack" id="focusFeedStatus" aria-label="Research feed status"></div>
+      </aside>
+    </section>
+
+    <section class="strategy-shelf" aria-labelledby="strategyShelfTitle">
+      <div class="strategy-shelf-head"><h2 id="strategyShelfTitle">Strategy lanes</h2><p>Methods are evidence, not magic switches.</p></div>
+      <div class="strategy-lanes">
+        <article class="strategy-lane"><div class="strategy-lane-top"><b>0DTE momentum</b><span id="lane0dteCount">0 active</span></div><p>Fast confirmation with a hard clock, defined risk and a no-chase entry zone.</p><div class="method-chips"><span>Opening range</span><span>9EMA</span><span>RVOL</span><span>VWAP</span></div></article>
+        <article class="strategy-lane"><div class="strategy-lane-top"><b>Swing continuation</b><span id="laneSwingCount">0 active</span></div><p>Trend, relative strength and catalyst-aware setups over days to weeks.</p><div class="method-chips"><span>12–1 momentum</span><span>Breakout</span><span>Pullback</span><span>Earnings</span></div></article>
+        <article class="strategy-lane"><div class="strategy-lane-top"><b>LEAPS research</b><span>gated</span></div><p>Long-duration ideas require both financial strength and supportive price structure.</p><div class="method-chips"><span>SEC filings</span><span>Quality</span><span>Trend</span><span>Risk-defined</span></div></article>
       </div>
     </section>
 
@@ -1273,7 +1459,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
         <button class="analysis-run" id="discoverRun" type="submit"><span class="analysis-spinner" aria-hidden="true"></span><svg class="icon"><use href="#i-search"/></svg><span>Run screen</span></button>
       </form>
       <div class="discover-note"><svg class="icon"><use href="#i-check"/></svg><span id="discoverEffectiveFilters">Loading effective preset rules…</span></div>
-      <div class="discover-note"><svg class="icon"><use href="#i-alert"/></svg><span>Scores compare only the configured universe. AI research is optional, cannot change rank or trigger a trade, and keeps fundamental/event coverage visibly unavailable until point-in-time feeds are connected.</span></div>
+      <div class="discover-note"><svg class="icon"><use href="#i-alert"/></svg><span>Scores compare only the configured universe. AI research is optional and cannot change rank or trigger a trade. Current filing/news/social context may enrich Analyze when configured, but it is not a point-in-time backtest feature.</span></div>
       <div class="discover-note"><svg class="icon"><use href="#i-activity"/></svg><span>Queue agent research sends the verified candidate to a published ChatGPT Workspace Agent. Its API does not return output to this app; use an explicitly configured delivery workflow, or Build AI thesis for an immediate result here.</span></div>
       <div class="screen-tools">
         <label class="analysis-field"><span>Save current screen</span><input id="discoverScreenName" type="text" maxlength="60" placeholder="My momentum screen"></label>
@@ -1321,6 +1507,11 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 
     <div class="analysis-results" id="analysisResults" hidden aria-live="polite">
       <section class="analysis-verdict" id="analysisSummary" aria-label="Analysis verdict"></section>
+
+      <section class="panel" id="analysisResearchPanel" aria-labelledby="analysisResearchTitle">
+        <div class="analysis-section-head"><div><h2 id="analysisResearchTitle">Financial &amp; attention context</h2><p>Current filing, news, and social evidence with visible coverage; research rank only.</p></div></div>
+        <div id="analysisResearchOutput"></div>
+      </section>
 
       <section class="panel" aria-labelledby="analysisForecastTitle">
         <div class="analysis-section-head"><div><h2 id="analysisForecastTitle">Forward outlook</h2><p>Non-overlapping historical outcomes, shrunk toward the ticker base rate and checked walk-forward.</p></div></div>
@@ -1456,7 +1647,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
         <b>Display preferences</b>
         <div class="preference-grid">
           <label class="auto-field"><span>Theme</span><select id="preferenceTheme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Use device setting</option></select></label>
-          <label class="auto-field"><span>Start page</span><select id="preferenceView"><option value="signals">Signals</option><option value="discover">Discover</option><option value="analysis">Analyze</option></select></label>
+          <label class="auto-field"><span>Start page</span><select id="preferenceView"><option value="signals">Today</option><option value="discover">Discover</option><option value="analysis">Analyze</option></select></label>
           <label class="auto-check"><input type="checkbox" id="preferenceCompact">Use denser signal cards</label>
           <label class="auto-check" aria-disabled="true"><input type="checkbox" id="preferenceSound" disabled>Alert sounds (coming soon)</label>
           <label class="auto-check"><input type="checkbox" id="preferenceMotion">Reduce interface motion</label>
@@ -1510,6 +1701,7 @@ const ARROWS = {STRONG_UP:"strong-up",UP:"up",NEUTRAL:"",DOWN:"down",STRONG_DOWN
 const ICON = {STRONG_UP:"i-up",UP:"i-up",NEUTRAL:"i-minus",DOWN:"i-down",STRONG_DOWN:"i-down"};
 const tfOrder = ["M","W","D","4H","1H","15m","5m"];
 let lastState = null, calibration = {}, briefing = null, dailyBrief = null, dailyBriefRenderKey = null;
+let focusData = null, focusIntelligence = {}, focusAIResults = {};
 let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
@@ -1534,6 +1726,15 @@ function finiteNumber(value){
   if(value===null||value===undefined||value==="") return null;
   const parsed=Number(value);
   return Number.isFinite(parsed)?parsed:null;
+}
+function fmtMoney(value){
+  const number=finiteNumber(value);
+  return number==null?"—":number.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtQuoteTime(value){
+  const parsed=new Date(value);
+  if(!value||Number.isNaN(parsed.getTime())) return "time unavailable";
+  return new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(parsed)+" ET";
 }
 function symbolDataQuality(s,symbol){
   return s?.symbols?.[symbol]?.data_quality || s?.readiness?.symbols?.[symbol] || null;
@@ -1667,6 +1868,118 @@ async function refreshDailyBrief(){
   renderDailyBrief();
 }
 
+function focusMetric(item,label){
+  const score=finiteNumber(item?.score);
+  return `<span class="pillar-chip"><b>${score==null?"—":Math.round(score)}</b><small>${esc(label)}</small></span>`;
+}
+function focusFeedPill(name,status){
+  const normalized=String(status||"PENDING").toUpperCase();
+  const cls=normalized==="AVAILABLE"?"live":normalized==="NOT_CONFIGURED"?"pending":"";
+  const label=normalized==="AVAILABLE"?"live":normalized==="NOT_CONFIGURED"?"setup needed":normalized.replaceAll("_"," ").toLowerCase();
+  return `<span class="feed-pill ${cls}"><span class="dot ${normalized==="AVAILABLE"?"live":normalized==="NOT_CONFIGURED"?"warn":""}"></span>${esc(name)} · ${esc(label)}</span>`;
+}
+function focusSourceStatus(sourceName){
+  const statuses=(focusData?.focus||[]).map(row=>focusIntelligence[row.symbol]?.sources?.find(item=>item.name===sourceName)?.status).filter(Boolean);
+  if(!statuses.length) return "PENDING";
+  if(statuses.every(status=>status==="AVAILABLE")) return "AVAILABLE";
+  if(statuses.some(status=>status==="AVAILABLE")) return "PARTIAL";
+  if(statuses.every(status=>status==="NOT_CONFIGURED")) return "NOT_CONFIGURED";
+  return "UNAVAILABLE";
+}
+function renderFocus(){
+  const anchors=document.getElementById("focusAnchors"), grid=document.getElementById("focusGrid"), curated=document.getElementById("curatedFocusList");
+  if(!focusData){ return; }
+  const roles={SPX:"Broad market",SPY:"Liquidity proxy",QQQ:"Growth leadership"};
+  anchors.innerHTML=(focusData.anchors||[]).map(item=>`<article class="anchor-card">
+    <div class="anchor-head"><span class="anchor-symbol">${esc(item.symbol)}</span><span class="anchor-role">${esc(roles[item.symbol]||"Benchmark")}</span></div>
+    <span class="anchor-price">${item.price==null?"—":`$${esc(fmtMoney(item.price))}`}</span>
+    <div class="anchor-foot" title="${esc(item.status==="INDICATIVE"?`Checked ${fmtQuoteTime(item.observed_at)}; provider price timestamp unavailable`:item.as_of||item.observed_at||item.status)}"><span class="dot ${item.status==="AVAILABLE"?"live":item.status==="INDICATIVE"||item.status==="STALE"?"warn":"down"}"></span>${esc(item.status==="AVAILABLE"?`${item.source||"market feed"} · ${fmtQuoteTime(item.as_of)}`:item.status==="INDICATIVE"?`${item.source||"market feed"} · indicative`:item.status==="STALE"?"Last-known value":"Feed unavailable")}</div>
+  </article>`).join("");
+  const rows=focusData.focus||[];
+  grid.innerHTML=rows.length?rows.map((row,index)=>{
+    const play=row.best_play||{}, intel=focusIntelligence[row.symbol], overall=intel?.overall||{};
+    const fundamental=intel?.pillars?.fundamentals, technical=intel?.pillars?.technical||{score:row.technical_score};
+    const ai=focusAIResults[row.symbol];
+    const filing=intel?.filings?.items?.[0];
+    return `<article class="focus-card ${play.eligible?"":"no-setup"}">
+      <div class="focus-card-top"><span class="focus-rank">${index+1}</span><div><span class="focus-symbol">${esc(row.symbol)}</span><span class="focus-price">$${esc(fmtPx(row.price))} · ${esc(play.horizon||"watch only")}</span></div><span class="tier-badge ${overall.tier?"":"unrated"}" title="Overall research tier${overall.coverage_weight!=null?` · ${Math.round(overall.coverage_weight*100)}% source coverage`:''}">${esc(overall.tier||"—")}</span></div>
+      <span class="focus-play">${esc(String(play.status||"NO_SETUP").replaceAll("_"," "))}</span>
+      <p>${esc(play.label||"No current setup")} · ${esc((play.evidence||[])[0]?.interpretation||play.confirmation||"Waiting for a supported setup.")}</p>
+      <div class="pillar-row">${focusMetric(technical,"Technical")}${focusMetric(fundamental,"Financial")}${focusMetric(overall,"Overall")}</div>
+      <div class="focus-rule"><b>Confirm:</b> ${esc(play.confirmation||"No active confirmation.")} ${filing?`<br><b>Latest filing:</b> ${esc(filing.form)} · ${esc(filing.filed_at)}`:""}${overall.coverage_weight!=null?`<br><b>Score coverage:</b> ${Math.round(overall.coverage_weight*100)}% of configured inputs`:''}</div>
+      <div class="focus-card-actions"><button type="button" data-focus-analyze="${esc(row.symbol)}">Analyze</button><button type="button" data-focus-ai="${esc(row.symbol)}" ${play.eligible?"":"disabled"}>AI review</button><button type="button" data-focus-watch="${esc(row.symbol)}">Watch</button></div>
+      ${ai?`<div class="focus-ai-result"><b>${esc(ai.verdict||"RESEARCH")}</b> · ${esc(ai.headline||ai.message||"AI evidence review complete.")}</div>`:""}
+    </article>`;
+  }).join(""):`<div class="empty"><b>${focusData.complete?"No focus list is available.":"Focus rank held back."}</b>${focusData.complete?"No configured names are available.":"A complete configured-universe scan is required before the terminal ranks three names."}</div>`;
+  curated.innerHTML=(focusData.curated_watchlist||[]).map((row,index)=>{
+    const play=row.best_play||{};
+    return `<button class="curated-row" type="button" data-curated-symbol="${esc(row.symbol)}"><span class="rank">${index+1}</span><span><b>${esc(row.symbol)}</b><small>${esc(play.label||"No setup")}</small></span><span class="score">${play.eligible?Math.round(play.score||0):"—"}</span></button>`;
+  }).join("")||`<div class="empty">No current candidates.</div>`;
+  const anchorStatuses=(focusData.anchors||[]).map(item=>item.status);
+  const marketStatus=focusData.complete&&anchorStatuses.every(status=>status==="AVAILABLE")?"AVAILABLE":focusData.complete||anchorStatuses.some(status=>["AVAILABLE","INDICATIVE","STALE"].includes(status))?"PARTIAL":"UNAVAILABLE";
+  document.getElementById("focusFeedStatus").innerHTML=[
+    focusFeedPill("Market",marketStatus),
+    focusFeedPill("SEC",focusSourceStatus("SEC EDGAR")),
+    focusFeedPill("News",focusSourceStatus("Alpha Vantage")),
+    focusFeedPill("Social",focusSourceStatus("Finnhub")),
+  ].join("");
+  grid.querySelectorAll("[data-focus-analyze]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.focusAnalyze)));
+  grid.querySelectorAll("[data-focus-watch]").forEach(button=>button.addEventListener("click",()=>addToResearch(button.dataset.focusWatch)));
+  grid.querySelectorAll("[data-focus-ai]").forEach(button=>button.addEventListener("click",()=>reviewFocusNameWithAI(button)));
+  curated.querySelectorAll("[data-curated-symbol]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.curatedSymbol)));
+}
+async function refreshFocus(force=false){
+  if(!ownerAuthenticated){ focusData=null; return; }
+  const button=document.getElementById("refreshFocusButton");
+  button.disabled=true;
+  try{
+    focusData=await fetchJSON(`/api/focus${force?"?refresh=true":""}`);
+    if(force) focusIntelligence={};
+    renderFocus();
+    await Promise.all((focusData.focus||[]).map(async row=>{
+      try{ focusIntelligence[row.symbol]=await fetchJSON(`/api/intelligence/${encodeURIComponent(row.symbol)}${force?"?refresh=true":""}`); }
+      catch(error){ focusIntelligence[row.symbol]={overall:{tier:"UNRATED",score:null},sources:[],error:error.message}; }
+      renderFocus();
+    }));
+  }catch(error){
+    document.getElementById("focusGrid").innerHTML=`<div class="empty"><b>Focus feeds are unavailable.</b>${esc(error.message)}</div>`;
+  }finally{ button.disabled=false; }
+}
+async function reviewFocusNameWithAI(button){
+  const symbol=button.dataset.focusAi, row=(focusData?.focus||[]).find(item=>item.symbol===symbol), play=row?.best_play;
+  if(!row||!play?.eligible) return null;
+  button.disabled=true; button.textContent="Reviewing…";
+  try{
+    const data=await fetchJSON("/api/discover/thesis",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({symbol,play_key:play.key,web_research:false})});
+    focusAIResults[symbol]={verdict:data.thesis?.verdict,headline:data.thesis?.headline};
+    renderFocus();
+    return data;
+  }catch(error){
+    focusAIResults[symbol]={verdict:"UNAVAILABLE",message:error.message}; renderFocus(); return null;
+  }
+}
+async function curateFocusWithAI(){
+  if(!ownerAuthenticated){ openOwnerDialog(); return; }
+  const button=document.getElementById("curateFocusButton"), rows=(focusData?.focus||[]).filter(row=>row.best_play?.eligible);
+  if(!rows.length) return;
+  button.disabled=true;
+  let saved=0;
+  try{
+    for(let index=0;index<rows.length;index++){
+      const row=rows[index]; button.textContent=`Reviewing ${index+1}/${rows.length}…`;
+      const fakeButton={dataset:{focusAi:row.symbol},disabled:false,textContent:""};
+      const data=await reviewFocusNameWithAI(fakeButton);
+      if(data&&["RESEARCH","WATCH"].includes(data.thesis?.verdict)){
+        if(await addToResearch(row.symbol)) saved++;
+      }
+    }
+    button.textContent=`${saved} saved to Research`;
+  }finally{
+    button.disabled=false;
+    setTimeout(()=>{ button.innerHTML='<svg class="icon"><use href="#i-bookmark"/></svg>Run AI curation'; },1800);
+  }
+}
+
 function setHealth(mode){
   const el = document.getElementById("dataHealth");
   const dot = el.querySelector(".dot");
@@ -1681,7 +1994,7 @@ function setHealth(mode){
 function clearPersonalState(reason="Sign in required."){
   ownerAuthenticated=false;
   accountUser=null; preferencesCache=null; preferencesApplied=false;
-  lastState=null; briefing=null; dailyBrief=null; dailyBriefRenderKey=null; watchlistsCache=[]; savedScreensCache=[];
+  lastState=null; briefing=null; dailyBrief=null; dailyBriefRenderKey=null; focusData=null; focusIntelligence={}; focusAIResults={}; watchlistsCache=[]; savedScreensCache=[];
   symbolOrder=[]; selectedSymbol=null; selectedAlertId=null; selectedSwingSymbol=null;
   currentDossier=null; selectionTouched=false;
   if(typeof autotradeCache!=="undefined") autotradeCache=null;
@@ -1705,6 +2018,10 @@ function clearPersonalState(reason="Sign in required."){
   document.getElementById("briefPanel").hidden=true;
   document.getElementById("briefBody").replaceChildren();
   document.getElementById("dailySetup").hidden=true;
+  document.getElementById("focusAnchors").innerHTML=["SPX","SPY","QQQ"].map(symbol=>`<article class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">${symbol}</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot warn"></span>Sign in to refresh</div></article>`).join("");
+  document.getElementById("focusGrid").innerHTML=`<div class="empty">Sign in to build the current focus list.</div>`;
+  document.getElementById("curatedFocusList").innerHTML=`<div class="empty">Sign in to load candidates.</div>`;
+  document.getElementById("focusFeedStatus").replaceChildren();
   document.getElementById("autotradeMode").textContent="OFF";
   document.getElementById("autotradeMode").className="auto-mode off";
   document.getElementById("autotradeReady").textContent="0";
@@ -1780,6 +2097,8 @@ function renderOverview(s){
   document.getElementById("summarySignals").textContent=activeAlerts(s).length;
   document.getElementById("summarySuppressed").textContent=(s.suppressed||[]).length+heldDataAlerts(s).length;
   document.getElementById("summaryNext").textContent=s.session==="RTH"?"5 min":"Next open";
+  document.getElementById("lane0dteCount").textContent=activeAlerts(s).filter(alert=>alert.module==="0DTE").length+" active";
+  document.getElementById("laneSwingCount").textContent=activeAlerts(s).filter(alert=>alert.module==="SWING").length+" active";
 }
 
 function renderDataQualityNotice(s){
@@ -2112,6 +2431,13 @@ function renderAlertCard(a){
   const n = ev.buckets ? Object.values(ev.buckets).reduce((s,b)=>s+(b.n||0),0) : 0;
   const confidence=Math.round(Number(a.confidence||0)*100);
   const firstTarget=(a.take_profits||[]).find(t=>t.underlying!=null)?.underlying;
+  const leg=(a.legs||[])[0];
+  const isOption=String(a.vehicle||"").toUpperCase()==="OPTION"&&leg;
+  const contractCells=isOption
+    ? [["Expiry",leg.expiry],["Contract",`${fmtPx(leg.strike)} ${leg.option_type}`],["Option entry",`$${fmtPx(a.entry_limit)}`]]
+    : [["Vehicle","Equity"],["Size",`${a.equity_qty||"—"} shares`],["Limit",`$${fmtPx(a.entry_limit)}`]];
+  const profitMap=(a.take_profits||[]).filter(target=>target.underlying!=null).map((target,index)=>`T${index+1} ${fmtPx(target.underlying)} · trim ${Math.round(Number(target.tranche||0)*100)}%`).join("  ·  ");
+  const estimatedOptionStop=isOption&&finiteNumber(a.stop_est_vehicle)!=null?`<div class="level-bubble stop"><span>Est. option stop</span><b>$${fmtPx(a.stop_est_vehicle)}</b></div>`:"";
   return `<div class="alert-card ${selectedAlertId===a.alert_id?'selected':''} ${ev.blocked?'blocked':''}" role="button" tabindex="0" aria-pressed="${selectedAlertId===a.alert_id}" data-alert-id="${esc(a.alert_id)}">
     <div class="ac-top">
       <span class="ac-status">${esc(a.status||'ACTIVE')}</span>
@@ -2123,16 +2449,19 @@ function renderAlertCard(a){
         <span class="ac-sym">${esc(a.symbol)}</span><span class="ac-live">$${fmtPx(a.underlying_price)}</span>
         <span class="ac-strat">${esc(a.strategy.replace(/_/g,' '))} · ${esc(a.module)}</span>
       </div>
-      <div class="confidence-orb" style="--confidence:${confidence*3.6}deg" aria-label="${confidence}% model confidence"><span>${confidence}%<small>confidence</small></span></div>
+      <div class="signal-score-pill" aria-label="${confidence}% historical reliability score"><b>${confidence}%</b><small>${ev.blocked?'research score':'signal score'}</small></div>
     </div>
     ${characterChip(a.strategy, ev)}
     <div class="ac-thesis">${esc(a.thesis)}</div>
+    <div class="contract-strip">${contractCells.map(([label,value])=>`<div class="contract-cell"><span>${esc(label)}</span><b>${esc(value)}</b></div>`).join("")}</div>
     <div class="level-bubbles">
-      <div class="level-bubble"><span>Entry</span><b>${fmtPx(a.entry_zone?.[0])}–${fmtPx(a.entry_zone?.[1])}</b></div>
-      <div class="level-bubble stop"><span>Stop</span><b>${fmtPx(a.stop_underlying)}</b></div>
-      <div class="level-bubble target"><span>Target 1</span><b>${fmtPx(firstTarget)}</b></div>
+      <div class="level-bubble"><span>${isOption?"Option entry zone":"Entry zone"}</span><b>${isOption?"$":""}${fmtPx(a.entry_zone?.[0])}–${isOption?"$":""}${fmtPx(a.entry_zone?.[1])}</b></div>
+      ${estimatedOptionStop}
+      <div class="level-bubble stop"><span>${isOption?"Underlying stop":"Stop"}</span><b>${fmtPx(a.stop_underlying)}</b></div>
+      <div class="level-bubble target"><span>${isOption?"Underlying T1":"Target 1"}</span><b>${fmtPx(firstTarget)}</b></div>
       <div class="level-bubble"><span>Max risk</span><b>$${Number(a.dollar_risk||0).toLocaleString()}</b></div>
     </div>
+    ${profitMap?`<div class="profit-map"><b>${isOption?"Underlying targets":"Profit map"}</b><span>${esc(profitMap)}</span></div>`:""}
     <div class="evidence-line">
       <span class="evidence-badge ${evBadgeCls}">${evLabel}</span>
       <span>${interval}${n?`${interval?' · ':''}${n} past signals`:""}${(interval||n)?' · ':''}Reward vs risk ${esc(a.reward_risk)}</span>
@@ -2314,6 +2643,7 @@ function switchView(view){
     document.getElementById("view-"+v).hidden = v !== view;
   });
   if(view==="discover"&&!discoverLoaded) runDiscovery();
+  if(view==="signals"&&ownerAuthenticated&&!focusData) refreshFocus();
 }
 document.querySelectorAll("[data-view]").forEach(b=>
   b.addEventListener("click", ()=>switchView(b.dataset.view)));
@@ -2399,7 +2729,7 @@ async function openOwnerDialog(){
 async function completeAccountSignIn(message){
   await refreshOwnerSession();
   connectWS();
-  await Promise.all([refresh(),refreshBriefing(),refreshDailyBrief(),refreshAutotrade()]);
+  await Promise.all([refresh(),refreshBriefing(),refreshDailyBrief(),refreshFocus(),refreshAutotrade()]);
   const status=document.getElementById("ownerStatus");
   status.textContent=message; status.className="bd-status ok";
 }
@@ -2574,7 +2904,7 @@ function renderWatchlists(error=""){
   list.querySelectorAll("[data-watch-open]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.watchOpen)));
 }
 async function addToResearch(symbol){
-  if(!ownerAuthenticated){ openOwnerDialog(); return; }
+  if(!ownerAuthenticated){ openOwnerDialog(); return false; }
   const status=document.getElementById("watchStatus");
   status.textContent=`Saving ${symbol}…`; status.className="watch-status";
   try{
@@ -2586,7 +2916,8 @@ async function addToResearch(symbol){
     await fetchJSON(`/api/watchlists/${encodeURIComponent(watchlist.watchlist_id)}/symbols/${encodeURIComponent(symbol)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
     await loadWatchlists();
     status.textContent=`${symbol} added to Research.`; status.className="watch-status ok";
-  }catch(e){ status.textContent=e.message; status.className="watch-status err"; if(e.status===401) openOwnerDialog(); }
+    return true;
+  }catch(e){ status.textContent=e.message; status.className="watch-status err"; if(e.status===401) openOwnerDialog(); return false; }
 }
 
 // Compact end-of-day discovery
@@ -2803,7 +3134,36 @@ function renderAnalysisForecast(forecast){
   }).join("");
   document.getElementById("analysisForecastNote").textContent=`${forecast?.interpretation||"Historical reliability data is unavailable."} Historical conditional odds are not a price target or guarantee.`;
 }
-function renderStockAnalysis(data){
+function renderResearchIntelligence(intelligence){
+  const output=document.getElementById("analysisResearchOutput");
+  if(!intelligence){
+    output.innerHTML=`<div class="empty"><b>Current multi-feed rank is not available for this ticker.</b>The technical analysis below still works for any supported symbol; filing/news/social enrichment is limited to the configured universe and signed-in accounts.</div>`;
+    return;
+  }
+  if(intelligence.status==="UNAVAILABLE"){
+    output.innerHTML=`<div class="empty"><b>Current research enrichment is unavailable.</b>${esc(intelligence.reason||"The historical technical analysis below is unaffected.")}</div>`;
+    return;
+  }
+  const pillars=intelligence.pillars||{}, overall=intelligence.overall||{}, fundamental=intelligence.fundamentals||{};
+  const scoreCard=(item,label,detail)=>`<div class="research-rank-score"><b>${finiteNumber(item?.score)==null?"—":Math.round(item.score)}</b><small>${esc(label)}${detail?` · ${esc(detail)}`:""}</small></div>`;
+  const metrics=(fundamental.metrics||[]).map(metric=>`<div class="research-fact"><span>${esc(metric.label)}</span><b>${esc(Number(metric.value).toFixed(1))}%</b></div>`).join("");
+  const filings=(intelligence.filings?.items||[]).slice(0,4).map(filing=>`<a class="research-link" href="${esc(filing.url)}" target="_blank" rel="noopener noreferrer">${esc(filing.form)} filing<small>${esc(filing.filed_at)} · SEC EDGAR</small></a>`).join("");
+  const headlines=(intelligence.news?.headlines||[]).slice(0,3).map(item=>`<div class="research-fact"><span>${esc(item.title)}<small style="display:block;color:var(--text-faint)">${esc(item.source)} · ${esc(fmtAnalysisDate(item.published_at))}</small></span></div>`).join("");
+  const social=intelligence.social||{};
+  output.innerHTML=`
+    <div class="research-rank-top">
+      ${scoreCard(pillars.technical,"Technical")}
+      ${scoreCard(pillars.fundamentals,"Financial",`${fundamental.coverage||0}/5 facts`)}
+      ${scoreCard(pillars.news,"News")}
+      ${scoreCard(overall,"Overall",`${Math.round(Number(overall.coverage_weight||0)*100)}% coverage`)}
+    </div>
+    <div class="research-evidence-grid">
+      <article class="research-evidence-card"><h3>Financial strength</h3>${metrics||`<p>${esc(intelligence.fundamentals?.limitation||"SEC financial facts are unavailable for this symbol.")}</p>`}</article>
+      <article class="research-evidence-card"><h3>Recent official filings</h3>${filings||`<p>No recent supported SEC filing links are available.</p>`}</article>
+      <article class="research-evidence-card"><h3>News &amp; social attention</h3>${headlines||`<p>${esc(intelligence.news?.reason||"No recent, relevant news observations are available.")}</p>`}<div class="research-fact" style="margin-top:7px"><span>Social mentions (7 days)</span><b>${finiteNumber(social.mentions)==null?"—":Number(social.mentions).toLocaleString()}</b></div><p>${esc(social.limitation||social.reason||"Social context is not configured.")}</p></article>
+    </div>`;
+}
+function renderStockAnalysis(data,intelligence){
   const consensus=data.consensus||{}, tone=analysisTone(consensus.label);
   const summary=document.getElementById("analysisSummary");
   summary.className=`analysis-verdict ${tone==="neutral"?"mixed":tone}`;
@@ -2817,6 +3177,7 @@ function renderStockAnalysis(data){
     <span class="analysis-vote down"><b>${esc(consensus.bearish_votes??0)}</b><small>Bearish</small></span>
   </div>`;
   summary.querySelector("[data-analysis-watch]").addEventListener("click",event=>addToResearch(event.currentTarget.dataset.analysisWatch));
+  renderResearchIntelligence(intelligence);
   renderAnalysisForecast(data.forecast);
   renderAnalysisMethods(data.methods);
   const risk=data.risk||{};
@@ -2854,8 +3215,8 @@ async function analyzeStock(event){
   try{
     currentDossier=await fetchJSON(`/api/dossier/${encodeURIComponent(symbol)}?${params}`);
     const analysis=currentDossier.analysis;
-    renderStockAnalysis(analysis);
-    status.textContent=`Updated ${fmtAnalysisDate(analysis.as_of)} · ${analysis.daily_bars} daily bars · fundamentals ${currentDossier.coverage.fundamentals.replaceAll("_"," ").toLowerCase()}`; status.className="analysis-status ok";
+    renderStockAnalysis(analysis,currentDossier.intelligence);
+    status.textContent=`Updated ${fmtAnalysisDate(analysis.as_of)} · ${analysis.daily_bars} daily bars · financial context ${currentDossier.coverage.fundamentals.replaceAll("_"," ").toLowerCase()}`; status.className="analysis-status ok";
   }catch(error){
     status.textContent=error.message||"Unable to analyze that ticker"; status.className="analysis-status err";
   }finally{
@@ -3229,13 +3590,14 @@ window.addEventListener("resize",()=>{
 loadDiscoveryPresets();
 refreshCalibration();
 refreshOwnerSession().then(session=>{
-  if(session.authenticated){ connectWS(); refresh(); refreshBriefing(); refreshDailyBrief(); refreshAutotrade(); }
+  if(session.authenticated){ connectWS(); refresh(); refreshBriefing(); refreshDailyBrief(); refreshFocus(); refreshAutotrade(); }
   else setHealth("auth");
 });
 setInterval(refresh, 15000);
 setInterval(refreshCalibration, 60000);
 setInterval(refreshBriefing, 60000);
 setInterval(refreshDailyBrief, 300000);
+setInterval(refreshFocus, 300000);
 setInterval(refreshAutotrade, 15000);
 </script>
 </body>

@@ -13,6 +13,9 @@
 #   AUTOTRADE_CONTROL_TOKEN # required only for agent/operator control endpoints
 #   AUTOTRADE_AGENT_TOKEN   # required only for Claude intent claim/receipt endpoints
 #   OPENAI_API_KEY          # optional — in-app, closed-schema AI thesis
+#   INTELLIDHAN_SEC_USER_AGENT # required for SEC filing context; include contact email
+#   ALPHA_VANTAGE_API_KEY   # optional — current ticker news/sentiment context
+#   FINNHUB_API_KEY         # optional — capped social-attention context
 #   CHATGPT_WORKSPACE_AGENT_ID # optional — published agtch_ API channel identifier
 #   CHATGPT_WORKSPACE_AGENT_TOKEN # optional — Workspace Agents-scoped access token
 #   INTELLIDHAN_DAILY_BRIEF_GITHUB_TOKEN # fine-grained read-only token for private daily artifacts

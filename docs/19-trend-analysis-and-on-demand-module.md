@@ -138,18 +138,22 @@ Command:
 
 Universe: `QQQ SPY SMH TQQQ AAPL NVDA MSFT AMZN META GOOGL AMD TSLA`.
 
-Data: 1,256 corporate-action-adjusted completed daily bars per symbol, ending
-2026-07-10.
+Data refreshed 2026-07-17: 1,258 corporate-action-adjusted completed daily bars
+per symbol, ending 2026-07-17.
 Signals are formed at the close and applied to the next close-to-close return.
 Positions are long or cash, without leverage or shorting. Every position change
 is charged 10 basis points. Parameters are identical for all symbols.
 
 | Method | Positive CAGR | Beat buy/hold CAGR | Smaller drawdown | Median CAGR | Median Sharpe | Median max DD | Median exposure |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| SMA200 | 11/12 | 0/12 | 12/12 | 24.45% | 1.078 | -27.31% | 72.93% |
-| 12m time-series momentum | 12/12 | 0/12 | 9/12 | 20.93% | 0.988 | -33.86% | 75.18% |
-| Donchian 55/20 | 11/12 | 0/12 | 11/12 | 12.68% | 0.711 | -26.66% | 48.05% |
-| Two-of-three consensus | 11/12 | 0/12 | 12/12 | 24.62% | 0.990 | -27.56% | 72.28% |
+| SMA200 | 11/12 | 0/12 | 12/12 | 23.29% | 1.042 | -27.31% | 73.28% |
+| 12m time-series momentum | 12/12 | 0/12 | 9/12 | 20.25% | 0.935 | -33.86% | 75.28% |
+| Donchian 55/20 | 11/12 | 0/12 | 11/12 | 12.29% | 0.682 | -26.66% | 47.96% |
+| Two-of-three consensus | 11/12 | 0/12 | 12/12 | 23.41% | 0.956 | -27.56% | 72.63% |
+
+The same run found positive one-month walk-forward Brier skill for only 1 of 12
+symbols (median skill -1.58%) and no validated three-month contexts. Conditional
+forward labels therefore remain unconfirmed for almost the entire universe.
 
 ### Interpretation
 

@@ -1,6 +1,6 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-14 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-07-17 · **Status:** Working personal-terminal foundation
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -11,7 +11,12 @@ must not be presented as implemented.
 
 ## Current implementation
 
-- Card-first web terminal with Signals, Discover, Analyze, 0DTE, and Swing tasks.
+- Card-first Today terminal with SPX/SPY/QQQ context, a deterministic top-three
+  focus list, curated radar, rich signal plans, Discover, Analyze, 0DTE, and
+  Swing tasks.
+- Optional SEC filing/financial-strength, Alpha Vantage news-tone, and Finnhub
+  social-attention enrichment. Every provider carries source status and missing
+  inputs are excluded with visible score coverage.
 - Invite-only database accounts with scrypt password hashes, opaque
   server-expiring sessions, and ADMIN/TRADER/VIEWER roles. Preferences, capital
   limits, watchlists, and saved screens are isolated per user; broker
@@ -33,7 +38,8 @@ must not be presented as implemented.
   delivery action is the only allowed exception. The trigger API queues the run
   but does not yet return its output.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
-  forward evidence and fixed-rule backtests.
+  forward evidence and fixed-rule backtests; signed-in configured-universe
+  dossiers also expose the current SEC/news/social research snapshot.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
@@ -71,6 +77,7 @@ the Account panel to create the first administrator. See
 | 22 | [Smart-Play Scanner &amp; AI Thesis](docs/22-smart-play-scanner-and-ai-thesis.md) | Fixed momentum/breakout/pullback rules, walk-forward diagnostic, OpenAI evidence contract, and card-first UX |
 | 23 | [ChatGPT Workspace Agent Dispatch](docs/23-chatgpt-workspace-agent-dispatch.md) | Published-agent API trigger, security boundary, setup, UX, and operational contract |
 | 24 | [Daily Brief Landing Integration](docs/24-daily-brief-landing-integration.md) | Private artifact adapter, freshness/fallback contract, setup-card UX, and deployment configuration |
+| 25 | [Signal Terminal Redesign](docs/25-signal-terminal-redesign.md) | Agent-readable Today hierarchy, multi-feed rank contract, rich alerts, strategy evidence boundaries, and rollout plan |
 
 ## Core Product Tenets
 
