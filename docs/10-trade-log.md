@@ -17,7 +17,14 @@ user P&L uses the real track.
 
 ## 2. Record Contents
 
-Per alert: full alert snapshot (immutable), factor vector, paper fills/exits with timestamps and bar evidence, real fills (from Telegram button ack + Robinhood `get_pnl_trade_history` reconciliation), realized P&L (real + paper), R-multiple, MAE/MFE (max adverse/favorable excursion — did the stop breathe right?), process-adherence grade (entered inside zone? honored stop? trimmed at TPs?), and a post-trade chart snapshot.
+Per alert: full alert snapshot (immutable), factor vector, paper fills/exits with
+timestamps and bar evidence, real fills from user acknowledgements plus durable
+Codex execution receipts and broker reconciliation under doc 27, realized P&L
+(real + paper), R-multiple, MAE/MFE (max adverse/favorable excursion—did the
+stop breathe right?), process-adherence grade (entered inside zone? honored
+stop? trimmed at TPs?), and a post-trade chart snapshot. IntelliDhan never polls
+Robinhood directly; Codex discovers the official MCP's current reconciliation
+capabilities at runtime and records broker truth through the receipt contract.
 
 ## 3. Views (web)
 

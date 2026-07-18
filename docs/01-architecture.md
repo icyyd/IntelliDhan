@@ -136,13 +136,15 @@ events ─▶ L2-macro-context ────────────────�
 - **Telegram bot** inbound: button presses → `user.action` events (same stream the web app feeds) — channel-agnostic behavior capture.
 
 ### ⑤ Behavior Plane (docs 10, 17) — the closed loop
-- Consumes `user.action` + `alert.*` + fill reconciliations (RH MCP `get_pnl_trade_history` poller).
+- Consumes `user.action` + `alert.*` plus durable execution receipts and broker
+  reconciliations submitted by Codex under doc 27. The Behavior Plane never
+  polls Robinhood or holds an MCP tool or credential.
 - **Error detectors**: streaming rules over the joined (alerts × actions × fills) timeline → `ErrorTag` events (revenge, chase, stop-tamper, hesitation, euphoria-size… doc 17 §3), each linked to its root-cause family.
 - **Intervention ladder**: consumes detections + P&L state → publishes `discipline.state`: module cooldowns, friction requirements (breathing interstitial before next order), size multipliers (drawdown *and* euphoria guards), user tier (MECHANICAL/SUBJECTIVE/INTUITIVE), 20-trade-sample locks. The Signal plane's veto wall and the Composer's sizing both subscribe — **psychology literally throttles the engine**, one loop, no side channels.
 - **Mental-game store**: A/B/C tags, emotional maps, mental hand histories, warmup/cooldown completions — relational tables keyed to sessions and trades; warmup-gate state feeds the UI's module-activation locks.
 
 ### ⑥ Learning Plane (docs 03 §4, 10)
-- **Trade log writer**: every alert → immutable log record; **paper-track executor** simulates fills/management per the printed plan for *all* alerts (uniform, unbiased); real-track reconciler matches user fills from RH.
+- **Trade log writer**: every alert → immutable log record; **paper-track executor** simulates fills/management per the printed plan for *all* alerts (uniform, unbiased); real-track reconciler matches user-entered fills and durable Codex broker receipts.
 - **Settlement worker**: terminal-state resolution (EOD + real-time), MAE/MFE computation, process-adherence + Consistency Score grading.
 - **Calibration service** (weekly + on-demand): isotonic fits per strategy class from settled paper outcomes (+ sub-threshold setups), drift detection → auto-demotion events → strategy registry hot-reloads thresholds. Publishes the claimed-vs-realized curves the UI renders (G8).
 - **Replay/backtest harness**: same DAG + Signal plane fed from recorded `md.*` streams at accelerated clock; CI runs the 20 curated sessions; walk-forward backtests for new strategies (doc 08 §4 governance) run here too.
