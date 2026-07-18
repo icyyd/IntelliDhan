@@ -141,6 +141,25 @@ def test_regular_system_commit_with_readme_passes(repo: Path):
     assert checker.main(["check", base, head], root=repo) == 0
 
 
+def test_system_file_rename_to_excluded_path_still_requires_readme(
+    repo: Path, capsys: pytest.CaptureFixture[str]
+):
+    activate(repo)
+    base = commit(
+        repo,
+        "documented service",
+        {"services/app.py": "active\n", "README.md": "# Project\n\nService.\n"},
+    )
+    (repo / "notes").mkdir()
+    git(repo, "mv", "services/app.py", "notes/app.py")
+    git(repo, "commit", "-m", "move service out of system paths")
+    head = git(repo, "rev-parse", "HEAD")
+
+    assert checker.main(["check", base, head], root=repo) == 1
+    error = capsys.readouterr().err
+    assert "services/app.py" in error
+
+
 def test_merge_history_is_checked(repo: Path):
     base = activate(repo)
     git(repo, "checkout", "-b", "feature")

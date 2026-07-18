@@ -11,6 +11,8 @@
   covers build/tracking and agent configuration, excludes explicitly archived
   docs plus test/context-only commits, and has temporary-repository tests for
   bootstrap, invalid-base, regular-commit, merge, and path-scope behavior.
+  Rename collapsing is disabled so moving a system file into an excluded path
+  cannot hide the source-path change.
 - Active isolated branch/worktree: `codex/codex-robinhood-primary` at
   `/Users/dhanvin/Documents/IntelliDhan-codex-robinhood`, based on merged
   `main` commit `7620024`. The collaborators' dirty checkout is untouched.

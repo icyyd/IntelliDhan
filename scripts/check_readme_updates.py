@@ -79,6 +79,7 @@ def changed_files(commit: str, *, root: Path) -> set[str]:
         output = git(
             "diff-tree",
             "--root",
+            "--no-renames",
             "--no-commit-id",
             "--name-only",
             "-r",
@@ -86,7 +87,7 @@ def changed_files(commit: str, *, root: Path) -> set[str]:
             root=root,
         )
     else:
-        output = git("diff", "--name-only", ancestry[1], commit, root=root)
+        output = git("diff", "--no-renames", "--name-only", ancestry[1], commit, root=root)
     return {line for line in output.splitlines() if line}
 
 

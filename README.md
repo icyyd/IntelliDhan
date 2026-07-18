@@ -71,7 +71,9 @@ the base branch and rejects changes to runtime, configuration, UI, deployment,
 scripts, architecture, or active system documentation that omit `README.md`.
 Tracking/build boundaries such as `.gitignore`, `.dockerignore`, `.claude/`,
 and `.codex/` are included; explicitly archived or decommissioned docs and
-test-only/context-only commits are excluded.
+test-only/context-only commits are excluded. Rename detection is disabled for
+this check so moving an active system file into an excluded location still
+requires the same-commit README update.
 
 ## Document Index
 
