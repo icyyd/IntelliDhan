@@ -31,8 +31,28 @@ def test_today_declutter_uses_progressive_disclosure_and_conditional_detail():
     hero_end = source.index("</section>", hero_start)
     assert 'id="homeStockSearchForm"' in source[hero_start:hero_end]
     assert '<details class="curated-panel">' in source
-    assert "if(!alert){ panel.hidden=true; return; }" in source
-    assert "panel.hidden=!ownerAuthenticated||!budgetsCache" in source
+    assert "if(!selectionTouched||!alert){ panel.hidden=true; return; }" in source
+    assert "selectedAlertId = latest?.alert_id" not in source
+    assert 'type:"Analyze"' in source
+    assert "analyzeCandidate(s);" in source
+
+
+def test_risk_limit_failure_stays_visible_and_fail_closed():
+    source = Path("web/index.html").read_text(encoding="utf-8")
+    assert 'budgetsStatus="error"' in source
+    assert "panel.hidden=!ownerAuthenticated" in source
+    assert "Risk limits unavailable." in source
+    assert "Do not approve execution until they reload." in source
+    assert "onclick=\"loadCapitalLimits()\"" in source
+
+
+def test_autocomplete_invalidates_stale_results_and_exposes_keyboard_state():
+    source = Path("web/index.html").read_text(encoding="utf-8")
+    assert '.search-suggestion[aria-selected="true"]' in source
+    assert "homeSearchRequest++;" in source
+    assert "suggestions.replaceChildren();" in source
+    assert "const request=homeSearchRequest;" in source
+    assert 'if(event.key==="Escape"){ event.preventDefault(); hideHomeSuggestions(); }' in source
 
 
 def test_decluttered_terminal_has_unique_element_ids():

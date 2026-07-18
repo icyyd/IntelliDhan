@@ -1,6 +1,6 @@
 # Signal terminal decluttering pass
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Branch: `codex/ui-declutter`
 
 ## Goal
@@ -81,5 +81,20 @@ permission to copy their execution behavior.
   and desktop.
 - Light and dark themes were inspected, and the final browser console contained
   no errors.
-- Automated verification passed with 243 tests (5 deselected), Ruff, two parsed
+- Automated verification passed with 245 tests (5 deselected), Ruff, two parsed
   inline scripts, unique DOM IDs, and a clean `git diff --check`.
+
+## Independent review corrections
+
+- Capital-limit loading now distinguishes loading, ready, and error states. A
+  signed-in failure keeps the risk panel visible with a blocking warning and a
+  retry action instead of silently removing the safety surface.
+- Command-palette ticker results now open the full on-demand analysis module;
+  they no longer target hidden market-only state.
+- Setup detail stays collapsed on initial load and appears only after the user
+  explicitly selects an alert card.
+- Autocomplete gives the active keyboard option a visible marker, clears old
+  option DOM immediately, and invalidates pending/debounced requests on input,
+  submit, selection, outside click, or Escape.
+- Browser recheck confirmed the active-option marker, cancellation of a pending
+  `Micro` search, no mobile overflow, and a clean console.

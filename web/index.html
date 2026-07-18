@@ -735,7 +735,7 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
 .home-search-form{display:flex; gap:8px}.home-search-form input{width:100%; min-height:48px; padding:0 16px; border:1px solid var(--border); border-radius:17px; background:var(--input-bg); color:var(--text); font:750 15px var(--mono); letter-spacing:.035em; text-transform:uppercase}.home-search-form input:focus{outline:2px solid rgba(145,164,255,.65); outline-offset:2px}
 .home-search-form button{min-width:112px; border:0; border-radius:16px; background:var(--cyan); color:var(--on-accent); font:750 12px var(--sans); cursor:pointer}.home-search-form button:hover{filter:brightness(1.08)}
 .search-suggestions{position:absolute; top:55px; left:0; right:120px; z-index:20; overflow:hidden; border:1px solid var(--border); border-radius:17px; background:var(--panel-elevated); box-shadow:0 18px 50px rgba(0,0,0,.32)}
-.search-suggestion{display:flex; width:100%; align-items:center; gap:10px; min-height:45px; padding:8px 12px; border:0; border-bottom:1px solid var(--border-soft); background:transparent; color:var(--text); text-align:left; cursor:pointer}.search-suggestion:last-child{border-bottom:0}.search-suggestion:hover,.search-suggestion:focus{background:var(--tint-a); outline:none}.search-suggestion b{font:750 12px var(--mono); color:var(--cyan)}.search-suggestion span{overflow:hidden; color:var(--text-dim); font-size:11px; text-overflow:ellipsis; white-space:nowrap}
+.search-suggestion{display:flex; width:100%; align-items:center; gap:10px; min-height:45px; padding:8px 12px; border:0; border-bottom:1px solid var(--border-soft); background:transparent; color:var(--text); text-align:left; cursor:pointer}.search-suggestion:last-child{border-bottom:0}.search-suggestion:hover,.search-suggestion:focus,.search-suggestion[aria-selected="true"]{background:var(--tint-a); box-shadow:inset 3px 0 0 var(--cyan); outline:none}.search-suggestion b{font:750 12px var(--mono); color:var(--cyan)}.search-suggestion span{overflow:hidden; color:var(--text-dim); font-size:11px; text-overflow:ellipsis; white-space:nowrap}
 .home-levels{grid-column:1/-1; display:grid; grid-template-columns:auto repeat(5,minmax(0,1fr)); gap:8px; padding-top:12px; border-top:1px solid var(--border-soft)}.home-levels[hidden]{display:none}.home-level-symbol{display:flex; flex-direction:column; justify-content:center; padding:10px 14px; border-radius:17px; background:rgba(145,164,255,.10)}.home-level-symbol b{font:800 17px var(--mono)}.home-level-symbol small{color:var(--text-faint); font-size:9px}.home-level{padding:10px; border-radius:16px; background:var(--tint-d)}.home-level b{display:block; font:700 12px var(--mono)}.home-level small{display:block; margin-top:2px; color:var(--text-faint); font-size:8.5px}.home-level-action{grid-column:1/-1; justify-self:end; align-self:center; color:var(--cyan); font-size:10px; font-weight:750; background:none; border:0; cursor:pointer}
 .analysis-search-panel{padding:16px}
 .analysis-form{display:grid; grid-template-columns:minmax(140px,1.4fr) repeat(3,minmax(108px,.7fr)) auto; gap:10px; align-items:end}
@@ -1882,7 +1882,6 @@ function ensureSelection(s){
   if(!selectedSymbol){
     const latest=active.at(-1);
     selectedSymbol = latest?.symbol || Object.keys(s.symbols)[0] || null;
-    selectedAlertId = latest?.alert_id || null;
   }
   if(!s.symbols[selectedSymbol]) selectedSymbol = Object.keys(s.symbols)[0] || null;
 }
@@ -1952,10 +1951,6 @@ async function refreshCalibration(){
     calibration = await fetchJSON("/api/calibration");
     renderEvidencePanel();
     if(lastState){
-      if(!selectionTouched){
-        const preferred=orderedAlerts(lastState)[0];
-        if(preferred){ selectedAlertId=preferred.alert_id; selectedSymbol=preferred.symbol; }
-      }
       renderContext(lastState); renderMatrix(lastState); renderTracking(lastState);
     }
   }catch(e){}
@@ -2110,7 +2105,7 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   symbolOrder=[]; selectedSymbol=null; selectedAlertId=null; selectedSwingSymbol=null;
   currentDossier=null; selectionTouched=false;
   if(typeof autotradeCache!=="undefined") autotradeCache=null;
-  if(typeof budgetsCache!=="undefined") budgetsCache=null;
+  if(typeof budgetsCache!=="undefined"){ budgetsCache=null; budgetsStatus="idle"; budgetsError=""; }
   if(typeof wsConnection!=="undefined"&&wsConnection){
     const socket=wsConnection; wsConnection=null; socket.onclose=null; socket.close();
   }
@@ -2331,7 +2326,7 @@ function renderContext(s){
   const dq=symbolDataQuality(s,selectedSymbol);
   const alert=selectedAlert(s);
   const panel=document.getElementById("contextPanel");
-  if(!alert){ panel.hidden=true; return; }
+  if(!selectionTouched||!alert){ panel.hidden=true; return; }
   panel.hidden=false;
   const ev=alert ? evidenceFor(alert.strategy) : null;
   document.getElementById("contextTitle").textContent=alert?"Selected setup":"Market context";
@@ -2670,8 +2665,17 @@ function renderPerformance(s){
 
 function renderRisk(s){
   const panel=document.getElementById("riskPanel");
-  panel.hidden=!ownerAuthenticated||!budgetsCache;
+  const output=document.getElementById("riskUsage");
+  panel.hidden=!ownerAuthenticated;
   if(panel.hidden) return;
+  if(budgetsStatus==="loading"){
+    output.innerHTML=`<div class="empty" role="status">Loading capital and risk limits…</div>`;
+    return;
+  }
+  if(budgetsStatus!=="ready"||!budgetsCache){
+    output.innerHTML=`<div class="empty" role="alert"><b>Risk limits unavailable.</b>${esc(budgetsError||"Capital limits could not be verified.")} Do not approve execution until they reload.<button class="auto-configure" type="button" onclick="loadCapitalLimits()">Retry limits</button></div>`;
+    return;
+  }
   // Compare shared signal-plan risk with the signed-in user's review ceiling.
   const committed = {};
   activeAlerts(s).forEach(a=>{
@@ -2939,11 +2943,17 @@ async function savePreferences(){
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
 }
 async function loadCapitalLimits(){
-  if(!ownerAuthenticated){ budgetsCache=null; return; }
+  if(!ownerAuthenticated){ budgetsCache=null; budgetsStatus="idle"; budgetsError=""; return; }
+  budgetsCache=null; budgetsStatus="loading"; budgetsError="";
+  if(lastState) renderRisk(lastState);
   try{
     budgetsCache=await fetchJSON("/api/budgets");
+    budgetsStatus="ready";
     if(lastState) renderRisk(lastState);
-  }catch(e){ budgetsCache=null; }
+  }catch(e){
+    budgetsCache=null; budgetsStatus="error"; budgetsError=e.message||"Capital limits could not be verified.";
+    if(lastState) renderRisk(lastState);
+  }
 }
 async function loadWatchlists(){
   if(!ownerAuthenticated){ watchlistsCache=[]; renderWatchlists(); return; }
@@ -3152,8 +3162,9 @@ function homeSearchSymbol(value){
 }
 function hideHomeSuggestions(){
   const input=document.getElementById("homeStockSearch"), suggestions=document.getElementById("homeSearchSuggestions");
-  suggestions.hidden=true; homeSearchActive=-1; input.setAttribute("aria-expanded","false"); input.removeAttribute("aria-activedescendant");
-  suggestions.querySelectorAll('[role="option"]').forEach(option=>option.setAttribute("aria-selected","false"));
+  clearTimeout(homeSearchTimer); homeSearchTimer=null; homeSearchRequest++;
+  homeSearchResults=[]; homeSearchActive=-1; suggestions.hidden=true; suggestions.replaceChildren();
+  input.setAttribute("aria-expanded","false"); input.removeAttribute("aria-activedescendant");
 }
 function setHomeSearchActive(index){
   const input=document.getElementById("homeStockSearch"), options=[...document.querySelectorAll("#homeSearchSuggestions [role=option]")];
@@ -3202,14 +3213,16 @@ async function runHomeSearch(symbol){
 document.getElementById("homeStockSearchForm").addEventListener("submit",async event=>{
   event.preventDefault();
   if(homeSearchActive>=0&&homeSearchResults[homeSearchActive]){ chooseHomeSuggestion(homeSearchResults[homeSearchActive]); return; }
-  const input=document.getElementById("homeStockSearch"), symbol=await resolveHomeSearch(input.value);
-  hideHomeSuggestions(); if(symbol){ input.value=symbol; runHomeSearch(symbol); }
+  const input=document.getElementById("homeStockSearch"), value=input.value;
+  hideHomeSuggestions();
+  const symbol=await resolveHomeSearch(value);
+  if(symbol){ input.value=symbol; runHomeSearch(symbol); }
 });
 document.getElementById("homeStockSearch").addEventListener("input",event=>{
-  clearTimeout(homeSearchTimer);
-  const query=event.target.value.trim(), suggestions=document.getElementById("homeSearchSuggestions"), request=++homeSearchRequest;
-  homeSearchResults=[]; homeSearchActive=-1; event.target.removeAttribute("aria-activedescendant");
-  if(query.length<1){ hideHomeSuggestions(); suggestions.replaceChildren(); return; }
+  const query=event.target.value.trim(), suggestions=document.getElementById("homeSearchSuggestions");
+  hideHomeSuggestions();
+  if(query.length<1) return;
+  const request=homeSearchRequest;
   homeSearchTimer=setTimeout(async()=>{
     try{
       const data=await fetchJSON(`/api/search?q=${encodeURIComponent(query)}&limit=7`);
@@ -3223,7 +3236,7 @@ document.getElementById("homeStockSearch").addEventListener("input",event=>{
 });
 document.getElementById("homeStockSearch").addEventListener("keydown",event=>{
   const open=!document.getElementById("homeSearchSuggestions").hidden;
-  if(event.key==="Escape"&&open){ event.preventDefault(); hideHomeSuggestions(); }
+  if(event.key==="Escape"){ event.preventDefault(); hideHomeSuggestions(); }
   else if((event.key==="ArrowDown"||event.key==="ArrowUp")&&open){ event.preventDefault(); const next=homeSearchActive<0?(event.key==="ArrowDown"?0:homeSearchResults.length-1):homeSearchActive+(event.key==="ArrowDown"?1:-1); setHomeSearchActive(next); }
   else if(event.key==="Enter"&&open&&homeSearchActive>=0){ event.preventDefault(); chooseHomeSuggestion(homeSearchResults[homeSearchActive]); }
 });
@@ -3615,9 +3628,9 @@ function openPalette(){
 function closePalette(){ document.getElementById("cmdkOverlay").classList.remove("open"); }
 function renderPaletteResults(q){
   const items = [
-    ...symbolOrder.map(s=>({label:s, type:"Symbol", action:()=>{
-      closePalette(); switchView("signals");
-      selectSymbol(s);
+    ...symbolOrder.map(s=>({label:s, type:"Analyze", action:()=>{
+      closePalette();
+      analyzeCandidate(s);
     }})),
     {label:"Discover stocks", type:"Action", action:()=>{ closePalette(); switchView("discover"); }},
     {label:"Analyze a stock", type:"Action", action:()=>{
@@ -3725,7 +3738,7 @@ async function disarmAutotrade(){
 }
 
 // ── Personal capital and risk limits ────────────────────────────────
-let budgetsCache = null;
+let budgetsCache = null, budgetsStatus = "idle", budgetsError = "";
 const CAP_LABEL = {"0DTE":"Daily capital","SWING":"Daily capital","LEAPS":"Standing capital","HODL":"Standing capital"};
 const CAP_KEY = {"0DTE":"daily_capital","SWING":"daily_capital","LEAPS":"standing_capital","HODL":"standing_capital"};
 
@@ -3739,8 +3752,12 @@ async function openBudgets(){
   const legacy=Boolean(accountUser?.legacy);
   document.getElementById("budgetsSubtitle").textContent=legacy?"Legacy shared-engine settings.":"Saved privately to your account.";
   dlg.showModal();
+  budgetsCache=null; budgetsStatus="loading"; budgetsError="";
+  if(lastState) renderRisk(lastState);
   try{
     budgetsCache = await fetchJSON("/api/budgets");
+    budgetsStatus="ready";
+    if(lastState) renderRisk(lastState);
     const boundaryCopy=legacy?"These legacy settings change shared engine sizing for every user. Create a durable account before relying on personal limits.":"These account-specific limits guide your risk review. The current shared signal plans and automation policy are not automatically resized per account.";
     body.innerHTML = `<div class="account-helper" style="margin:0 0 12px">${boundaryCopy}</div>`+Object.entries(budgetsCache).map(([mod, cfg]) => `
       <div class="bd-module">
@@ -3756,6 +3773,8 @@ async function openBudgets(){
         <div class="bd-hint">${legacy?'Shared engine limit for '+mod+'; changing it affects every user.':'Your review ceiling for '+mod+'; signals above it need manual resizing or should be skipped.'}</div>
       </div>`).join("");
   }catch(e){
+    budgetsCache=null; budgetsStatus="error"; budgetsError=e.message||"Capital limits could not be verified.";
+    if(lastState) renderRisk(lastState);
     body.innerHTML = `<div class="empty">${esc(e.message||"Could not load capital limits")}</div>`;
     if(e.status===401){ dlg.close(); openOwnerDialog(); }
   }
@@ -3779,6 +3798,7 @@ async function saveBudgets(){
   status.textContent = "Saving…"; status.className = "bd-status";
   try{
     budgetsCache = await fetchJSON("/api/budgets", {method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(updated)});
+    budgetsStatus="ready"; budgetsError="";
     status.textContent = accountUser?.legacy?"Saved to the shared engine defaults.":"Saved privately to your account.";
     status.className = "bd-status ok";
     renderRisk(lastState);
