@@ -46,6 +46,35 @@ def test_sentinel_ok_on_contiguous_bars():
     assert report.quality == DataQuality.OK and report.issues == []
 
 
+def test_live_bar_sentinel_rejects_empty_stale_and_mismatched_series():
+    required = T0 + timedelta(minutes=10)
+    empty = check_bars(
+        "QQQ",
+        [],
+        expected_timeframe=Timeframe.M5,
+        require_bars=True,
+        latest_required_close=required,
+    )
+    assert empty.quality == DataQuality.DEGRADED
+    assert any("no bars" in issue for issue in empty.issues)
+
+    stale = check_bars(
+        "QQQ",
+        [mk_bar(0)],
+        expected_timeframe=Timeframe.M5,
+        latest_required_close=required,
+    )
+    assert any("stale" in issue for issue in stale.issues)
+
+    wrong = check_bars(
+        "QQQ",
+        [mk_bar(2, tf=Timeframe.M15, symbol="SPY")],
+        expected_timeframe=Timeframe.M5,
+    )
+    assert any("unexpected symbols" in issue for issue in wrong.issues)
+    assert any("unexpected timeframes" in issue for issue in wrong.issues)
+
+
 def test_sentinel_quote_checks():
     now = T0
     crossed = Quote(symbol="QQQ", ts=now, bid=101.0, ask=100.0, last=100.5, source="t")

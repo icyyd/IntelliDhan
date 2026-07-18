@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from intellidhan_schemas import SessionState
+from intellidhan_schemas import SessionState, Timeframe
 
 ET = ZoneInfo("America/New_York")
 
@@ -89,3 +89,44 @@ class MarketClock:
     def session_id(self, now: datetime) -> str:
         """Stable per-trading-day key; VWAP and profile builders reset on change."""
         return now.astimezone(ET).date().isoformat()
+
+    def latest_completed_bar_close(
+        self, now: datetime, timeframe: Timeframe
+    ) -> datetime:
+        """Latest regular-session bar close at or before ``now``.
+
+        The prior session close remains the boundary through the overnight,
+        weekend, and first minutes after the next open. Feed callers apply
+        their own publication grace before calling so a just-closed candle is
+        not treated as late while the provider is still finalizing it.
+        """
+        if now.tzinfo is None:
+            raise ValueError("naive datetime rejected")
+        if timeframe.seconds >= Timeframe.D1.seconds:
+            raise ValueError("completed intraday boundary requires an intraday timeframe")
+        local = now.astimezone(ET)
+        if self.is_trading_day(local.date()):
+            opened = datetime.combine(local.date(), RTH_OPEN, tzinfo=ET)
+            closed = datetime.combine(
+                local.date(), self.rth_close(local.date()), tzinfo=ET
+            )
+            if opened <= local < closed:
+                completed = int((local - opened).total_seconds() // timeframe.seconds)
+                if completed >= 1:
+                    return opened + timedelta(seconds=completed * timeframe.seconds)
+        return self.latest_completed_session_close(local)
+
+    def latest_completed_session_close(self, now: datetime) -> datetime:
+        """Most recent full regular-session close at or before ``now``."""
+        if now.tzinfo is None:
+            raise ValueError("naive datetime rejected")
+        local = now.astimezone(ET)
+        day = local.date()
+        if self.is_trading_day(day):
+            closed = datetime.combine(day, self.rth_close(day), tzinfo=ET)
+            if local >= closed:
+                return closed
+        day -= timedelta(days=1)
+        while not self.is_trading_day(day):
+            day -= timedelta(days=1)
+        return datetime.combine(day, self.rth_close(day), tzinfo=ET)

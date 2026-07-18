@@ -459,6 +459,16 @@ body{
 .desk-stat small{display:block; color:var(--text-faint); font-size:10.5px; white-space:nowrap}
 
 .signal-board{padding:18px}
+.data-quality-notice{display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border:1px solid rgba(251,113,133,.28); border-radius:20px; background:linear-gradient(145deg,rgba(92,40,58,.55),rgba(29,25,43,.76)); color:var(--red-soft); box-shadow:var(--shadow-card)}
+.data-quality-notice[hidden]{display:none}
+.data-quality-notice .stat-bubble{background:rgba(251,113,133,.13); color:var(--red)}
+.data-quality-notice b{display:block; color:var(--text); font-size:13px; margin-bottom:3px}
+.data-quality-notice p{margin:0; color:var(--text-dim); font-size:11.5px; line-height:1.55}
+.data-quality-symbols{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.data-quality-symbols span{padding:4px 8px; border-radius:99px; background:rgba(251,113,133,.11); color:var(--red-soft); font:650 10px var(--mono)}
+.data-quality-notice.waiting{border-color:rgba(246,200,107,.25); background:linear-gradient(145deg,rgba(82,65,32,.42),rgba(29,25,43,.76)); color:var(--gold)}
+.data-quality-notice.waiting .stat-bubble{background:rgba(246,200,107,.12); color:var(--gold)}
+.data-quality-notice.waiting .data-quality-symbols span{background:rgba(246,200,107,.10); color:var(--gold)}
 .section-heading{display:flex; align-items:center; gap:16px; margin-bottom:15px}
 .section-heading-copy h2{font-size:18px; letter-spacing:-.02em; margin:0 0 2px}
 .section-heading-copy p{font-size:11.5px; color:var(--text-faint); margin:0}
@@ -538,6 +548,10 @@ body{
 .sym-row:hover{background:rgba(145,164,255,.06); border-color:rgba(145,164,255,.32)}
 .sym-row.hl{border-radius:16px; box-shadow:0 0 0 2px rgba(145,164,255,.13); background:rgba(145,164,255,.075)}
 .sym-row .tk{width:auto; font-size:13px}
+.sym-row .tk small{display:block; color:var(--red-soft); font:650 10px var(--sans); text-transform:uppercase; letter-spacing:.06em; margin-top:2px}
+.sym-row .tk small.neutral{color:var(--text-faint)}
+.sym-row .tk small.waiting{color:var(--gold)}
+.sym-row.paused{border-color:rgba(251,113,133,.22); background:rgba(251,113,133,.045)}
 .sym-row .px{width:auto; text-align:right; font-size:11px}
 .sym-row .tf-chips{grid-column:1/-1; margin-top:4px}
 .tf-chip{border-radius:99px; padding:3px 7px}
@@ -1014,6 +1028,11 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       </div>
     </section>
 
+    <section class="data-quality-notice" id="dataQualityNotice" role="status" aria-live="polite" hidden>
+      <span class="stat-bubble"><svg class="icon"><use href="#i-alert"/></svg></span>
+      <div><b id="dataQualityTitle">Market data paused</b><p id="dataQualityDetail"></p><div class="data-quality-symbols" id="dataQualitySymbols"></div></div>
+    </section>
+
     <section class="panel signal-board" aria-labelledby="signalBoardTitle">
       <div class="section-heading">
         <div class="section-heading-copy">
@@ -1415,9 +1434,25 @@ function esc(value){
   return String(value ?? "").replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
 function fmtPx(value){ return Number.isFinite(Number(value)) ? Number(value).toFixed(2) : "—"; }
-function activeAlerts(s){
+function symbolDataQuality(s,symbol){
+  return s?.symbols?.[symbol]?.data_quality || s?.readiness?.symbols?.[symbol] || null;
+}
+function isDataQuarantined(state){ return state?.status==="QUARANTINED"; }
+function dataStateLabel(state){
+  if(state?.status==="QUARANTINED") return "Data issue";
+  if(state?.status==="WAITING") return "Opening data";
+  if(state?.status==="MARKET_CLOSED") return "Market closed";
+  return state?.status ? String(state.status).replaceAll("_"," ") : "Not ready";
+}
+function rawActiveAlerts(s){
   return (s.alerts||[]).filter(a=>a.status!=="EXPIRED" && a.status!=="CANCELLED" &&
     (!a.valid_until || new Date(a.valid_until).getTime()>Date.now()));
+}
+function heldDataAlerts(s){
+  return rawActiveAlerts(s).filter(a=>isDataQuarantined(symbolDataQuality(s,a.symbol)));
+}
+function activeAlerts(s){
+  return rawActiveAlerts(s).filter(a=>!isDataQuarantined(symbolDataQuality(s,a.symbol)));
 }
 function selectedAlert(s){
   return activeAlerts(s).find(a=>a.alert_id===selectedAlertId) || null;
@@ -1588,8 +1623,13 @@ function renderAll(){
   const sess = document.getElementById("session");
   sess.innerHTML = `<span class="dot ${s.session==='RTH'?'rth':''}"></span> ${s.session}`;
 
+  const pausedSymbols=Object.entries(s.readiness?.symbols||{}).filter(([,state])=>state.actionable===false);
+  const quarantined=pausedSymbols.filter(([,state])=>state.status==="QUARANTINED");
   // Honest readiness first; market-closed is healthy only after boot + DQ + store pass.
-  if(s.readiness && !s.readiness.ok){
+  if(quarantined.length){
+    setHealth("warn");
+    document.getElementById("dataHealth").lastChild.textContent = ` ${quarantined.length} ticker${quarantined.length===1?"":"s"} paused`;
+  } else if(s.readiness && !s.readiness.ok){
     setHealth(s.readiness.boot_state==="FAILED"?"down":"warn");
     const plane=s.readiness.loop_state!=="RUNNING"?s.readiness.loop_state:s.readiness.provider_state||s.readiness.boot_state;
     document.getElementById("dataHealth").lastChild.textContent = ` ${String(plane||"NOT READY").replaceAll("_"," ")}`;
@@ -1609,6 +1649,7 @@ function renderAll(){
     return `<span class="tk"><b>${sym}</b>${d.last?d.last.toFixed(2):"—"}</span>`;
   }).join("");
 
+  renderDataQualityNotice(s);
   renderMatrix(s);
   renderOverview(s);
   renderContext(s);
@@ -1624,8 +1665,27 @@ function renderAll(){
 
 function renderOverview(s){
   document.getElementById("summarySignals").textContent=activeAlerts(s).length;
-  document.getElementById("summarySuppressed").textContent=(s.suppressed||[]).length;
+  document.getElementById("summarySuppressed").textContent=(s.suppressed||[]).length+heldDataAlerts(s).length;
   document.getElementById("summaryNext").textContent=s.session==="RTH"?"5 min":"Next open";
+}
+
+function renderDataQualityNotice(s){
+  const notice=document.getElementById("dataQualityNotice");
+  const states=Object.entries(s.readiness?.symbols||{});
+  const quarantined=states.filter(([,state])=>state.status==="QUARANTINED");
+  const waiting=states.filter(([,state])=>state.status==="WAITING");
+  const shown=quarantined.length?quarantined:waiting;
+  if(!shown.length){ notice.hidden=true; return; }
+  notice.classList.toggle("waiting", !quarantined.length);
+  document.getElementById("dataQualityTitle").textContent=quarantined.length
+    ? `Fresh signals blocked for ${quarantined.length} ticker${quarantined.length===1?"":"s"}`
+    : "Waiting for the first completed market bar";
+  document.getElementById("dataQualityDetail").textContent=quarantined.length
+    ? "Existing plans for these tickers were cancelled. Healthy tickers keep updating; only fresh plans may appear after the feed passes a new validation poll."
+    : "No completed 5-minute bar is due yet. Trading actions will unlock automatically after current data is validated.";
+  document.getElementById("dataQualitySymbols").innerHTML=shown.map(([symbol,state])=>
+    `<span title="${esc(state.last_error||state.status)}">${esc(symbol)} · ${esc(dataStateLabel(state))}</span>`).join("");
+  notice.hidden=false;
 }
 
 function tfBadge(state){
@@ -1724,6 +1784,7 @@ function renderMarketChart(symbolState, alert){
 function renderContext(s){
   ensureSelection(s);
   const d=s.symbols[selectedSymbol] || {};
+  const dq=symbolDataQuality(s,selectedSymbol);
   const alert=selectedAlert(s);
   const ev=alert ? evidenceFor(alert.strategy) : null;
   document.getElementById("contextTitle").textContent=alert?"Selected setup":"Market context";
@@ -1732,10 +1793,14 @@ function renderContext(s){
   const trendKeys=["D","4H","1H","15m","5m"].filter(tf=>d.matrix?.[tf]);
   const visibleBars=Math.min((d.bars||[]).length,matchMedia("(max-width:520px)").matches?36:60);
   document.getElementById("contextMeta").innerHTML=trendKeys.map(tf=>`<span title="${tf}">${tfBadge(d.matrix[tf])}</span>`).join("") +
-    `<span class="chip">5m · ${visibleBars} bars</span>`;
+    `<span class="chip">5m · ${visibleBars} bars</span>`+
+    (dq?.actionable===false?`<span class="chip" style="color:${isDataQuarantined(dq)?'var(--red-soft)':'var(--text-faint)'}">${esc(dataStateLabel(dq))}</span>`:"");
 
   const banner=document.getElementById("contextBanner");
-  if(alert && ev?.status==="none"){
+  if(dq?.actionable===false){
+    banner.className=`context-banner ${isDataQuarantined(dq)?"blocked":"neutral"}`;
+    banner.innerHTML=`<svg class="icon"><use href="#i-alert"/></svg><span><strong>${esc(selectedSymbol)} trading actions are paused.</strong> ${esc(dq.last_error||"Current market data has not passed validation.")} Values below are last-known context, not a current entry.</span>`;
+  }else if(alert && ev?.status==="none"){
     banner.className="context-banner neutral";
     banner.innerHTML=`<svg class="icon"><use href="#i-alert"/></svg><span><strong>Historical reliability is unavailable.</strong> Treat this signal as research-only until validation data loads.</span>`;
   }else if(alert && ev?.blocked){
@@ -1783,10 +1848,14 @@ function renderContext(s){
 function renderMatrix(s){
   document.getElementById("matrix").innerHTML = symbolOrder.map(sym=>{
     const d = s.symbols[sym];
+    const dq=symbolDataQuality(s,sym);
     const chips = ["D","1H","5m"].filter(tf=>d.matrix[tf]).map(tf=>
       `<span title="${tf}">${tfBadge(d.matrix[tf])}</span>`).join("");
     const px = d.last ? d.last.toFixed(2) : "—";
-    return `<button class="sym-row ${sym===selectedSymbol?'hl':''}" id="row-${sym}" data-symbol="${sym}" aria-label="View ${sym} market context"><span class="tk">${sym}</span><span class="px num">${px}</span><span class="tf-chips">${chips}</span></button>`;
+    const unavailable=dq?.actionable===false;
+    const quarantined=isDataQuarantined(dq);
+    const statusClass=dq?.status==="WAITING"?"waiting":"neutral";
+    return `<button class="sym-row ${sym===selectedSymbol?'hl':''} ${quarantined?'paused':''}" id="row-${sym}" data-symbol="${sym}" aria-label="View ${sym} market context${unavailable?`, ${dataStateLabel(dq).toLowerCase()}`:''}"><span class="tk">${sym}${unavailable?`<small class="${quarantined?'':statusClass}">${esc(dataStateLabel(dq))}</small>`:''}</span><span class="px num">${px}</span><span class="tf-chips">${chips}</span></button>`;
   }).join("");
   document.querySelectorAll(".sym-row[data-symbol]").forEach(row=>row.addEventListener("click",()=>selectSymbol(row.dataset.symbol)));
 }
@@ -1949,13 +2018,14 @@ function plainSuppressionDetail(detail,gate){
 
 function noTradeSummary(s){
   const sup = s.suppressed||[];
+  const dataHeld=heldDataAlerts(s);
   const evaluated = (s.alerts||[]).length + sup.length;
-  const top = gateCounts(sup).slice(0,3);
+  const top = gateCounts(sup.concat(dataHeld.map(a=>({gate:"data_quality"})))).slice(0,3);
   const maxN = top.length ? top[0][1] : 1;
   const symbols = [...new Set(sup.map(x=>x.symbol))];
   const nextEval = s.session === "RTH" ? "next 5-minute bar close" : "market closed — resumes at next open";
   return `<div class="notrade-summary">
-    <div class="headline"><b>${evaluated}</b> candidates evaluated this session · <b>${sup.length}</b> suppressed · <b>${symbols.length}</b> symbols affected</div>
+    <div class="headline"><b>${evaluated}</b> candidates evaluated this session · <b>${sup.length+dataHeld.length}</b> held back · <b>${symbols.length}</b> symbols affected</div>
     ${top.map(([gate,n])=>`<div class="reason-bar"><span class="label">${esc(plainGate(gate))}</span><span class="fill" style="width:${(n/maxN)*120}px"></span><span class="n">${n}</span></div>`).join("")}
     <div class="risk-note" style="margin-top:8px">Next evaluation: ${nextEval}</div>
   </div>`;
@@ -1963,8 +2033,10 @@ function noTradeSummary(s){
 
 function renderSuppressedTab(s){
   const sup = s.suppressed||[];
-  document.getElementById("qCountSuppressed").textContent = "("+sup.length+")";
+  const dataHeld=heldDataAlerts(s);
+  document.getElementById("qCountSuppressed").textContent = "("+(sup.length+dataHeld.length)+")";
   document.getElementById("queueSuppressed").innerHTML = noTradeSummary(s) +
+    dataHeld.map(a=>`<div class="suppressed-item"><span class="gate">data issue</span> ${esc(a.symbol)} ${esc(a.strategy.replace(/_/g,' '))} — This plan is retired; recovery requires a fresh signal.</div>`).join("")+
     sup.slice().reverse().slice(0,8).map(x=>
       `<div class="suppressed-item"><span class="gate">${esc(plainGate(x.gate))}</span> ${x.symbol} ${x.strategy.replace(/_/g,' ')}${x.composite?` <span class="num">score ${x.composite.toFixed(0)}</span>`:""} — ${esc(plainSuppressionDetail(x.detail,x.gate))}</div>`
     ).join("");
@@ -2586,6 +2658,7 @@ document.getElementById("analysisSymbol").addEventListener("input",event=>{
 
 function moduleAlerts(s, mod){ return orderedAlerts(s).filter(a=>a.module===mod); }
 function moduleSuppressed(s, mod){ return (s.suppressed||[]).filter(x=>x.module===mod); }
+function moduleDataHeld(s, mod){ return heldDataAlerts(s).filter(a=>a.module===mod); }
 function selectAlertFromModule(alertId){ switchView("signals"); selectAlert(alertId); }
 
 function renderModuleTracking(s, mod, listId, countId){
@@ -2602,15 +2675,18 @@ function renderModuleTracking(s, mod, listId, countId){
 }
 function renderModuleSuppressed(s, mod, elId, countId){
   const sup = moduleSuppressed(s, mod);
-  document.getElementById(countId).textContent = "("+sup.length+")";
-  const items = sup.slice().reverse().slice(0,8).map(x=>
+  const dataHeld=moduleDataHeld(s,mod);
+  document.getElementById(countId).textContent = "("+(sup.length+dataHeld.length)+")";
+  const heldItems=dataHeld.map(a=>
+    `<div class="suppressed-item"><span class="gate">data issue</span> ${esc(a.symbol)} ${esc(a.strategy.replace(/_/g,' '))} — This plan is retired; recovery requires a fresh signal.</div>`).join("");
+  const items = heldItems+sup.slice().reverse().slice(0,8).map(x=>
     `<div class="suppressed-item"><span class="gate">${x.gate}</span> ${x.symbol} ${x.strategy.replace(/_/g,' ')}${x.composite?` <span class="num">c${x.composite.toFixed(0)}</span>`:""} — ${x.detail}</div>`).join("");
   document.getElementById(elId).innerHTML = items || `<div class="empty">Nothing suppressed for ${mod} yet.</div>`;
 }
 
 function render0dteView(s){
   document.getElementById("summary0dteSignals").textContent = moduleAlerts(s,"0DTE").length;
-  document.getElementById("summary0dteSuppressed").textContent = moduleSuppressed(s,"0DTE").length;
+  document.getElementById("summary0dteSuppressed").textContent = moduleSuppressed(s,"0DTE").length+moduleDataHeld(s,"0DTE").length;
   renderModuleTracking(s,"0DTE","queue0dteTracking","qCount0dteTracking");
   renderModuleSuppressed(s,"0DTE","queue0dteSuppressed","qCount0dteSuppressed");
   document.getElementById("profile0dteInner").innerHTML =
@@ -2718,7 +2794,7 @@ if(document.documentElement.dataset.theme === "light") applyTheme("light");
 function renderSwingView(s){
   ensureSwingSelection(s);
   document.getElementById("summarySwingSignals").textContent = moduleAlerts(s,"SWING").length;
-  document.getElementById("summarySwingSuppressed").textContent = moduleSuppressed(s,"SWING").length;
+  document.getElementById("summarySwingSuppressed").textContent = moduleSuppressed(s,"SWING").length+moduleDataHeld(s,"SWING").length;
   renderModuleTracking(s,"SWING","queueSwingTracking","qCountSwingTracking");
   renderModuleSuppressed(s,"SWING","queueSwingSuppressed","qCountSwingSuppressed");
   renderSwingSymbolPicker(s);

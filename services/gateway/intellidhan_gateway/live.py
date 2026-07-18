@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -19,7 +20,7 @@ from intellidhan_delivery.format import format_alert
 from intellidhan_delivery.telegram import TelegramSender
 from intellidhan_engine.composer import Budgets, Composer
 from intellidhan_engine.runner import EngineRunner
-from intellidhan_ingestor.market_clock import MarketClock
+from intellidhan_ingestor.market_clock import ET, MarketClock
 from intellidhan_ingestor.providers import YahooProvider
 from intellidhan_ingestor.sentinel import check_bars
 from intellidhan_learning.paper import PaperExecutor, PaperTrade, performance_report
@@ -47,6 +48,29 @@ def _load_dotenv() -> None:
 _load_dotenv()
 
 POLL_SECONDS = 60
+FETCH_TIMEOUT_SECONDS = 20
+FETCH_CONCURRENCY = 4
+BAR_PUBLICATION_GRACE = timedelta(seconds=90)
+
+
+class DataQualityError(RuntimeError):
+    """Expected sentinel rejection, safe to quarantine at symbol scope."""
+
+
+@dataclass(frozen=True)
+class IngestResult:
+    accepted: tuple[str, ...]
+    quarantined: dict[str, str]
+    waiting: tuple[str, ...] = ()
+
+    @property
+    def summary(self) -> str | None:
+        if not self.quarantined:
+            return None
+        details = "; ".join(
+            f"{symbol}: {reason}" for symbol, reason in self.quarantined.items()
+        )
+        return f"quarantined this poll — {details}"
 
 
 class LiveLoop:
@@ -62,7 +86,24 @@ class LiveLoop:
         self.composer = Composer(Budgets(), option_selector=None)
         self.executor = PaperExecutor()
         self.telegram = TelegramSender()
-        self.autotrade = AutotradeManager()
+        self.symbol_health: dict[str, dict] = {
+            symbol: {
+                "symbol": symbol,
+                "status": "NOT_READY",
+                "quality": DataQuality.QUARANTINED.value,
+                "actionable": False,
+                "last_checked_at": None,
+                "last_good_bar_at": None,
+                "expected_bar_at": None,
+                "source": None,
+                "failure_kind": "NOT_READY",
+                "last_error": "market data has not been validated",
+                "consecutive_failures": 0,
+                "last_recovered_at": None,
+            }
+            for symbol in self.symbols
+        }
+        self.autotrade = AutotradeManager(symbol_gate=self.symbol_block_reason)
         self.store = store or TerminalStore()
         self.alerts: list[Alert] = []
         self._alert_ids: set[str] = set()
@@ -73,6 +114,8 @@ class LiveLoop:
         self.started_at: datetime | None = None
         self.last_poll: datetime | None = None
         self.last_successful_poll: datetime | None = None
+        self.last_partial_poll: datetime | None = None
+        self.last_close_catchup_at: datetime | None = None
         self.last_heartbeat: datetime | None = None
         self.boot_state = "NOT_STARTED"
         self.loop_state = "NOT_STARTED"
@@ -93,6 +136,7 @@ class LiveLoop:
             self.autotrade.policy_path,
             self.autotrade.state_path,
             state_store=self.store,
+            symbol_gate=self.symbol_block_reason,
         )
         persisted_budgets = self.store.get_setting("budgets")
         if persisted_budgets:
@@ -154,56 +198,320 @@ class LiveLoop:
             for symbol in self.symbols
         ]
         vix, *daily_results = await asyncio.gather(vix_task, *daily_tasks)
-        self._accept_quality("VIX:D", "VIX", vix)
+        self._accept_quality(
+            "VIX:D",
+            "VIX",
+            vix,
+            expected_timeframe=Timeframe.D1,
+            require_bars=True,
+            checked_at=end,
+        )
         self.runner.set_macro_series(build_macro_series(vix))
         for symbol, daily in zip(self.symbols, daily_results):
-            self._accept_quality(f"{symbol}:D", symbol, daily)
-            if not daily:
-                raise RuntimeError(f"no completed daily bars returned for {symbol}")
+            self._accept_quality(
+                f"{symbol}:D",
+                symbol,
+                daily,
+                expected_timeframe=Timeframe.D1,
+                require_bars=True,
+                checked_at=end,
+            )
             self.runner.seed_daily(symbol, daily)
-        await self._ingest_recent(days=4)  # warm intraday TFs + today so far
+        intraday = await self._ingest_recent(
+            days=4, now=end
+        )  # warm intraday TFs + today so far
         self.started_at = end
         self.last_heartbeat = end
-        self.provider_state = "READY"
+        self.last_error = intraday.summary
+        if intraday.quarantined:
+            self.last_partial_poll = end
+            self.provider_state = "PARTIAL"
+        else:
+            self.last_successful_poll = end
+            self.provider_state = "READY"
+            required_close = self.clock.latest_completed_bar_close(
+                end - BAR_PUBLICATION_GRACE, Timeframe.M5
+            )
+            completed_session = self.clock.latest_completed_session_close(
+                end - BAR_PUBLICATION_GRACE
+            )
+            if required_close == completed_session:
+                self.last_close_catchup_at = completed_session
         self.boot_state = "READY"
 
-    def _accept_quality(self, key: str, symbol: str, bars: list) -> None:
-        report = check_bars(symbol, bars)
-        self.quality_reports[key] = report.model_dump(mode="json")
+    def _accept_quality(
+        self,
+        key: str,
+        symbol: str,
+        bars: list,
+        *,
+        expected_timeframe: Timeframe | None = None,
+        require_bars: bool = False,
+        latest_required_close: datetime | None = None,
+        checked_at: datetime | None = None,
+    ) -> None:
+        report = check_bars(
+            symbol,
+            bars,
+            expected_timeframe=expected_timeframe,
+            require_bars=require_bars,
+            latest_required_close=latest_required_close,
+        )
+        payload = report.model_dump(mode="json")
+        payload.update(
+            {
+                "checked_at": checked_at.isoformat() if checked_at else None,
+                "last_bar_at": max(bar.ts_close for bar in bars).isoformat()
+                if bars
+                else None,
+            }
+        )
+        self.quality_reports[key] = payload
         if report.quality != DataQuality.OK:
-            raise RuntimeError(f"data quality rejected {key}: {'; '.join(report.issues)}")
+            raise DataQualityError(
+                f"data quality rejected {key}: {'; '.join(report.issues)}"
+            )
 
-    async def _ingest_recent(self, days: int) -> None:
+    @staticmethod
+    def _safe_error(exc: Exception) -> str:
+        message = " ".join(str(exc).split()) or type(exc).__name__
+        return message[:320]
+
+    def _record_symbol_success(
+        self,
+        symbol: str,
+        bars: list,
+        *,
+        checked_at: datetime,
+        expected_close: datetime | None,
+        actionable: bool,
+        inactive_status: str = "WAITING",
+        inactive_reason: str = "waiting for the first completed 5-minute bar",
+    ) -> None:
+        previous = self.symbol_health[symbol]
+        latest = max(bars, key=lambda bar: bar.ts_close) if bars else None
+        recovered_at = previous.get("last_recovered_at")
+        if previous.get("status") == "QUARANTINED":
+            recovered_at = checked_at.isoformat()
+        self.symbol_health[symbol] = {
+            "symbol": symbol,
+            "status": "OK" if actionable else inactive_status,
+            "quality": DataQuality.OK.value,
+            "actionable": actionable,
+            "last_checked_at": checked_at.isoformat(),
+            "last_good_bar_at": (
+                latest.ts_close.isoformat()
+                if latest
+                else previous.get("last_good_bar_at")
+            ),
+            "expected_bar_at": expected_close.isoformat() if expected_close else None,
+            "source": latest.source if latest else previous.get("source"),
+            "failure_kind": None,
+            "last_error": None if actionable else inactive_reason,
+            "consecutive_failures": 0,
+            "last_recovered_at": recovered_at,
+        }
+
+    def _record_symbol_failure(
+        self,
+        symbol: str,
+        exc: Exception,
+        *,
+        checked_at: datetime,
+        expected_close: datetime | None,
+        failure_kind: str,
+    ) -> str:
+        reason = self._safe_error(exc)
+        previous = self.symbol_health[symbol]
+        self.symbol_health[symbol] = {
+            **previous,
+            "status": "QUARANTINED",
+            "quality": DataQuality.QUARANTINED.value,
+            "actionable": False,
+            "last_checked_at": checked_at.isoformat(),
+            "expected_bar_at": expected_close.isoformat() if expected_close else None,
+            "failure_kind": failure_kind,
+            "last_error": reason,
+            "consecutive_failures": int(previous.get("consecutive_failures", 0)) + 1,
+        }
+        self.quality_reports[f"{symbol}:5m"] = {
+            "symbol": symbol,
+            "quality": DataQuality.QUARANTINED.value,
+            "issues": [reason],
+            "checked_at": checked_at.isoformat(),
+            "last_bar_at": previous.get("last_good_bar_at"),
+        }
+        try:
+            self.autotrade.block_symbol(symbol, f"{symbol} data is quarantined: {reason}")
+        except Exception as persist_exc:
+            # The in-memory symbol gate remains fail-closed even if durable
+            # intent revocation cannot be written during a store outage.
+            self.persistence_ready = False
+            print(f"[autotrade] could not persist {symbol} quarantine: {persist_exc}")
+        cancelled_alerts = self._cancel_symbol_alerts(symbol, reason, checked_at)
+        self.symbol_health[symbol]["cancelled_alerts"] = cancelled_alerts
+        return reason
+
+    def _cancel_symbol_alerts(
+        self, symbol: str, reason: str, checked_at: datetime
+    ) -> int:
+        """Permanently retire plans whose market context became untrustworthy."""
+        cancelled = 0
+        for index, alert in enumerate(self.alerts):
+            if alert.symbol.upper() != symbol.upper():
+                continue
+            if alert.status in {"CANCELLED", "EXPIRED"} or alert.valid_until <= checked_at:
+                continue
+            risk_note = f"Cancelled after market-data quarantine: {reason}"
+            risks = list(alert.risks)
+            if risk_note not in risks:
+                risks.append(risk_note)
+            updated = alert.model_copy(update={"status": "CANCELLED", "risks": risks})
+            self.alerts[index] = updated
+            if self.persistence_ready:
+                try:
+                    self.store.upsert_alert(updated.model_dump(mode="json"))
+                except Exception as persist_exc:
+                    # Keep the in-memory retirement and fail global readiness;
+                    # recovery must not make an undurable old plan executable.
+                    self.persistence_ready = False
+                    print(
+                        f"[store] could not persist {symbol} alert retirement: "
+                        f"{persist_exc}"
+                    )
+            cancelled += 1
+        return cancelled
+
+    def symbol_block_reason(self, symbol: str) -> str | None:
+        status = self.symbol_health.get(symbol.upper())
+        if status is None:
+            return f"{symbol.upper()} market data is not monitored"
+        if status.get("actionable") is True:
+            return None
+        detail = status.get("last_error") or "market data has not been validated"
+        return f"{symbol.upper()} market data is not actionable: {detail}"
+
+    def _mark_market_closed(self) -> None:
+        """Disable execution outside RTH without mislabeling valid data as bad."""
+        for symbol, state in self.symbol_health.items():
+            if state.get("status") == "QUARANTINED":
+                continue
+            self.symbol_health[symbol] = {
+                **state,
+                "status": "MARKET_CLOSED",
+                "actionable": False,
+                "failure_kind": None,
+                "last_error": "regular market session is closed",
+            }
+
+    async def _ingest_recent(
+        self,
+        days: int,
+        *,
+        now: datetime | None = None,
+        allow_new_entries: bool = True,
+    ) -> IngestResult:
         # Before boot() completes (started_at is None) this is a historical
         # replay: it must warm engine/executor/risk state but never re-send
         # Telegram messages, re-broadcast, or create autotrade intents —
         # otherwise every restart re-delivers days of stale alerts as new.
         replay = self.started_at is None
-        end = datetime.now(timezone.utc)
+        end = now or datetime.now(timezone.utc)
+        session = self.clock.session_state(end)
+        expected_close = self.clock.latest_completed_bar_close(
+            end - BAR_PUBLICATION_GRACE, Timeframe.M5
+        )
+        waiting_for_first_close = (
+            session == SessionState.RTH
+            and expected_close.astimezone(ET).date() < end.astimezone(ET).date()
+        )
+        fetch_start = end - timedelta(days=days)
+        if expected_close.astimezone(ET).date() < end.astimezone(ET).date():
+            # A one-day Monday/premarket request starts after Friday's close.
+            # Extend just enough to include the boundary we are validating.
+            fetch_start = min(fetch_start, expected_close - timedelta(days=1))
         bars = []
-        quarantined: list[str] = []
-        for sym in self.symbols:
-            # Per-symbol quarantine: one symbol's halt gap or feed hole must
-            # not discard every other symbol's bars for the poll — that would
-            # freeze alerting AND paper-trade stop/target settlement across
-            # the whole universe until the bad symbol's window rolls over.
+        quarantined: dict[str, str] = {}
+        accepted: list[str] = []
+        waiting: list[str] = []
+        semaphore = asyncio.Semaphore(FETCH_CONCURRENCY)
+
+        async def fetch(symbol: str):
             try:
-                fetched = await self.provider.get_bars(
-                    sym, Timeframe.M5, end - timedelta(days=days), end
-                )
-                self._accept_quality(f"{sym}:5m", sym, fetched)
+                async with semaphore:
+                    fetched = await asyncio.wait_for(
+                        self.provider.get_bars(
+                            symbol, Timeframe.M5, fetch_start, end
+                        ),
+                        timeout=FETCH_TIMEOUT_SECONDS,
+                    )
+                return symbol, fetched, None
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
-                quarantined.append(f"{sym}: {exc}")
+                return symbol, None, exc
+
+        results = await asyncio.gather(*(fetch(symbol) for symbol in self.symbols))
+        for symbol, fetched, fetch_error in results:
+            # Per-symbol quarantine: one symbol's halt gap or feed hole must
+            # not discard every other symbol's bars or settlement processing.
+            if fetch_error is not None:
+                kind = "TIMEOUT" if isinstance(fetch_error, TimeoutError) else "PROVIDER"
+                quarantined[symbol] = self._record_symbol_failure(
+                    symbol,
+                    fetch_error,
+                    checked_at=end,
+                    expected_close=expected_close,
+                    failure_kind=kind,
+                )
                 continue
-            bars.extend(fetched)
-        if quarantined:
-            self.last_error = "quarantined this poll — " + "; ".join(quarantined)
-            print(f"[live] {self.last_error}")
-            if len(quarantined) == len(self.symbols):
-                # total feed outage is still a degraded poll, not a quiet one
-                raise RuntimeError(self.last_error)
+            completed = [bar for bar in fetched if bar.ts_close <= end]
+            try:
+                self._accept_quality(
+                    f"{symbol}:5m",
+                    symbol,
+                    completed,
+                    expected_timeframe=Timeframe.M5,
+                    require_bars=True,
+                    latest_required_close=expected_close,
+                    checked_at=end,
+                )
+            except DataQualityError as exc:
+                quarantined[symbol] = self._record_symbol_failure(
+                    symbol,
+                    exc,
+                    checked_at=end,
+                    expected_close=expected_close,
+                    failure_kind="DATA_QUALITY",
+                )
+                continue
+            actionable = session == SessionState.RTH and not waiting_for_first_close
+            inactive_status = "WAITING" if waiting_for_first_close else "MARKET_CLOSED"
+            inactive_reason = (
+                "waiting for the first completed 5-minute bar"
+                if waiting_for_first_close
+                else "regular market session is closed"
+            )
+            self._record_symbol_success(
+                symbol,
+                completed,
+                checked_at=end,
+                expected_close=expected_close,
+                actionable=actionable,
+                inactive_status=inactive_status,
+                inactive_reason=inactive_reason,
+            )
+            accepted.append(symbol)
+            if not actionable:
+                waiting.append(symbol)
+            bars.extend(completed)
+
+        result = IngestResult(tuple(accepted), quarantined, tuple(waiting))
+        if result.summary:
+            print(f"[live] {result.summary}")
+        if not accepted and quarantined:
+            # Total feed outage is still a degraded poll, not a quiet one.
+            raise RuntimeError(result.summary)
         bars.sort(key=lambda b: (b.ts_close, b.symbol))
         for bar in bars:
             if bar.ts_close > end:
@@ -223,7 +531,12 @@ class LiveLoop:
                         self.store.upsert_paper_trade(settled.model_dump(mode="json"))
                 else:
                     await self._notify_settlement(settled)
-            for setup in self.runner.on_bar_5m(bar):
+            setups = self.runner.on_bar_5m(bar)
+            if not allow_new_entries:
+                # The post-close pass updates state and settles open paper
+                # trades, but must not publish entries that expire overnight.
+                continue
+            for setup in setups:
                 alert = self.composer.compose(setup)
                 if alert is None:
                     continue
@@ -248,6 +561,7 @@ class LiveLoop:
                 self.runner.controls.register_open(setup.module, setup.symbol, setup.strategy)
                 if not replay:
                     await self._deliver(alert)
+        return result
 
     def _claim_send(self, key: str) -> bool:
         """Cross-instance exactly-once gate for outbound Telegram.
@@ -360,11 +674,34 @@ class LiveLoop:
         except Exception as exc:
             errors.append(f"briefing: {exc}")
             print(f"[live] briefing error: {exc}")
-        if self.clock.session_state(now) == SessionState.RTH:
+        session = self.clock.session_state(now)
+        required_close = self.clock.latest_completed_bar_close(
+            now - BAR_PUBLICATION_GRACE, Timeframe.M5
+        )
+        completed_session = self.clock.latest_completed_session_close(
+            now - BAR_PUBLICATION_GRACE
+        )
+        close_catchup_due = (
+            session != SessionState.RTH
+            and required_close == completed_session
+            and self.last_close_catchup_at != completed_session
+        )
+        if session == SessionState.RTH or close_catchup_due:
             try:
-                await self._ingest_recent(days=1)
-                self.last_successful_poll = now
-                self.provider_state = "READY"
+                result = await self._ingest_recent(
+                    days=1,
+                    now=now,
+                    allow_new_entries=not close_catchup_due,
+                )
+                if result.quarantined:
+                    self.last_partial_poll = now
+                    self.provider_state = "PARTIAL"
+                    errors.append(result.summary or "one or more symbols quarantined")
+                else:
+                    self.last_successful_poll = now
+                    self.provider_state = "READY"
+                    if close_catchup_due:
+                        self.last_close_catchup_at = completed_session
             except asyncio.CancelledError:
                 raise
             except Exception as exc:  # feed hiccup: stay alive, sentinel-honest
@@ -372,6 +709,8 @@ class LiveLoop:
                 errors.append(f"ingest: {exc}")
                 print(f"[live] ingest error: {exc}")
             self.last_poll = now
+        elif session != SessionState.RTH:
+            self._mark_market_closed()
         self.last_error = "; ".join(errors) or None
         self.loop_state = "DEGRADED" if errors else "RUNNING"
         self.last_heartbeat = datetime.now(timezone.utc)
@@ -413,18 +752,36 @@ class LiveLoop:
             "persistence": persistence,
             "durability_required": durability_required,
             "durability_ready": durability_ready,
-            # ISO strings, not datetimes: snapshot() embeds this dict and
-            # /api/state serializes with plain json.dumps (no encoder) — raw
-            # datetimes 500 the dashboard the moment the system turns READY.
+            # Keep the snapshot contract JSON-native even though FastAPI also
+            # applies jsonable_encoder at the HTTP boundary.
             "started_at": self.started_at.isoformat() if self.started_at else None,
             "last_poll": self.last_poll.isoformat() if self.last_poll else None,
             "last_successful_poll": (self.last_successful_poll.isoformat()
                                      if self.last_successful_poll else None),
+            "last_partial_poll": (
+                self.last_partial_poll.isoformat() if self.last_partial_poll else None
+            ),
+            "last_close_catchup_at": (
+                self.last_close_catchup_at.isoformat()
+                if self.last_close_catchup_at
+                else None
+            ),
             "last_heartbeat": (self.last_heartbeat.isoformat()
                                if self.last_heartbeat else None),
             "heartbeat_age_seconds": heartbeat_age_seconds,
             "last_error": self.last_error,
             "data_quality": self.quality_reports,
+            "symbols": self.symbol_health,
+            "quarantined_symbols": [
+                symbol
+                for symbol, status in self.symbol_health.items()
+                if status["status"] == "QUARANTINED"
+            ],
+            "actionable_symbols": [
+                symbol
+                for symbol, status in self.symbol_health.items()
+                if status["actionable"]
+            ],
         }
 
     def snapshot(self) -> dict:
@@ -461,6 +818,7 @@ class LiveLoop:
                     "volume": bar.volume,
                 } for bar in state.recent_daily[-150:]],
                 "indicators": indicator_snapshots,
+                "data_quality": self.symbol_health.get(sym),
             }
         return {
             "session": self.clock.session_state(datetime.now(timezone.utc)).value,

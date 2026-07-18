@@ -33,6 +33,35 @@ class DataProvider(Protocol):
 - **Router** picks the healthiest provider per capability; automatic failover with a `source` stamp on every record (auditable accuracy).
 - **Reconciliation job** (nightly): compares overlapping bars across providers; discrepancies > 0.1% logged and quarantined.
 
+### Live 5-minute acceptance contract
+
+The gateway validates each symbol independently before bars enter the engine.
+During regular trading hours, a response must be non-empty and reach the latest
+completed five-minute boundary after a 90-second provider-publication grace.
+The prior session close remains the required boundary overnight and through the
+first minutes after the next open. A one-time post-close poll captures and
+validates the 16:00 ET bar (13:00 ET on half-days) after the same grace period.
+That pass updates indicators and settles open paper trades but cannot create or
+deliver a new entry signal that would expire before the next session.
+Wrong-symbol rows, wrong timeframes, duplicates, out-of-order rows, material
+intra-session gaps, empty responses, provider timeouts, and stale boundaries
+quarantine only the affected ticker.
+
+`/api/health.symbols` and `/api/state.symbols[*].data_quality` expose the ticker's
+status, actionability, last check, last good bar, expected bar, source, failure
+kind, error, recovery time, and consecutive failure count. `WAITING` means the
+new session has not produced its first publishable bar, `MARKET_CLOSED` means
+data is valid but execution is off, and `QUARANTINED` means the feed failed a
+quality check and existing plans were retired. A partial poll is
+reported as `provider_state: PARTIAL`; it is never promoted to a fully successful
+poll. Healthy tickers continue through the engine while quarantined tickers are
+removed from actionable signal counts and broker execution.
+
+`/api/health` is strict signal readiness and may return 503 for a partial feed.
+`/api/liveness` is the deployment process probe; it never authorizes trading.
+Koyeb uses liveness so a persistent single-ticker quarantine cannot restart the
+healthy part of the signal plane.
+
 ## 3. TradingView Integration
 
 Two roles:

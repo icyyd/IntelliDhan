@@ -135,6 +135,25 @@ def test_ineligible_alert_is_recorded_blocked_not_ready(tmp_path, monkeypatch):
     assert "strategy is not explicitly live eligible" in intent.reasons
 
 
+def test_cancelled_alert_cannot_become_ready_after_data_recovers(
+    tmp_path, calibrated
+):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+
+    intent = manager.on_alert(make_alert(status="CANCELLED"))
+
+    assert intent.status == IntentStatus.BLOCKED
+    assert "alert status is cancelled" in intent.reasons
+
+    active = make_alert(alert_id="alr_test_spy_existing")
+    existing = manager.on_alert(active)
+    assert existing.status == IntentStatus.READY
+    retired = manager.on_alert(active.model_copy(update={"status": "CANCELLED"}))
+    assert retired.status == IntentStatus.BLOCKED
+    assert "alert status is cancelled" in retired.reasons
+
+
 def test_supervised_approval_claim_receipt_and_persistence(tmp_path, calibrated):
     policy = tmp_path / "policy.yaml"
     state = tmp_path / "state.json"
@@ -162,6 +181,75 @@ def test_supervised_approval_claim_receipt_and_persistence(tmp_path, calibrated)
     assert restored.record_receipt(intent.intent_id, {"status": "CLOSED"}).status == (
         IntentStatus.CLOSED
     )
+
+
+def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
+    tmp_path, calibrated
+):
+    health = {"reason": None}
+    manager = AutotradeManager(
+        tmp_path / "policy.yaml",
+        tmp_path / "state.json",
+        symbol_gate=lambda _symbol: health["reason"],
+    )
+    manager.update_policy(live_policy("SUPERVISED"))
+    awaiting = manager.on_alert(make_alert())
+    health["reason"] = "SPY market data is quarantined"
+    assert manager.approve(awaiting.intent_id).status == IntentStatus.BLOCKED
+    assert health["reason"] in awaiting.reasons
+
+    health["reason"] = None
+    second = manager.on_alert(make_alert(alert_id="alr_test_spy_2"))
+    assert manager.approve(second.intent_id).status == IntentStatus.READY
+    health["reason"] = "SPY market data is stale"
+    assert manager.claim(second.intent_id).status == IntentStatus.BLOCKED
+
+    health["reason"] = None
+    third = manager.on_alert(make_alert(alert_id="alr_test_spy_3"))
+    manager.approve(third.intent_id)
+    manager.claim(third.intent_id)
+    changed = manager.block_symbol("SPY", "SPY feed failed after claim")
+    assert third in changed
+    assert third.status == IntentStatus.CLAIMED
+    assert third.claim["cancel_requested"] is True
+    assert third.claim["revoked_reason"] == "SPY feed failed after claim"
+    executed = manager.record_receipt(
+        third.intent_id,
+        {"status": "EXECUTED", "broker_order_id": "late-fill"},
+    )
+    assert executed.status == IntentStatus.EXECUTED
+    executed.valid_until = datetime.now(timezone.utc) - timedelta(seconds=1)
+    with pytest.raises(ValueError, match="only READY intents"):
+        manager.claim(executed.intent_id)
+    assert executed.status == IntentStatus.EXECUTED
+
+    manager.block_symbol("SPY", "SPY feed remains unavailable")
+    assert executed.status == IntentStatus.EXECUTED
+    replayed = manager.on_alert(
+        make_alert(alert_id="alr_test_spy_3", status="CANCELLED")
+    )
+    assert replayed.status == IntentStatus.EXECUTED
+    closed = manager.record_receipt(third.intent_id, {"status": "CLOSED"})
+    manager.block_symbol("SPY", "SPY feed remains unavailable")
+    assert manager.on_alert(
+        make_alert(alert_id="alr_test_spy_3", status="CANCELLED")
+    ).status == IntentStatus.CLOSED
+    assert closed.status == IntentStatus.CLOSED
+
+    late = manager.on_alert(make_alert(alert_id="alr_test_spy_late_cancel"))
+    manager.approve(late.intent_id)
+    manager.claim(late.intent_id)
+    manager.record_receipt(late.intent_id, {"status": "CANCELLED"})
+    late_fill = manager.record_receipt(
+        late.intent_id,
+        {"status": "EXECUTED", "broker_order_id": "post-cancel-fill"},
+    )
+    assert late_fill.status == IntentStatus.EXECUTED
+
+    health["reason"] = "SPY market data is unavailable"
+    created_blocked = manager.on_alert(make_alert(alert_id="alr_test_spy_4"))
+    assert created_blocked.status == IntentStatus.BLOCKED
+    assert "symbol market data is stale" in created_blocked.order_plan["abort_if"][4]
 
 
 def test_real_repo_policy_file_loads_and_defaults_to_off(tmp_path):

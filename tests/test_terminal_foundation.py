@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
@@ -24,7 +25,7 @@ from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.terminal_store import TerminalStore
 from intellidhan_ingestor.market_clock import MarketClock
 from intellidhan_learning.paper import PaperExecutor, PaperTrade
-from intellidhan_schemas import Bar, SessionState, Timeframe
+from intellidhan_schemas import Bar, Timeframe
 from intellidhan_schemas.signals import Direction, Module
 
 
@@ -169,6 +170,13 @@ def test_health_is_503_until_every_readiness_plane_passes(tmp_path, monkeypatch)
     response = client.get("/api/health")
     assert response.status_code == 503
     assert response.json()["ok"] is False
+    assert client.get("/api/liveness").status_code == 200
+
+    monkeypatch.setattr(gateway.loop, "provider_state", "PARTIAL")
+    response = client.get("/api/health")
+    assert response.status_code == 503
+    assert response.json()["provider_state"] == "PARTIAL"
+    assert client.get("/api/liveness").status_code == 200
 
     monkeypatch.setattr(gateway.loop, "provider_state", "READY")
     response = client.get("/api/health")
@@ -191,6 +199,17 @@ def test_health_is_503_until_every_readiness_plane_passes(tmp_path, monkeypatch)
     assert response.status_code == 503
     assert response.json()["durability_required"] is True
     assert response.json()["durability_ready"] is False
+
+    monkeypatch.setattr(gateway.loop, "loop_state", "STOPPED")
+    assert client.get("/api/liveness").status_code == 503
+
+
+def test_koyeb_uses_liveness_without_weakening_signal_readiness():
+    config = yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / "koyeb.yaml").read_text()
+    )
+    checks = config["definition"]["health_checks"]
+    assert [check["path"] for check in checks] == ["/api/liveness"]
 
 
 def test_websocket_subscriber_queue_is_bounded_to_newest_event(tmp_path):
@@ -359,13 +378,14 @@ async def test_briefing_failure_degrades_but_does_not_escape_poll_iteration(tmp_
     loop.boot_state = "READY"
     loop.provider_state = "READY"
     loop.persistence_ready = True
-    loop.clock = SimpleNamespace(session_state=lambda _now: SessionState.CLOSED)
 
     async def fail(_now):
         raise RuntimeError("delivery unavailable")
 
     loop.maybe_brief = fail
-    await loop.poll_once(datetime.now(timezone.utc))
+    now = datetime(2026, 7, 12, 12, 0, tzinfo=timezone.utc)
+    loop.last_close_catchup_at = loop.clock.latest_completed_session_close(now)
+    await loop.poll_once(now)
     assert loop.loop_state == "DEGRADED"
     assert loop.last_error == "briefing: delivery unavailable"
     assert loop.last_heartbeat is not None
@@ -378,6 +398,18 @@ def test_frontend_does_not_override_readiness_with_unconditional_live():
     )]
     assert 'setHealth("live")' not in refresh_block
     assert 'if(!ownerAuthenticated){ setHealth("auth"); return; }' in refresh_block
+
+
+def test_frontend_hides_quarantined_alerts_and_surfaces_symbol_status():
+    source = Path("web/index.html").read_text()
+    assert 'id="dataQualityNotice"' in source
+    assert "!isDataQuarantined(symbolDataQuality(s,a.symbol))" in source
+    assert "Fresh signals blocked" in source
+    assert "Existing plans for these tickers were cancelled" in source
+    assert 'state?.status==="MARKET_CLOSED"' in source
+    assert 'notice.classList.toggle("waiting", !quarantined.length)' in source
+    assert "Values below are last-known context, not a current entry" in source
+    assert "data issue" in source.lower()
 
 
 def test_frontend_clears_personal_state_on_logout_401_and_ws_expiry():

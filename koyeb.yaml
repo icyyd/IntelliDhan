@@ -3,7 +3,7 @@
 # Koyeb drives auto-deploys from its GitHub integration, not this file —
 # this documents the exact settings to enter in the dashboard. Reuses the
 # service originally configured for IntelliDhan-legacy (single Nano
-# instance, port 8000, /api/health check) — repoint its GitHub source to
+# instance, port 8000, /api/liveness check) — repoint its GitHub source to
 # this repo (icyyd/IntelliDhan) and this Dockerfile.
 #
 # ── Secrets to set in Koyeb dashboard → Service → Settings → Environment ──
@@ -51,7 +51,7 @@ definition:
   health_checks:
     - type: http
       port: 8000
-      path: /api/health
+      path: /api/liveness
       interval_seconds: 30
       timeout_seconds: 5
       grace_period_seconds: 45

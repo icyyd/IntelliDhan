@@ -356,6 +356,16 @@ async def health():
     return JSONResponse(jsonable_encoder(payload), status_code=200 if payload["ok"] else 503)
 
 
+@app.get("/api/liveness")
+async def liveness():
+    """Process-level probe; strict signal readiness remains at ``/api/health``."""
+    alive = loop.loop_state != "STOPPED"
+    return JSONResponse(
+        {"ok": alive, "service": "intellidhan-gateway", "loop_state": loop.loop_state},
+        status_code=200 if alive else 503,
+    )
+
+
 @app.get("/api/state")
 async def state(request: Request):
     _require_personal(request)

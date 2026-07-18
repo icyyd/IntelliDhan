@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from intellidhan_ingestor.market_clock import ET, MarketClock
-from intellidhan_schemas import SessionState
+from intellidhan_schemas import SessionState, Timeframe
 
 clock = MarketClock()
 
@@ -47,6 +47,46 @@ def test_dst_handling_via_utc():
 def test_next_rth_open_skips_weekend():
     nxt = clock.next_rth_open(et(2026, 7, 10, 17, 0))  # Friday evening
     assert nxt == et(2026, 7, 13, 9, 30)               # Monday
+
+
+def test_latest_completed_bar_close_is_market_boundary_aware():
+    assert clock.latest_completed_bar_close(
+        et(2026, 7, 10, 9, 34), Timeframe.M5
+    ) == et(2026, 7, 9, 16, 0)
+    assert clock.latest_completed_bar_close(
+        et(2026, 7, 10, 9, 35), Timeframe.M5
+    ) == et(2026, 7, 10, 9, 35)
+    assert clock.latest_completed_bar_close(
+        et(2026, 7, 10, 10, 2), Timeframe.M5
+    ) == et(2026, 7, 10, 10, 0)
+    assert clock.latest_completed_bar_close(
+        et(2026, 7, 11, 10, 0), Timeframe.M5
+    ) == et(2026, 7, 10, 16, 0)
+
+
+def test_final_bar_boundary_survives_close_and_half_days():
+    assert clock.latest_completed_bar_close(
+        et(2026, 7, 10, 16, 2), Timeframe.M5
+    ) == et(2026, 7, 10, 16, 0)
+    assert clock.latest_completed_bar_close(
+        et(2026, 11, 27, 13, 2), Timeframe.M5
+    ) == et(2026, 11, 27, 13, 0)
+
+
+def test_latest_boundary_is_continuous_from_close_to_next_open():
+    prior_close = et(2026, 7, 9, 16, 0)
+    assert clock.latest_completed_bar_close(
+        et(2026, 7, 9, 20, 1), Timeframe.M5
+    ) == prior_close
+    assert clock.latest_completed_bar_close(
+        et(2026, 7, 10, 9, 29), Timeframe.M5
+    ) == prior_close
+    assert clock.latest_completed_bar_close(
+        et(2026, 7, 10, 9, 34), Timeframe.M5
+    ) == prior_close
+    assert clock.latest_completed_bar_close(
+        et(2026, 7, 10, 9, 35), Timeframe.M5
+    ) == et(2026, 7, 10, 9, 35)
 
 
 def test_naive_datetime_rejected():
