@@ -166,6 +166,7 @@ def test_company_overview_is_descriptive_and_keeps_estimates_display_only():
             "Description": "Apple designs and sells consumer technology products and services.",
             "Sector": "TECHNOLOGY",
             "Industry": "CONSUMER ELECTRONICS",
+            "Currency": "None",
             "MarketCapitalization": "3500000000000",
             "PERatio": "31.2",
             "AnalystTargetPrice": "250.00",
@@ -174,6 +175,7 @@ def test_company_overview_is_descriptive_and_keeps_estimates_display_only():
     assert result["status"] == "AVAILABLE"
     assert result["profile"]["market_cap"] == 3_500_000_000_000
     assert result["profile"]["analyst_target_price"] == 250.0
+    assert "currency" not in result["profile"]
     assert "display-only" in result["limitation"]
 
 
@@ -549,3 +551,4 @@ def test_landing_page_exposes_welcome_search_levels_and_multibrain_cards():
     assert 'id="analysisKeyLevels"' in source
     assert "research posture" in source
     assert "Forward edge remains unconfirmed" in source
+    assert "currency unavailable" in source

@@ -1,7 +1,7 @@
 # Multi-brain technical regression validation
 
-Run date: 2026-07-18  
-Code: `technical-panel-regression-v1`  
+Run date: 2026-07-18
+Code: `technical-panel-regression-v1`
 Artifacts: `docs/evidence/multibrain-regression-21d.json` and
 `docs/evidence/multibrain-regression-63d.json`
 

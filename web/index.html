@@ -3132,7 +3132,7 @@ document.getElementById("homeStockSearch").addEventListener("input",event=>{
 document.getElementById("homeStockSearch").addEventListener("keydown",event=>{
   const open=!document.getElementById("homeSearchSuggestions").hidden;
   if(event.key==="Escape"&&open){ event.preventDefault(); hideHomeSuggestions(); }
-  else if((event.key==="ArrowDown"||event.key==="ArrowUp")&&open){ event.preventDefault(); setHomeSearchActive(homeSearchActive+(event.key==="ArrowDown"?1:-1)); }
+  else if((event.key==="ArrowDown"||event.key==="ArrowUp")&&open){ event.preventDefault(); const next=homeSearchActive<0?(event.key==="ArrowDown"?0:homeSearchResults.length-1):homeSearchActive+(event.key==="ArrowDown"?1:-1); setHomeSearchActive(next); }
   else if(event.key==="Enter"&&open&&homeSearchActive>=0){ event.preventDefault(); chooseHomeSuggestion(homeSearchResults[homeSearchActive]); }
 });
 document.addEventListener("click",event=>{
@@ -3269,7 +3269,13 @@ function renderResearchIntelligence(intelligence){
   const social=intelligence.social||{};
   const posture=String(multi.posture||"INSUFFICIENT_EVIDENCE");
   const brains=(multi.specialists||[]).map(brain=>`<div class="brain-card"><b>${esc(brain.label)}</b><small class="${String(brain.stance||"").toLowerCase()}">${esc(String(brain.stance||"UNAVAILABLE").replaceAll("_"," "))} · ${finiteNumber(brain.score)==null?"unscored":Math.round(brain.score)+"/100"}</small></div>`).join("");
-  const compactMoney=value=>finiteNumber(value)==null?"—":new Intl.NumberFormat("en-US",{notation:"compact",maximumFractionDigits:1,style:"currency",currency:company.currency||"USD"}).format(value);
+  const compactMoney=value=>{
+    if(finiteNumber(value)==null) return "—";
+    const currency=String(company.currency||"").toUpperCase();
+    if(!/^[A-Z]{3}$/.test(currency)) return `${new Intl.NumberFormat("en-US",{notation:"compact",maximumFractionDigits:1}).format(value)} · currency unavailable`;
+    try{ return new Intl.NumberFormat("en-US",{notation:"compact",maximumFractionDigits:1,style:"currency",currency}).format(value); }
+    catch(_error){ return `${new Intl.NumberFormat("en-US",{notation:"compact",maximumFractionDigits:1}).format(value)} · currency unavailable`; }
+  };
   const exchange=(company.exchanges||[]).join(", ")||company.exchange||"—";
   const companyProfile=company.name?`<div class="company-profile"><div class="company-profile-main"><h3>${esc(company.name)}</h3><p>${esc(company.description||"SEC registrant and filing identity.")}</p><small>${esc(company.overview_limitation||"")}</small></div><div class="company-profile-stat"><b>${esc(company.sector||company.industry||"Not classified")}</b><small>Sector</small></div><div class="company-profile-stat"><b>${esc(company.industry||"—")}</b><small>Industry</small></div><div class="company-profile-stat"><b>${esc(exchange)}</b><small>Exchange</small></div><div class="company-profile-stat"><b>${esc(compactMoney(company.market_cap))}</b><small>Market cap</small></div><div class="company-profile-stat"><b>${finiteNumber(company.pe_ratio)==null?"—":esc(Number(company.pe_ratio).toFixed(1))+"×"}</b><small>P/E · context only</small></div><div class="company-profile-stat"><b>${esc(company.fiscal_year_end||company.fiscal_year_end_code||"—")}</b><small>Fiscal year end</small></div></div>`:"";
   output.innerHTML=`

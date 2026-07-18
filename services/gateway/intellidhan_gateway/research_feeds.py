@@ -25,6 +25,28 @@ SEC_DATA_ROOT = "https://data.sec.gov"
 ALPHA_VANTAGE_URL = "https://www.alphavantage.co/query"
 FINNHUB_SOCIAL_URL = "https://finnhub.io/api/v1/stock/social-sentiment"
 _SAFE_DOCUMENT = re.compile(r"^[A-Za-z0-9._-]+$")
+_DISPLAY_CURRENCIES = {
+    "AUD",
+    "BRL",
+    "CAD",
+    "CHF",
+    "CNY",
+    "DKK",
+    "EUR",
+    "GBP",
+    "HKD",
+    "ILS",
+    "INR",
+    "JPY",
+    "KRW",
+    "MXN",
+    "NOK",
+    "SEK",
+    "SGD",
+    "TWD",
+    "USD",
+    "ZAR",
+}
 
 
 def _finite(value: Any) -> float | None:
@@ -361,6 +383,7 @@ def parse_alpha_overview(
     def number_field(key: str) -> float | None:
         return _finite(payload.get(key))
 
+    currency = str(payload.get("Currency", "")).strip().upper()
     profile = {
         "symbol": symbol,
         "name": text_field("Name"),
@@ -368,7 +391,7 @@ def parse_alpha_overview(
         "sector": text_field("Sector"),
         "industry": text_field("Industry"),
         "exchange": text_field("Exchange", 40),
-        "currency": text_field("Currency", 12),
+        "currency": currency if currency in _DISPLAY_CURRENCIES else None,
         "country": text_field("Country", 80),
         "fiscal_year_end": text_field("FiscalYearEnd", 32),
         "latest_quarter": text_field("LatestQuarter", 20),
