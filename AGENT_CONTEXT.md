@@ -7,7 +7,10 @@
   marker and affected capability, setup, deployment, safety, and document-index
   truth. Context and PR notes cannot substitute for the README change. CI
   enforces the same-commit rule for future changes once this bootstrap policy is
-  present on the base branch.
+  present on the base branch. The checker fails closed on unavailable history,
+  covers build/tracking and agent configuration, excludes explicitly archived
+  docs plus test/context-only commits, and has temporary-repository tests for
+  bootstrap, invalid-base, regular-commit, merge, and path-scope behavior.
 - Active isolated branch/worktree: `codex/codex-robinhood-primary` at
   `/Users/dhanvin/Documents/IntelliDhan-codex-robinhood`, based on merged
   `main` commit `7620024`. The collaborators' dirty checkout is untouched.

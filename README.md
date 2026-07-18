@@ -2,8 +2,9 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-07-18 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** Codex-only Robinhood execution contract v1.1; former
-Claude execution contract decommissioned and archived
+**Last system pass:** Codex-only Robinhood execution contract v1.1 plus
+commit-level README maintenance enforcement; former Claude execution contract
+decommissioned and archived
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -68,6 +69,9 @@ deployment instructions, safety boundaries, and document index as applicable.
 replace the README update. CI checks each commit after this policy is present on
 the base branch and rejects changes to runtime, configuration, UI, deployment,
 scripts, architecture, or active system documentation that omit `README.md`.
+Tracking/build boundaries such as `.gitignore`, `.dockerignore`, `.claude/`,
+and `.codex/` are included; explicitly archived or decommissioned docs and
+test-only/context-only commits are excluded.
 
 ## Document Index
 
