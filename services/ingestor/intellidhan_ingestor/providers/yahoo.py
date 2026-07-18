@@ -29,6 +29,20 @@ _TF_TO_YF = {
 _SYMBOL_ALIASES = {"SPX": "^SPX", "NDX": "^NDX", "VIX": "^VIX", "RUT": "^RUT"}
 
 
+def _normalize_adjusted_ohlc(
+    open_: float, high: float, low: float, close: float
+) -> tuple[float, float, float, float] | None:
+    """Repair only floating-point boundary noise; reject materially invalid bars."""
+    observed_high = max(open_, close)
+    observed_low = min(open_, close)
+    if low <= observed_low and observed_high <= high:
+        return open_, high, low, close
+    tolerance = max(1e-8, max(abs(open_), abs(high), abs(low), abs(close)) * 1e-10)
+    if observed_high - high <= tolerance and low - observed_low <= tolerance:
+        return open_, max(high, observed_high), min(low, observed_low), close
+    return None
+
+
 class YahooProvider:
     name = "yahoo"
     tier = FeedTier.CORE
@@ -73,15 +87,27 @@ class YahooProvider:
                     # a (symbol, ts_close) dedupe would then block the real
                     # completed bar forever.
                     continue
+            open_, high, low, close = (
+                float(row["Open"]),
+                float(row["High"]),
+                float(row["Low"]),
+                float(row["Close"]),
+            )
+            normalized = _normalize_adjusted_ohlc(open_, high, low, close)
+            if normalized is None:
+                # Do not invent a range for a materially corrupt upstream row.
+                # The downstream data-quality checks can observe the resulting gap.
+                continue
+            open_, high, low, close = normalized
             bars.append(
                 Bar(
                     symbol=symbol,
                     timeframe=timeframe,
                     ts_close=ts_utc.astimezone(timezone.utc),
-                    open=float(row["Open"]),
-                    high=float(row["High"]),
-                    low=float(row["Low"]),
-                    close=float(row["Close"]),
+                    open=open_,
+                    high=high,
+                    low=low,
+                    close=close,
                     volume=float(row["Volume"]),
                     source=f"{self.name}_adjusted" if adjusted else self.name,
                 )
