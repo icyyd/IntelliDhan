@@ -1,5 +1,41 @@
 # IntelliDhan Agent Context
 
+## 2026-07-18 — UI decluttering pass implemented
+
+- Active isolated branch/worktree: `codex/ui-declutter` at
+  `/Users/dhanvin/Documents/IntelliDhan-ui-declutter`, based on merged `main`
+  commit `3208730`. The original checkout remains untouched and contains other
+  contributors' uncommitted work.
+- Detailed agent-readable contract: `docs/26-ui-declutter-pass.md`.
+- The Today screen was reduced from ten visible sections to a calmer
+  signal-first hierarchy: combined welcome/search command surface, compressed
+  SPX/SPY/QQQ strip, Top 3 with collapsed radar, signals, and conditional detail.
+- Static strategy lanes, the duplicate market matrix, duplicate held-back
+  drawer, empty context, and empty risk surfaces are removed or hidden.
+- Automation remains visible but compact. No scoring, rank, provider,
+  authentication, Robinhood, or execution behavior is in scope.
+- Browser verification passed at 390, 768, 1024, 1280, and 1440 px with no
+  horizontal overflow. Real SEC-backed autocomplete and AAPL levels were
+  exercised; a clipped-suggestion defect was found and corrected by keeping the
+  results in the hero's normal flow. Light/dark themes were checked and the
+  console was clean.
+- Full verification after independent review: 246 tests passed (5 deselected),
+  Ruff passed, both inline
+  scripts parsed, DOM IDs are unique, and `git diff --check` is clean.
+- Draft PR #12 received a changes-requested engineering pass. Corrections keep
+  budget-fetch failures visibly fail-closed, route command-palette tickers to
+  on-demand analysis, require explicit alert selection before detail reveal,
+  and make autocomplete keyboard/race behavior deterministic. The corrected
+  mobile flow and pending-request cancellation were browser-tested with a clean
+  console. A re-review accessibility finding now preserves the risk warning and
+  Retry node across unchanged 15-second refreshes; a behavior test verifies
+  focus-safe node identity.
+- Final implementation head `a83f099` received an independent clean re-review
+  with no actionable findings. Both GitHub CI jobs (`test` and
+  `account-postgres`) passed, and draft PR #12 is mergeable. It remains draft
+  and unmerged pending explicit user confirmation.
+- No merge or deployment is authorized by this checkpoint.
+
 ## 2026-07-18 — Multi-brain stock analysis work in progress
 
 - Active isolated branch/worktree: `codex/multibrain-stock-analysis` at
@@ -94,7 +130,7 @@ detailed documents under `docs/`.
 ## 1. Git and review state
 
 - Production branch: `main`
-- Merged implementation commit: `7c8e2a4` (PR #9 merge commit)
+- Merged implementation commit: `3208730` (PR #11 merge commit)
 - The dependency stack landed in order on 2026-07-18: [#4](https://github.com/icyyd/IntelliDhan/pull/4),
   [#5](https://github.com/icyyd/IntelliDhan/pull/5),
   [#6](https://github.com/icyyd/IntelliDhan/pull/6),
