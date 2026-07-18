@@ -29,8 +29,11 @@
   mobile flow and pending-request cancellation were browser-tested with a clean
   console. A re-review accessibility finding now preserves the risk warning and
   Retry node across unchanged 15-second refreshes; a behavior test verifies
-  focus-safe node identity. CI was green on the prior checkpoint and will rerun
-  after the final push.
+  focus-safe node identity.
+- Final implementation head `a83f099` received an independent clean re-review
+  with no actionable findings. Both GitHub CI jobs (`test` and
+  `account-postgres`) passed, and draft PR #12 is mergeable. It remains draft
+  and unmerged pending explicit user confirmation.
 - No merge or deployment is authorized by this checkpoint.
 
 ## 2026-07-18 — Multi-brain stock analysis work in progress
