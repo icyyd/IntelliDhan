@@ -88,14 +88,18 @@ Before editing, committing, reviewing, merging, or deploying:
    overwrite, or silently reformat.
 2. Work on a narrow `codex/*` branch from current `main`. If another branch or PR
    already owns the cohesive change, update it rather than competing.
-3. Stage explicit in-scope paths. Run proportional unit, integration, lint,
+3. Every system-changing pass updates `README.md` in the same commit. Reconcile
+   its date and last-system-pass marker, shipped capabilities, setup/deployment
+   instructions, safety boundaries, and document index as applicable. A
+   context-file or PR-body update is not a substitute.
+4. Stage explicit in-scope paths. Run proportional unit, integration, lint,
    schema, UI, and smoke checks; commit tersely and push with upstream tracking.
-4. Open a draft PR and request independent review of the actual patch, including
+5. Open a draft PR and request independent review of the actual patch, including
    security, data integrity, UX, tests, documentation truth, and CI.
-5. Address blocking findings, rerun checks, and obtain a clean re-review. Never
+6. Address blocking findings, rerun checks, and obtain a clean re-review. Never
    approve an unreviewed or failing PR and never represent a self-review as an
    independent approval.
-6. Merge, branch deletion, secret changes, deployment, and execution-mode changes
+7. Merge, branch deletion, secret changes, deployment, and execution-mode changes
    each require explicit user authorization. Deploy only merged `main`, preserve
    a rollback target, verify Koyeb health, and perform a non-mutating smoke test.
 

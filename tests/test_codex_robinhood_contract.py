@@ -57,3 +57,15 @@ def test_agent_entrypoint_requires_codex_claim_and_safe_modes():
     assert "`SHADOW` is the safe validation path" in text
     assert "dedicated Robinhood Agentic account" in text
     assert "Never guess tool names or fields" in text
+
+
+def test_system_passes_require_same_commit_readme_maintenance():
+    agents = (ROOT / "AGENTS.md").read_text()
+    safety = (ROOT / "docs/28-platform-safety-and-data-integrity.md").read_text()
+    readme = (ROOT / "README.md").read_text()
+
+    required = "Every system-changing pass must update `README.md` in the same commit"
+    assert required in agents
+    assert "Every system-changing pass updates `README.md` in the same commit" in safety
+    assert "## Repository change discipline" in readme
+    assert "**Last system pass:**" in readme

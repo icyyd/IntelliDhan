@@ -1,6 +1,9 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-17 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-07-18 · **Status:** Working personal-terminal foundation
+
+**Last system pass:** Codex-only Robinhood execution contract v1.1; former
+Claude execution contract decommissioned and archived
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -40,9 +43,11 @@ must not be presented as implemented.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
   forward evidence and fixed-rule backtests; signed-in configured-universe
   dossiers also expose the current SEC/news/social research snapshot.
-- Credential-free Codex execution intents for Robinhood's official Trading MCP.
-  Contract v1.1 accepts only explicit `codex` claims; execution remains `OFF`
-  by default and broker authentication stays in the local Codex host.
+- Codex execution-intent bridge for Robinhood's official Trading MCP. The
+  project MCP declaration contains no credentials; contract v1.1 uses a new
+  Codex-only application bearer plus exact `codex` claims. Execution remains
+  `OFF` by default, broker authentication stays in the local Codex host, and
+  the former Claude execution contract is archived for possible reviewed reuse.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
@@ -53,6 +58,14 @@ the Account panel to create the first administrator. See
 For broker automation, trust the repository, authenticate the declared MCP with
 `codex mcp login robinhood-trading`, and follow the mandatory
 [Codex + Robinhood execution contract](docs/27-codex-robinhood-execution.md).
+
+## Repository change discipline
+
+Every system-changing pass must update this `README.md` in the same commit.
+Reconcile the date and last-system-pass marker, current capabilities, setup and
+deployment instructions, safety boundaries, and document index as applicable.
+`AGENT_CONTEXT.md` and pull-request notes supplement this README; they do not
+replace the README update.
 
 ## Document Index
 

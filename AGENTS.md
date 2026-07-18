@@ -51,5 +51,8 @@ intent creation and execution.
 ## GitOps
 
 The complete shared-repository workflow and deployment gates are mandatory in
-doc 28. Never merge, delete a branch, deploy, or change live execution mode
-without explicit user authorization.
+doc 28. Every system-changing pass must update `README.md` in the same commit,
+including its last-system-pass marker and any affected capability, setup,
+deployment, safety, or document-index content. Context files and PR text do not
+substitute for this update. Never merge, delete a branch, deploy, or change live
+execution mode without explicit user authorization.

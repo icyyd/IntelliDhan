@@ -2,6 +2,10 @@
 
 ## 2026-07-18 — Codex becomes the sole Robinhood execution agent
 
+- Repository maintenance is now explicit and tested: every system-changing pass
+  must update `README.md` in the same commit, including its last-system-pass
+  marker and affected capability, setup, deployment, safety, and document-index
+  truth. Context and PR notes cannot substitute for the README change.
 - Active isolated branch/worktree: `codex/codex-robinhood-primary` at
   `/Users/dhanvin/Documents/IntelliDhan-codex-robinhood`, based on merged
   `main` commit `7620024`. The collaborators' dirty checkout is untouched.
