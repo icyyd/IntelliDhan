@@ -1,6 +1,6 @@
 # IntelliDhan Agent Context
 
-**Last updated:** 2026-07-17
+**Last updated:** 2026-07-18
 
 This is the concise handoff file for agents working on IntelliDhan. It
 summarizes current implementation state and does not replace `CLAUDE.md` or the
@@ -8,18 +8,22 @@ detailed documents under `docs/`.
 
 ## 1. Git and review state
 
-- Feature branch: `codex/signal-terminal-redesign`
-- Current implementation commit before this context update: `5696a22`
-- Draft pull request: [#9 — Redesign the signal terminal](https://github.com/icyyd/IntelliDhan/pull/9)
-- PR base: `codex/daily-brief-landing` (stacked on PR #7 and the earlier account,
-  data-quality, scanner, Workspace Agent, and daily-brief work)
-- Local implementation worktree:
-  `/Users/dhanvin/Documents/IntelliDhan-signal-terminal-redesign`
+- Production branch: `main`
+- Merged implementation commit: `7c8e2a4` (PR #9 merge commit)
+- The dependency stack landed in order on 2026-07-18: [#4](https://github.com/icyyd/IntelliDhan/pull/4),
+  [#5](https://github.com/icyyd/IntelliDhan/pull/5),
+  [#6](https://github.com/icyyd/IntelliDhan/pull/6),
+  [#7](https://github.com/icyyd/IntelliDhan/pull/7), then
+  [#9](https://github.com/icyyd/IntelliDhan/pull/9).
 - The original shared checkout may contain collaborator changes. Never discard,
-  reset, stage, or rewrite changes outside the isolated worktree.
-- PR #9 passed both GitHub CI jobs at commit `5696a22` and received an
-  independent agent approval with no remaining findings.
-- Do not merge, retarget, remove, or deploy this stack without user confirmation.
+  reset, stage, or rewrite changes that are outside the current agent's isolated
+  feature worktree.
+- Every landed PR passed GitHub `test` and `account-postgres`; the cumulative
+  merged tree also received an independent runtime review with no code blocker.
+- Execution remains `OFF`. No merge changed the Robinhood trading boundary.
+- Continue to use a fresh `codex/*` feature branch and pull request for new work.
+  Do not remove branches, overwrite collaborator work, or bypass review without
+  explicit user confirmation.
 
 ## 2. Product direction
 
@@ -148,17 +152,20 @@ this file.
 
 ## 8. Validation baseline
 
-At PR commit `5696a22`:
+At merged `main` commit `7c8e2a4`:
 
-- `217 passed, 5 deselected`;
+- `222 passed, 5 deselected`;
 - Ruff clean;
 - both inline scripts parsed;
 - `git diff --check` clean;
 - desktop, 390 px mobile, light theme, and dark theme inspected;
 - authenticated Today and Analyze evidence flows exercised locally;
 - no browser console warnings/errors;
-- GitHub `test` and `account-postgres` jobs passed;
-- independent review approved.
+- GitHub `test` and `account-postgres` jobs passed for every landed PR;
+- independent post-merge runtime review approved;
+- Koyeb promoted the exact merge SHA and reported both deployment and service
+  `HEALTHY`; public liveness, protected-route 401 boundaries, desktop/mobile
+  overflow, and browser console checks passed against the live URL.
 
 Re-run proportionate checks after each material change and update this section
 only with observed results.
@@ -178,15 +185,17 @@ only with observed results.
 
 ## 10. Remaining priorities
 
-1. Land the lower PR stack in order, then retarget/review PR #9.
-2. Confirm Koyeb server environment and deployment health after merge.
-3. Add a licensed real-time provider router and field-level exchange timestamps.
-4. Add point-in-time broad-universe, sector/peer, earnings-calendar, estimates,
+1. Move any remaining literal Koyeb credentials to secret-backed references,
+   rotate them through the owning services, and configure the optional research
+   providers needed for multi-feed coverage. Never copy secret values into this
+   file, logs, issues, or pull requests.
+2. Add a licensed real-time provider router and field-level exchange timestamps.
+3. Add point-in-time broad-universe, sector/peer, earnings-calendar, estimates,
    transcript-change, and valuation datasets before claiming one-stop coverage.
-5. Persist research snapshots and evaluate ranking realization over time.
-6. Add reliable historical options chains and production-path 0DTE/LEAPS fill
+4. Persist research snapshots and evaluate ranking realization over time.
+5. Add reliable historical options chains and production-path 0DTE/LEAPS fill
    modeling before any strategy-promotion proposal.
-7. Build compare, portfolio-conflict, and durable review/journal workflows.
+6. Build compare, portfolio-conflict, and durable review/journal workflows.
 
 ## 11. Checkpoint protocol
 
