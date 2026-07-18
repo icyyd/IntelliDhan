@@ -1,5 +1,90 @@
 # IntelliDhan Agent Context
 
+## 2026-07-18 — Multi-brain stock analysis work in progress
+
+- Active isolated branch/worktree: `codex/multibrain-stock-analysis` at
+  `/Users/dhanvin/Documents/IntelliDhan-multibrain`; the shared checkout remains
+  untouched because it contains other agents' work.
+- New implementation contract:
+  `docs/15-multibrain-stock-analysis.md`.
+- The daily-brief pattern is being adapted as three evidence-isolated specialist
+  passes plus a deterministic reconciler. AI remains analysis-only and cannot
+  rank, create an intent, or touch execution.
+- Planned product work: dynamic SEC-backed ticker/company search, richer company
+  dossier, auditable research posture, homepage welcome/search/key levels, and
+  chronological no-lookahead validation.
+- Historical testing must use completed adjusted bars only. Current SEC/news/
+  social snapshots are explicitly excluded until point-in-time archives exist.
+- No merge or deployment is authorized by this checkpoint.
+
+### Independent review corrections
+
+- Attention/news/social can no longer create a directional posture: `BUY` and
+  `SELL` require matching technical and filed-business stances.
+- An unvalidated forward context is now a critical blocker, so it cannot appear
+  as a prominent directional posture.
+- Regression promotion now requires held-later Brier improvement over both the
+  expanding unconditional base rate and the fixed-vote benchmark.
+- Alpha company overviews must match the requested symbol; SEC identity remains
+  authoritative. Finnhub rows must match the symbol and fall inside a bounded,
+  nonfuture seven-day window.
+- Homepage company submissions resolve through SEC search, with direct-ticker
+  fallback plus combobox labeling, expanded state, Arrow navigation, Enter,
+  and Escape behavior.
+- Re-review verification baseline: `240 passed, 5 deselected`; Ruff and inline
+  script parsing clean; `git diff --check` clean. Live SEC-backed “Apple” search
+  resolved to AAPL, keyboard behavior passed, and the browser console was clean.
+
+### Backend checkpoint `multibrain-research-v1`
+
+- Added `research_consensus.py`: isolated price/risk, business-quality, and
+  catalyst/attention specialists plus deterministic `BUY` / `HOLD` / `SELL` /
+  `INSUFFICIENT_EVIDENCE` research posture. Sentiment cannot override price and
+  business evidence; the result cannot rank or execute.
+- Trend analysis is now `trend-analysis-v3` and exposes completed-daily 9EMA,
+  SMA50/200, 55-day confirmation, 20-day invalidation, 52-week range, and
+  two-ATR reference levels.
+- Added SEC registrant ticker/company search and SEC business identity fields.
+- Signed-in arbitrary ticker dossiers now receive current SEC/news/social
+  enrichment instead of restricting enrichment to the configured scan universe.
+- Focused verification: 27 tests passed; ruff passed. The shared repository
+  virtual environment was used read-only with this worktree's packages supplied
+  through `PYTHONPATH`.
+
+### Regression checkpoint `technical-panel-regression-v1`
+
+- Added a chronological pooled regression harness with matured-label admission,
+  non-overlapping outcomes, training-only standardization, ridge regularization,
+  development-only feature-set selection, and a later validation window.
+- Live 10-year configured-universe results are recorded in
+  `docs/16-multibrain-validation-results.md` and JSON evidence artifacts.
+- 21-session validation: core regression Brier 0.22974 vs fixed vote 0.22759
+  (-0.94% relative); 2/12 symbols improved.
+- 63-session validation: core regression Brier 0.22147 vs fixed vote 0.21928
+  (-1.00% relative); 5/12 symbols improved.
+- Both horizons are `NO_BENCHMARK_EDGE`; no regression promotion is authorized.
+  Transparent fixed votes remain production-authoritative.
+
+### Product checkpoint `dynamic-dossier-v1`
+
+- The Today screen now has a personalized welcome, ticker/company search,
+  compact on-demand levels, and a direct path to the full dossier.
+- The dossier presents completed-bar trend posture separately from validated
+  forward edge, key levels, company/business context, SEC financial and filing
+  evidence, news, social attention, and the three specialist opinions.
+- Alpha Vantage `OVERVIEW` adds a bounded business description, sector,
+  industry, market cap, and valuation context when configured. These fields are
+  display-only and cannot alter specialist scores or posture.
+- Desktop (1280 px) and mobile (390 px) browser checks show no horizontal
+  overflow. Homepage key-level search and the full AAPL dossier were exercised.
+- Browser testing exposed a Yahoo adjusted-price floating-point boundary defect
+  in a 10-year AAPL row. The provider now repairs only epsilon-scale OHLC noise
+  and rejects materially invalid rows; regression tests cover both paths.
+- Signed-out research enrichment correctly remains unavailable while technical
+  analysis and levels remain usable. Authenticated provider rendering is
+  covered by API/static tests; no credentials were invented for visual QA.
+- No merge or deployment is authorized by this checkpoint.
+
 **Last updated:** 2026-07-18
 
 This is the concise handoff file for agents working on IntelliDhan. It

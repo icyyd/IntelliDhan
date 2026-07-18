@@ -25,6 +25,28 @@ SEC_DATA_ROOT = "https://data.sec.gov"
 ALPHA_VANTAGE_URL = "https://www.alphavantage.co/query"
 FINNHUB_SOCIAL_URL = "https://finnhub.io/api/v1/stock/social-sentiment"
 _SAFE_DOCUMENT = re.compile(r"^[A-Za-z0-9._-]+$")
+_DISPLAY_CURRENCIES = {
+    "AUD",
+    "BRL",
+    "CAD",
+    "CHF",
+    "CNY",
+    "DKK",
+    "EUR",
+    "GBP",
+    "HKD",
+    "ILS",
+    "INR",
+    "JPY",
+    "KRW",
+    "MXN",
+    "NOK",
+    "SEK",
+    "SGD",
+    "TWD",
+    "USD",
+    "ZAR",
+}
 
 
 def _finite(value: Any) -> float | None:
@@ -341,14 +363,97 @@ def parse_alpha_news(
     }
 
 
-def parse_finnhub_social(payload: dict[str, Any]) -> dict[str, Any]:
+def parse_alpha_overview(
+    payload: dict[str, Any], expected_symbol: str | None = None
+) -> dict[str, Any]:
+    """Extract bounded company context without turning estimates into signal inputs."""
+    symbol = str(payload.get("Symbol", "")).strip().upper()
+    description = str(payload.get("Description", "")).strip()[:2_000]
+    if not symbol or not description or (expected_symbol and symbol != expected_symbol.upper()):
+        return {
+            "status": "UNAVAILABLE",
+            "profile": {},
+            "reason": "A current company overview was not available.",
+        }
+
+    def text_field(key: str, limit: int = 160) -> str | None:
+        value = str(payload.get(key, "")).strip()
+        return value[:limit] or None
+
+    def number_field(key: str) -> float | None:
+        return _finite(payload.get(key))
+
+    currency = str(payload.get("Currency", "")).strip().upper()
+    profile = {
+        "symbol": symbol,
+        "name": text_field("Name"),
+        "description": description,
+        "sector": text_field("Sector"),
+        "industry": text_field("Industry"),
+        "exchange": text_field("Exchange", 40),
+        "currency": currency if currency in _DISPLAY_CURRENCIES else None,
+        "country": text_field("Country", 80),
+        "fiscal_year_end": text_field("FiscalYearEnd", 32),
+        "latest_quarter": text_field("LatestQuarter", 20),
+        "market_cap": number_field("MarketCapitalization"),
+        "ebitda": number_field("EBITDA"),
+        "pe_ratio": number_field("PERatio"),
+        "peg_ratio": number_field("PEGRatio"),
+        "dividend_yield": number_field("DividendYield"),
+        "profit_margin": number_field("ProfitMargin"),
+        "operating_margin": number_field("OperatingMarginTTM"),
+        "return_on_equity": number_field("ReturnOnEquityTTM"),
+        "analyst_target_price": number_field("AnalystTargetPrice"),
+        "source": "Alpha Vantage company overview",
+    }
+    return {
+        "status": "AVAILABLE",
+        "profile": {key: value for key, value in profile.items() if value is not None},
+        "limitation": (
+            "Current descriptive and valuation context only. Provider estimates and valuation "
+            "fields are display-only and do not affect the research posture."
+        ),
+    }
+
+
+def parse_finnhub_social(
+    payload: dict[str, Any],
+    expected_symbol: str | None = None,
+    *,
+    now: datetime | None = None,
+    max_age_days: int = 7,
+) -> dict[str, Any]:
+    returned_symbol = str(payload.get("symbol", "")).strip().upper()
+    if expected_symbol and returned_symbol != expected_symbol.upper():
+        return {
+            "status": "UNAVAILABLE",
+            "score": None,
+            "tier": "UNRATED",
+            "mentions": 0,
+            "platform_counts": {},
+            "content_as_of": None,
+            "limitation": "The provider returned social data for a different symbol.",
+        }
+    reference = now or datetime.now(timezone.utc)
     observations = []
+    observed_times: list[datetime] = []
     platform_counts: dict[str, int] = {}
     for platform in ("reddit", "twitter"):
         rows = payload.get(platform, [])
         if not isinstance(rows, list):
             continue
         for row in rows[:200]:
+            raw_time = str(row.get("atTime", "")).strip()
+            try:
+                observed = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+                if observed.tzinfo is None:
+                    observed = observed.replace(tzinfo=timezone.utc)
+                observed = observed.astimezone(timezone.utc)
+            except ValueError:
+                continue
+            age = reference - observed
+            if age.total_seconds() < -300 or age > timedelta(days=max_age_days):
+                continue
             positive = _finite(row.get("positiveMention")) or 0.0
             negative = _finite(row.get("negativeMention")) or 0.0
             mention = _finite(row.get("mention")) or positive + negative
@@ -356,6 +461,7 @@ def parse_finnhub_social(payload: dict[str, Any]) -> dict[str, Any]:
                 continue
             tone = (positive - negative) / max(positive + negative, 1.0)
             observations.append((mention, max(-1.0, min(1.0, tone))))
+            observed_times.append(observed)
             platform_counts[platform] = platform_counts.get(platform, 0) + int(mention)
     weight = sum(item[0] for item in observations)
     average = sum(mention * tone for mention, tone in observations) / weight if weight else None
@@ -366,6 +472,7 @@ def parse_finnhub_social(payload: dict[str, Any]) -> dict[str, Any]:
         "tier": score_tier(score),
         "mentions": int(weight),
         "platform_counts": platform_counts,
+        "content_as_of": max(observed_times).isoformat() if observed_times else None,
         "limitation": (
             "Social mood is attention/risk context, not financial strength; it is capped at "
             "5% of rank and never triggers a trade."
@@ -417,7 +524,7 @@ class ResearchFeedService:
             raise ValueError("research feed returned an unexpected payload")
         return parsed
 
-    async def _ticker_map(self) -> dict[str, str]:
+    async def _ticker_map(self) -> dict[str, dict[str, str]]:
         cached = self._read_cache("sec:ticker-map", 86_400, False)
         if cached is not None:
             return cached
@@ -434,13 +541,58 @@ class ResearchFeedService:
                 max_bytes=5_000_000,
             )
             mapping = {
-                str(item.get("ticker", "")).upper(): str(item.get("cik_str", "")).zfill(10)
+                str(item.get("ticker", "")).upper(): {
+                    "symbol": str(item.get("ticker", "")).upper(),
+                    "cik": str(item.get("cik_str", "")).zfill(10),
+                    "name": str(item.get("title", ""))[:160],
+                }
                 for item in payload.values()
                 if isinstance(item, dict)
                 and item.get("ticker")
                 and item.get("cik_str") is not None
             }
             return self._write_cache("sec:ticker-map", mapping)
+
+    async def search(self, query: str, *, limit: int = 8) -> dict[str, Any]:
+        """Search the authoritative SEC registrant index by ticker or company name."""
+        clean = " ".join(query.strip().upper().split())
+        if len(clean) < 1 or len(clean) > 80:
+            raise ValueError("search query must be 1-80 characters")
+        if not 1 <= limit <= 12:
+            raise ValueError("search limit must be between 1 and 12")
+        try:
+            mapping = await self._ticker_map()
+        except LookupError as exc:
+            return {
+                "query": clean,
+                "status": "NOT_CONFIGURED",
+                "results": [],
+                "reason": str(exc),
+                "source": "SEC company_tickers",
+            }
+        scored = []
+        for item in mapping.values():
+            symbol = item["symbol"]
+            name = item["name"].upper()
+            if symbol == clean:
+                rank = 0
+            elif symbol.startswith(clean):
+                rank = 1
+            elif name.startswith(clean):
+                rank = 2
+            elif clean in name:
+                rank = 3
+            else:
+                continue
+            scored.append((rank, len(name), len(symbol), symbol, item))
+        results = [item for *_, item in sorted(scored)[:limit]]
+        return {
+            "query": clean,
+            "status": "AVAILABLE",
+            "results": results,
+            "source": "SEC company_tickers",
+            "limitation": "US SEC registrants only; funds, indices, and some foreign listings may be absent.",
+        }
 
     async def _sec(self, symbol: str, *, refresh: bool) -> dict[str, Any]:
         user_agent = os.getenv("INTELLIDHAN_SEC_USER_AGENT", "").strip()
@@ -454,9 +606,10 @@ class ResearchFeedService:
             # Registrant mappings change slowly and are shared across symbols.
             # A manual data refresh must not fan out duplicate ticker-map calls.
             mapping = await self._ticker_map()
-            cik = mapping.get(symbol)
-            if not cik:
+            registrant = mapping.get(symbol)
+            if not registrant:
                 raise LookupError(f"No SEC registrant mapping was found for {symbol}.")
+            cik = registrant["cik"]
             key = f"sec:{symbol}"
             cached = self._read_cache(key, 21_600, refresh)
             if cached is not None:
@@ -481,6 +634,21 @@ class ResearchFeedService:
                     "as_of": datetime.now(timezone.utc).isoformat(),
                     "cik": cik,
                     "company_name": str(submissions.get("name", ""))[:160],
+                    "profile": {
+                        "name": str(submissions.get("name", ""))[:160],
+                        "sic": str(submissions.get("sic", ""))[:8] or None,
+                        "industry": str(submissions.get("sicDescription", ""))[:160] or None,
+                        "fiscal_year_end": str(submissions.get("fiscalYearEnd", ""))[:4] or None,
+                        "exchanges": [str(item)[:40] for item in submissions.get("exchanges", [])[:8]],
+                        "tickers": [str(item)[:20] for item in submissions.get("tickers", [])[:8]],
+                        "website": str(submissions.get("website", ""))[:240] or None,
+                        "investor_website": str(submissions.get("investorWebsite", ""))[:240] or None,
+                        "description": (
+                            "SEC registrant identity and filing profile. A plain-language business "
+                            "description is not available from this source."
+                        ),
+                        "source": "SEC submissions",
+                    },
                     "fundamentals": parse_sec_fundamentals(facts),
                     "filings": parse_sec_filings(submissions, cik),
                 },
@@ -541,6 +709,50 @@ class ResearchFeedService:
                 "reason": "The current news feed could not be refreshed.",
             }
 
+    async def _overview(self, symbol: str, *, refresh: bool) -> dict[str, Any]:
+        api_key = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
+        if not api_key:
+            return {
+                "status": "NOT_CONFIGURED",
+                "source": "Alpha Vantage company overview",
+                "profile": {},
+                "reason": "The company overview feed is not configured.",
+            }
+        key = f"alpha-overview:{symbol}"
+        cached = self._read_cache(key, 21_600, refresh)
+        if cached is not None:
+            return cached
+        try:
+            payload = await self._json(
+                ALPHA_VANTAGE_URL,
+                params={"function": "OVERVIEW", "symbol": symbol, "apikey": api_key},
+                max_bytes=1_000_000,
+            )
+            if payload.get("Information") or payload.get("Note"):
+                raise LookupError
+            result = parse_alpha_overview(payload, symbol)
+            result.update(
+                {
+                    "source": "Alpha Vantage company overview",
+                    "as_of": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+            return self._write_cache(key, result)
+        except LookupError:
+            return {
+                "status": "UNAVAILABLE",
+                "source": "Alpha Vantage company overview",
+                "profile": {},
+                "reason": "The company overview feed is unavailable or rate-limited.",
+            }
+        except Exception:
+            return {
+                "status": "UNAVAILABLE",
+                "source": "Alpha Vantage company overview",
+                "profile": {},
+                "reason": "The company overview feed could not be refreshed.",
+            }
+
     async def _social(self, symbol: str, *, refresh: bool) -> dict[str, Any]:
         api_key = os.getenv("FINNHUB_API_KEY", "").strip()
         if not api_key:
@@ -554,7 +766,8 @@ class ResearchFeedService:
         if cached is not None:
             return cached
         try:
-            end = date.today()
+            observed_at = datetime.now(timezone.utc)
+            end = observed_at.date()
             payload = await self._json(
                 FINNHUB_SOCIAL_URL,
                 params={
@@ -565,8 +778,8 @@ class ResearchFeedService:
                 headers={"X-Finnhub-Token": api_key},
                 max_bytes=2_000_000,
             )
-            result = parse_finnhub_social(payload)
-            result.update({"source": "Finnhub", "as_of": datetime.now(timezone.utc).isoformat()})
+            result = parse_finnhub_social(payload, symbol, now=observed_at)
+            result.update({"source": "Finnhub", "as_of": observed_at.isoformat()})
             return self._write_cache(key, result)
         except Exception:
             return {
@@ -578,8 +791,9 @@ class ResearchFeedService:
     async def analyze(
         self, symbol: str, technical: dict[str, Any], *, refresh: bool = False
     ) -> dict[str, Any]:
-        sec, news, social = await asyncio.gather(
+        sec, overview, news, social = await asyncio.gather(
             self._sec(symbol, refresh=refresh),
+            self._overview(symbol, refresh=refresh),
             self._news(symbol, refresh=refresh),
             self._social(symbol, refresh=refresh),
         )
@@ -631,6 +845,28 @@ class ResearchFeedService:
             if used_weight
             else None
         )
+        sec_profile = sec.get("profile", {}) if sec.get("status") == "AVAILABLE" else {}
+        overview_profile = (
+            overview.get("profile", {}) if overview.get("status") == "AVAILABLE" else {}
+        )
+        company = dict(overview_profile)
+        for key in (
+            "name",
+            "sic",
+            "industry",
+            "exchanges",
+            "tickers",
+            "website",
+            "investor_website",
+        ):
+            if sec_profile.get(key):
+                company[key] = sec_profile[key]
+        if not company.get("description") and sec_profile.get("description"):
+            company["description"] = sec_profile["description"]
+        if sec_profile.get("fiscal_year_end"):
+            company["fiscal_year_end_code"] = sec_profile["fiscal_year_end"]
+        company["overview_status"] = overview.get("status")
+        company["overview_limitation"] = overview.get("limitation") or overview.get("reason")
         return {
             "symbol": symbol,
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -644,6 +880,7 @@ class ResearchFeedService:
             "pillars": pillars,
             "technical": technical,
             "fundamentals": fundamental,
+            "company": company,
             "filings": sec.get("filings", {"status": sec.get("status"), "items": []}),
             "news": news,
             "social": social,
@@ -655,12 +892,18 @@ class ResearchFeedService:
                     "status": news.get("status"),
                     "as_of": news.get("content_as_of"),
                 },
+                {
+                    "name": "Alpha Vantage company overview",
+                    "status": overview.get("status"),
+                    "as_of": overview.get("as_of"),
+                },
                 {"name": "Finnhub", "status": social.get("status"), "as_of": social.get("as_of")},
             ],
             "limitations": [
                 "Overall is a transparent research rank, not a probability of profit or order signal.",
                 "Unavailable pillars are excluded and weights are renormalized; coverage is shown.",
                 "Filing metrics use current standard XBRL facts and are not yet sector-relative.",
+                "Company overview fields are descriptive/display-only and do not affect posture.",
                 "News and social tone are low-weight context because attention can reverse or be manipulated.",
             ],
         }

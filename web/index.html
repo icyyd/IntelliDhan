@@ -728,7 +728,15 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   #queue0dteTracking,#queueSwingTracking{grid-template-columns:1fr}
 }
 
-/* ── On-demand stock analysis ───────────────────────────────────── */
+/* ── Welcome search and on-demand stock analysis ───────────────── */
+.home-search-card{position:relative; z-index:4; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; margin:0 0 18px; padding:16px; border:1px solid rgba(145,164,255,.22); border-radius:24px; background:linear-gradient(135deg,rgba(145,164,255,.10),rgba(94,234,212,.045)),var(--card-gradient); box-shadow:var(--shadow-card)}
+.home-search-copy b{display:block; font-size:14px; letter-spacing:-.01em}.home-search-copy small{display:block; margin-top:3px; color:var(--text-dim); font-size:10.5px}
+.home-search-wrap{position:relative; min-width:min(520px,50vw)}
+.home-search-form{display:flex; gap:8px}.home-search-form input{width:100%; min-height:48px; padding:0 16px; border:1px solid var(--border); border-radius:17px; background:var(--input-bg); color:var(--text); font:750 15px var(--mono); letter-spacing:.035em; text-transform:uppercase}.home-search-form input:focus{outline:2px solid rgba(145,164,255,.65); outline-offset:2px}
+.home-search-form button{min-width:112px; border:0; border-radius:16px; background:var(--cyan); color:var(--on-accent); font:750 12px var(--sans); cursor:pointer}.home-search-form button:hover{filter:brightness(1.08)}
+.search-suggestions{position:absolute; top:55px; left:0; right:120px; z-index:20; overflow:hidden; border:1px solid var(--border); border-radius:17px; background:var(--panel-elevated); box-shadow:0 18px 50px rgba(0,0,0,.32)}
+.search-suggestion{display:flex; width:100%; align-items:center; gap:10px; min-height:45px; padding:8px 12px; border:0; border-bottom:1px solid var(--border-soft); background:transparent; color:var(--text); text-align:left; cursor:pointer}.search-suggestion:last-child{border-bottom:0}.search-suggestion:hover,.search-suggestion:focus{background:var(--tint-a); outline:none}.search-suggestion b{font:750 12px var(--mono); color:var(--cyan)}.search-suggestion span{overflow:hidden; color:var(--text-dim); font-size:11px; text-overflow:ellipsis; white-space:nowrap}
+.home-levels{grid-column:1/-1; display:grid; grid-template-columns:auto repeat(5,minmax(0,1fr)); gap:8px; padding-top:12px; border-top:1px solid var(--border-soft)}.home-levels[hidden]{display:none}.home-level-symbol{display:flex; flex-direction:column; justify-content:center; padding:10px 14px; border-radius:17px; background:rgba(145,164,255,.10)}.home-level-symbol b{font:800 17px var(--mono)}.home-level-symbol small{color:var(--text-faint); font-size:9px}.home-level{padding:10px; border-radius:16px; background:var(--tint-d)}.home-level b{display:block; font:700 12px var(--mono)}.home-level small{display:block; margin-top:2px; color:var(--text-faint); font-size:8.5px}.home-level-action{grid-column:1/-1; justify-self:end; align-self:center; color:var(--cyan); font-size:10px; font-weight:750; background:none; border:0; cursor:pointer}
 .analysis-search-panel{padding:16px}
 .analysis-form{display:grid; grid-template-columns:minmax(140px,1.4fr) repeat(3,minmax(108px,.7fr)) auto; gap:10px; align-items:end}
 .analysis-field{display:block; min-width:0}
@@ -817,6 +825,9 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
 .research-link{display:block; padding:7px 0; border-bottom:1px solid var(--border-soft); color:var(--cyan); font-size:10px; text-decoration:none}
 .research-link:last-child{border-bottom:0}
 .research-link small{display:block; color:var(--text-faint); margin-top:2px}
+.company-profile{display:grid; grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(100px,.5fr)); gap:8px; margin-bottom:12px}.company-profile-main,.company-profile-stat{padding:13px; border:1px solid var(--border); border-radius:17px; background:var(--tint-c)}.company-profile-main h3{margin:0 0 5px; font-size:14px}.company-profile-main p{margin:0; color:var(--text-dim); font-size:10.5px; line-height:1.5}.company-profile-stat b,.company-profile-stat small{display:block}.company-profile-stat b{font-size:11.5px}.company-profile-stat small{margin-top:3px; color:var(--text-faint); font-size:8.5px; text-transform:uppercase}
+.multibrain-card{margin-bottom:12px; padding:15px; border:1px solid rgba(145,164,255,.25); border-radius:20px; background:linear-gradient(135deg,rgba(145,164,255,.09),rgba(94,234,212,.035))}.multibrain-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap}.research-posture{padding:6px 10px; border-radius:99px; background:rgba(246,200,107,.10); color:var(--gold); font:800 10px var(--mono)}.research-posture.buy{background:rgba(94,234,212,.12); color:var(--teal)}.research-posture.sell{background:rgba(251,113,133,.12); color:var(--red)}.multibrain-head p{flex:1; margin:0; color:var(--text-dim); font-size:11px}.brain-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:11px}.brain-card{padding:10px; border-radius:15px; background:var(--tint-d)}.brain-card b,.brain-card small{display:block}.brain-card b{font-size:10.5px}.brain-card small{margin-top:3px; color:var(--text-faint); font-size:9px}.brain-card .bullish{color:var(--teal)}.brain-card .bearish{color:var(--red)}
+.analysis-key-levels{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px}.analysis-key-level{padding:13px; border:1px solid var(--border); border-radius:17px; background:var(--tint-c)}.analysis-key-level b,.analysis-key-level small{display:block}.analysis-key-level b{font:700 14px var(--mono)}.analysis-key-level small{margin-top:3px; color:var(--text-faint); font-size:9px}
 .analysis-methods{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
 .method-card{position:relative; overflow:hidden; padding:18px; border:1px solid var(--border); border-radius:22px; background:var(--card-gradient); min-height:190px}
 .method-card.bullish{border-top-color:rgba(94,234,212,.42)}
@@ -858,8 +869,10 @@ body.analysis-view .decision-rail,body.analysis-view .bottom-drawer{display:none
   .analysis-verdict{grid-template-columns:1fr}
 }
 @media (max-width:700px){
+  .home-search-card{grid-template-columns:1fr}.home-search-wrap{min-width:0}.home-levels{grid-template-columns:repeat(2,minmax(0,1fr))}.home-level-symbol{grid-column:1/-1}
   .forecast-grid{grid-template-columns:1fr}
   .research-evidence-grid{grid-template-columns:1fr}
+  .company-profile{grid-template-columns:1fr 1fr}.company-profile-main{grid-column:1/-1}.brain-grid{grid-template-columns:1fr}.analysis-key-levels{grid-template-columns:repeat(2,minmax(0,1fr))}
   .analysis-methods{grid-template-columns:1fr}
   .analysis-risk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
@@ -1258,14 +1271,23 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
     <section class="terminal-hero" aria-labelledby="deskTitle">
       <div class="terminal-hero-copy">
         <div class="terminal-kicker">Real-time signal engine</div>
-        <h1 id="deskTitle">The market, distilled into decisions.</h1>
-        <p>Start with what needs attention now: benchmark direction, three ranked focus names, complete trade plans, and the evidence that can invalidate them.</p>
+        <h1 id="deskTitle">Welcome to your market desk.</h1>
+        <p id="deskSummary">Start with today's brief, then search any ticker for the levels and evidence that can change the thesis.</p>
       </div>
       <div class="terminal-stats" aria-label="Signal summary">
         <div class="terminal-stat"><b id="summarySignals">—</b><small>Active plans</small></div>
         <div class="terminal-stat"><b id="summarySuppressed">—</b><small>Held back honestly</small></div>
         <div class="terminal-stat"><b id="summaryNext">—</b><small>Next scan</small></div>
       </div>
+    </section>
+
+    <section class="home-search-card" aria-labelledby="homeSearchTitle">
+      <div class="home-search-copy"><b id="homeSearchTitle">What are you watching?</b><small>Search a ticker or company for completed-bar levels, business quality, catalysts, and social attention.</small></div>
+      <div class="home-search-wrap">
+        <form class="home-search-form" id="homeStockSearchForm"><input id="homeStockSearch" type="search" maxlength="80" autocomplete="off" placeholder="Search AAPL or Apple" aria-label="Ticker or company" role="combobox" aria-controls="homeSearchSuggestions" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false"><button type="submit">Get levels</button></form>
+        <div class="search-suggestions" id="homeSearchSuggestions" role="listbox" hidden></div>
+      </div>
+      <div class="home-levels" id="homeKeyLevels" aria-live="polite" hidden></div>
     </section>
 
     <section class="anchor-strip" id="focusAnchors" aria-label="SPX, SPY and QQQ market pulse">
@@ -1508,6 +1530,11 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
     <div class="analysis-results" id="analysisResults" hidden aria-live="polite">
       <section class="analysis-verdict" id="analysisSummary" aria-label="Analysis verdict"></section>
 
+      <section class="panel" aria-labelledby="analysisLevelsTitle">
+        <div class="analysis-section-head"><div><h2 id="analysisLevelsTitle">Key levels to watch</h2><p>Completed adjusted daily references that confirm or invalidate the price thesis.</p></div></div>
+        <div class="analysis-key-levels" id="analysisKeyLevels"></div>
+      </section>
+
       <section class="panel" id="analysisResearchPanel" aria-labelledby="analysisResearchTitle">
         <div class="analysis-section-head"><div><h2 id="analysisResearchTitle">Financial &amp; attention context</h2><p>Current filing, news, and social evidence with visible coverage; research rank only.</p></div></div>
         <div id="analysisResearchOutput"></div>
@@ -1707,6 +1734,7 @@ let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
 let accountUser = null, preferencesCache = null, preferencesApplied = false;
 let selectedDiscoverPreset = "smart_momentum", currentDossier = null;
+let homeSearchTimer = null, homeSearchRequest = 0, homeSearchResults = [], homeSearchActive = -1;
 let discoverPresets = {
   smart_momentum:{play_type:"MOMENTUM_LEADER"},
   breakout_watch:{play_type:"BREAKOUT_WATCH"},
@@ -2304,7 +2332,8 @@ function renderBriefing(){
 }
 function renderDailyBrief(){
   const panel=document.getElementById("dailySetup");
-  if(!ownerAuthenticated||!dailyBrief){ panel.hidden=true; panel.replaceChildren(); dailyBriefRenderKey=null; return; }
+  const heroSummary=document.getElementById("deskSummary");
+  if(!ownerAuthenticated||!dailyBrief){ panel.hidden=true; panel.replaceChildren(); dailyBriefRenderKey=null; heroSummary.textContent="Start with today's brief, then search any ticker for the levels and evidence that can change the thesis."; return; }
   const nextRenderKey=JSON.stringify(dailyBrief);
   if(!panel.hidden&&dailyBriefRenderKey===nextRenderKey) return;
   dailyBriefRenderKey=nextRenderKey;
@@ -2335,6 +2364,7 @@ function renderDailyBrief(){
   const firstEvent=(dailyBrief.economic_events||[])[0];
   const risk=firstEvent?`${firstEvent.time_et||firstEvent.time||"Scheduled event"}: ${firstEvent.event||"Market event"}${firstEvent.forecast_vs_previous?` — ${firstEvent.forecast_vs_previous}`:""}`:(dailyBrief.risks||[])[0]||dailyBrief.notice||"Check the economic calendar, live data quality, and each setup's invalidation before acting.";
   const limitation=dailyBrief.data_quality?.limitations?.[0]||dailyBrief.disclaimer||"Research brief only.";
+  heroSummary.textContent=dailyBrief.headline||dailyBrief.notice||"Today's brief is loading; search a ticker to start with completed-bar evidence.";
   const sourceUrl=dailyBrief.source?.url;
   panel.innerHTML=`
     <div class="daily-setup-head">
@@ -2692,6 +2722,10 @@ function renderAccountSession(session){
   document.getElementById("ownerSignOut").hidden=!signedIn;
   const registerTab=document.getElementById("accountRegisterTab");
   registerTab.hidden=!session.registration_enabled;
+  const hour=Number(new Intl.DateTimeFormat("en-US",{hour:"numeric",hour12:false,timeZone:"America/New_York"}).format(new Date()));
+  const greeting=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+  const firstName=user?.display_name?.trim().split(/\s+/)[0];
+  document.getElementById("deskTitle").textContent=signedIn?`${greeting}${firstName?`, ${firstName}`:""}.`:"Welcome to your market desk.";
   if(!signedIn) return;
   const name=user?.display_name||"Administrator";
   document.getElementById("accountName").textContent=name;
@@ -3021,6 +3055,89 @@ function analyzeCandidate(symbol){
   document.getElementById("analysisSymbol").value=symbol;
   document.getElementById("stockAnalysisForm").requestSubmit();
 }
+function homeSearchSymbol(value){
+  return String(value||"").trim().toUpperCase().split(/\s+/)[0].replace(/[^A-Z0-9.\-]/g,"").slice(0,12);
+}
+function hideHomeSuggestions(){
+  const input=document.getElementById("homeStockSearch"), suggestions=document.getElementById("homeSearchSuggestions");
+  suggestions.hidden=true; homeSearchActive=-1; input.setAttribute("aria-expanded","false"); input.removeAttribute("aria-activedescendant");
+  suggestions.querySelectorAll('[role="option"]').forEach(option=>option.setAttribute("aria-selected","false"));
+}
+function setHomeSearchActive(index){
+  const input=document.getElementById("homeStockSearch"), options=[...document.querySelectorAll("#homeSearchSuggestions [role=option]")];
+  if(!options.length) return;
+  homeSearchActive=(index+options.length)%options.length;
+  options.forEach((option,position)=>option.setAttribute("aria-selected",String(position===homeSearchActive)));
+  input.setAttribute("aria-activedescendant",options[homeSearchActive].id);
+  options[homeSearchActive].scrollIntoView({block:"nearest"});
+}
+function chooseHomeSuggestion(item){
+  if(!item?.symbol) return;
+  document.getElementById("homeStockSearch").value=item.symbol; hideHomeSuggestions(); runHomeSearch(item.symbol);
+}
+async function resolveHomeSearch(value){
+  const query=String(value||"").trim();
+  if(!query) return "";
+  try{
+    const data=await fetchJSON(`/api/search?q=${encodeURIComponent(query)}&limit=7`), results=data.results||[], upper=query.toUpperCase();
+    const resolved=results.find(item=>item.symbol===upper)||results.find(item=>String(item.name||"").toUpperCase()===upper)||results[0];
+    if(resolved?.symbol) return resolved.symbol;
+  }catch(_error){ /* Exact ticker fallback remains available without SEC search. */ }
+  return homeSearchSymbol(query);
+}
+function renderHomeLevels(dossier){
+  const output=document.getElementById("homeKeyLevels"), analysis=dossier.analysis||{}, levels=analysis.key_levels||{};
+  const rows=[
+    [levels.last_close,"Last close"],
+    [levels.daily_ema_9,"Daily 9EMA"],
+    [levels.sma_50,"50-day average"],
+    [levels.breakout_confirmation_55d,"Breakout check"],
+    [levels.invalidation_reference_20d,"Invalidation check"],
+  ];
+  output.innerHTML=`<div class="home-level-symbol"><b>${esc(analysis.symbol)}</b><small>${esc(dossier.security?.name||"On-demand analysis")}</small></div>${rows.map(([value,label])=>`<div class="home-level"><b>$${esc(fmtPx(value))}</b><small>${esc(label)}</small></div>`).join("")}<button class="home-level-action" type="button" data-home-full="${esc(analysis.symbol)}">Open full dossier →</button>`;
+  output.hidden=false;
+  output.querySelector("[data-home-full]").addEventListener("click",event=>analyzeCandidate(event.currentTarget.dataset.homeFull));
+}
+async function runHomeSearch(symbol){
+  const clean=homeSearchSymbol(symbol), output=document.getElementById("homeKeyLevels");
+  if(!clean) return;
+  output.hidden=false; output.innerHTML=`<div class="empty">Loading completed daily levels for ${esc(clean)}…</div>`;
+  try{
+    const dossier=await fetchJSON(`/api/dossier/${encodeURIComponent(clean)}?years=3&include_backtest=false&cost_bps=10`);
+    renderHomeLevels(dossier);
+  }catch(error){ output.innerHTML=`<div class="empty"><b>${esc(clean)} could not be analyzed.</b>${esc(error.message||"Try a listed US ticker.")}</div>`; }
+}
+document.getElementById("homeStockSearchForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(homeSearchActive>=0&&homeSearchResults[homeSearchActive]){ chooseHomeSuggestion(homeSearchResults[homeSearchActive]); return; }
+  const input=document.getElementById("homeStockSearch"), symbol=await resolveHomeSearch(input.value);
+  hideHomeSuggestions(); if(symbol){ input.value=symbol; runHomeSearch(symbol); }
+});
+document.getElementById("homeStockSearch").addEventListener("input",event=>{
+  clearTimeout(homeSearchTimer);
+  const query=event.target.value.trim(), suggestions=document.getElementById("homeSearchSuggestions"), request=++homeSearchRequest;
+  homeSearchResults=[]; homeSearchActive=-1; event.target.removeAttribute("aria-activedescendant");
+  if(query.length<1){ hideHomeSuggestions(); suggestions.replaceChildren(); return; }
+  homeSearchTimer=setTimeout(async()=>{
+    try{
+      const data=await fetchJSON(`/api/search?q=${encodeURIComponent(query)}&limit=7`);
+      if(request!==homeSearchRequest) return;
+      homeSearchResults=data.results||[];
+      suggestions.innerHTML=homeSearchResults.map((item,index)=>`<button class="search-suggestion" id="home-search-option-${index}" type="button" role="option" aria-selected="false" data-search-index="${index}"><b>${esc(item.symbol)}</b><span>${esc(item.name)}</span></button>`).join("");
+      suggestions.hidden=!homeSearchResults.length; event.target.setAttribute("aria-expanded",String(homeSearchResults.length>0));
+      suggestions.querySelectorAll("[data-search-index]").forEach(button=>button.addEventListener("click",()=>chooseHomeSuggestion(homeSearchResults[Number(button.dataset.searchIndex)])));
+    }catch(_error){ hideHomeSuggestions(); }
+  },180);
+});
+document.getElementById("homeStockSearch").addEventListener("keydown",event=>{
+  const open=!document.getElementById("homeSearchSuggestions").hidden;
+  if(event.key==="Escape"&&open){ event.preventDefault(); hideHomeSuggestions(); }
+  else if((event.key==="ArrowDown"||event.key==="ArrowUp")&&open){ event.preventDefault(); const next=homeSearchActive<0?(event.key==="ArrowDown"?0:homeSearchResults.length-1):homeSearchActive+(event.key==="ArrowDown"?1:-1); setHomeSearchActive(next); }
+  else if(event.key==="Enter"&&open&&homeSearchActive>=0){ event.preventDefault(); chooseHomeSuggestion(homeSearchResults[homeSearchActive]); }
+});
+document.addEventListener("click",event=>{
+  if(!event.target.closest(".home-search-wrap")) hideHomeSuggestions();
+});
 document.getElementById("discoverForm").addEventListener("submit",runDiscovery);
 document.querySelectorAll("[data-preset]").forEach(button=>button.addEventListener("click",()=>{
   selectedDiscoverPreset=button.dataset.preset;
@@ -3137,20 +3254,33 @@ function renderAnalysisForecast(forecast){
 function renderResearchIntelligence(intelligence){
   const output=document.getElementById("analysisResearchOutput");
   if(!intelligence){
-    output.innerHTML=`<div class="empty"><b>Current multi-feed rank is not available for this ticker.</b>The technical analysis below still works for any supported symbol; filing/news/social enrichment is limited to the configured universe and signed-in accounts.</div>`;
+    output.innerHTML=`<div class="empty"><b>Current multi-feed context is not available.</b>Sign in and configure the SEC/news/social providers for business, filing, catalyst, and attention evidence. The completed-bar analysis remains available.</div>`;
     return;
   }
   if(intelligence.status==="UNAVAILABLE"){
     output.innerHTML=`<div class="empty"><b>Current research enrichment is unavailable.</b>${esc(intelligence.reason||"The historical technical analysis below is unaffected.")}</div>`;
     return;
   }
-  const pillars=intelligence.pillars||{}, overall=intelligence.overall||{}, fundamental=intelligence.fundamentals||{};
+  const pillars=intelligence.pillars||{}, overall=intelligence.overall||{}, fundamental=intelligence.fundamentals||{}, company=intelligence.company||{}, multi=intelligence.multi_brain||{};
   const scoreCard=(item,label,detail)=>`<div class="research-rank-score"><b>${finiteNumber(item?.score)==null?"—":Math.round(item.score)}</b><small>${esc(label)}${detail?` · ${esc(detail)}`:""}</small></div>`;
   const metrics=(fundamental.metrics||[]).map(metric=>`<div class="research-fact"><span>${esc(metric.label)}</span><b>${esc(Number(metric.value).toFixed(1))}%</b></div>`).join("");
   const filings=(intelligence.filings?.items||[]).slice(0,4).map(filing=>`<a class="research-link" href="${esc(filing.url)}" target="_blank" rel="noopener noreferrer">${esc(filing.form)} filing<small>${esc(filing.filed_at)} · SEC EDGAR</small></a>`).join("");
   const headlines=(intelligence.news?.headlines||[]).slice(0,3).map(item=>`<div class="research-fact"><span>${esc(item.title)}<small style="display:block;color:var(--text-faint)">${esc(item.source)} · ${esc(fmtAnalysisDate(item.published_at))}</small></span></div>`).join("");
   const social=intelligence.social||{};
+  const posture=String(multi.posture||"INSUFFICIENT_EVIDENCE");
+  const brains=(multi.specialists||[]).map(brain=>`<div class="brain-card"><b>${esc(brain.label)}</b><small class="${String(brain.stance||"").toLowerCase()}">${esc(String(brain.stance||"UNAVAILABLE").replaceAll("_"," "))} · ${finiteNumber(brain.score)==null?"unscored":Math.round(brain.score)+"/100"}</small></div>`).join("");
+  const compactMoney=value=>{
+    if(finiteNumber(value)==null) return "—";
+    const currency=String(company.currency||"").toUpperCase();
+    if(!/^[A-Z]{3}$/.test(currency)) return `${new Intl.NumberFormat("en-US",{notation:"compact",maximumFractionDigits:1}).format(value)} · currency unavailable`;
+    try{ return new Intl.NumberFormat("en-US",{notation:"compact",maximumFractionDigits:1,style:"currency",currency}).format(value); }
+    catch(_error){ return `${new Intl.NumberFormat("en-US",{notation:"compact",maximumFractionDigits:1}).format(value)} · currency unavailable`; }
+  };
+  const exchange=(company.exchanges||[]).join(", ")||company.exchange||"—";
+  const companyProfile=company.name?`<div class="company-profile"><div class="company-profile-main"><h3>${esc(company.name)}</h3><p>${esc(company.description||"SEC registrant and filing identity.")}</p><small>${esc(company.overview_limitation||"")}</small></div><div class="company-profile-stat"><b>${esc(company.sector||company.industry||"Not classified")}</b><small>Sector</small></div><div class="company-profile-stat"><b>${esc(company.industry||"—")}</b><small>Industry</small></div><div class="company-profile-stat"><b>${esc(exchange)}</b><small>Exchange</small></div><div class="company-profile-stat"><b>${esc(compactMoney(company.market_cap))}</b><small>Market cap</small></div><div class="company-profile-stat"><b>${finiteNumber(company.pe_ratio)==null?"—":esc(Number(company.pe_ratio).toFixed(1))+"×"}</b><small>P/E · context only</small></div><div class="company-profile-stat"><b>${esc(company.fiscal_year_end||company.fiscal_year_end_code||"—")}</b><small>Fiscal year end</small></div></div>`:"";
   output.innerHTML=`
+    ${companyProfile}
+    <div class="multibrain-card"><div class="multibrain-head"><span class="research-posture ${posture.toLowerCase()}">${esc(posture.replaceAll("_"," "))} · research posture</span><p>${esc(multi.summary||"Specialist agreement is unavailable.")}</p><span class="chip">${esc(multi.confidence||"LOW")} confidence</span></div><div class="brain-grid">${brains}</div></div>
     <div class="research-rank-top">
       ${scoreCard(pillars.technical,"Technical")}
       ${scoreCard(pillars.fundamentals,"Financial",`${fundamental.coverage||0}/5 facts`)}
@@ -3164,19 +3294,23 @@ function renderResearchIntelligence(intelligence){
     </div>`;
 }
 function renderStockAnalysis(data,intelligence){
-  const consensus=data.consensus||{}, tone=analysisTone(consensus.label);
+  const consensus=data.consensus||{}, multi=intelligence?.multi_brain||{}, posture=String(multi.posture||"");
+  const tone=posture==="BUY"?"bullish":posture==="SELL"?"bearish":analysisTone(consensus.label);
   const summary=document.getElementById("analysisSummary");
   summary.className=`analysis-verdict ${tone==="neutral"?"mixed":tone}`;
   summary.innerHTML=`<div class="analysis-verdict-main">
-    <div class="analysis-verdict-top"><span class="analysis-signal ${tone}">${esc(String(consensus.label||"MIXED").replaceAll("_"," "))}</span><span class="analysis-asof">As of ${esc(fmtAnalysisDate(data.as_of))} · ${esc(data.source||"adjusted daily data")}</span><button class="secondary-action analysis-watch" type="button" data-analysis-watch="${esc(data.symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg>Watch</button></div>
+    <div class="analysis-verdict-top"><span class="analysis-signal ${tone}">${esc(posture?`${posture.replaceAll("_"," ")} · research posture`:String(consensus.label||"MIXED").replaceAll("_"," "))}</span><span class="analysis-asof">As of ${esc(fmtAnalysisDate(data.as_of))} · ${esc(data.source||"adjusted daily data")}</span><button class="secondary-action analysis-watch" type="button" data-analysis-watch="${esc(data.symbol)}"><svg class="icon"><use href="#i-bookmark"/></svg>Watch</button></div>
     <div class="analysis-symbol-line"><h2>${esc(data.symbol)}</h2><span class="analysis-price">$${esc(fmtPx(data.price))}</span></div>
-    <p class="analysis-interpretation">${esc(data.interpretation||"")}</p>
+    <p class="analysis-interpretation">${esc(multi.summary||data.interpretation||"")} ${esc(data.forecast?.strategy_context_status==="VALIDATED_CONTEXT"?"At least one historical horizon cleared its walk-forward context gate.":"Forward edge remains unconfirmed; do not read the posture as a probability of profit.")}</p>
   </div><div class="analysis-votes" aria-label="Method vote count">
     <span class="analysis-vote up"><b>${esc(consensus.bullish_votes??0)}</b><small>Bullish</small></span>
     <span class="analysis-vote"><b>${esc(consensus.neutral_votes??0)}</b><small>Neutral</small></span>
     <span class="analysis-vote down"><b>${esc(consensus.bearish_votes??0)}</b><small>Bearish</small></span>
   </div>`;
   summary.querySelector("[data-analysis-watch]").addEventListener("click",event=>addToResearch(event.currentTarget.dataset.analysisWatch));
+  const levelLabels={last_close:"Last close",daily_ema_9:"Daily 9EMA",sma_50:"50-day average",sma_200:"200-day average",breakout_confirmation_55d:"55-day confirmation",invalidation_reference_20d:"20-day invalidation",high_52w:"52-week high",two_atr_risk_reference:"Two-ATR risk reference"};
+  const keyLevels=data.key_levels||{};
+  document.getElementById("analysisKeyLevels").innerHTML=Object.entries(levelLabels).map(([key,label])=>`<div class="analysis-key-level"><b>$${esc(fmtPx(keyLevels[key]))}</b><small>${esc(label)}</small></div>`).join("");
   renderResearchIntelligence(intelligence);
   renderAnalysisForecast(data.forecast);
   renderAnalysisMethods(data.methods);

@@ -41,7 +41,10 @@ def test_uptrend_report_is_transparent_and_adjusted_source_visible():
     assert report["methods"]["donchian_55_20"]["state"] == "BREAKOUT"
     assert report["source"] == "fixture_adjusted"
     assert report["risk"]["reference_quantity"] > 0
-    assert report["analytics_version"] == "trend-analysis-v2"
+    assert report["analytics_version"] == "trend-analysis-v3"
+    assert report["key_levels"]["daily_ema_9"] > 0
+    assert report["key_levels"]["breakout_confirmation_55d"] > 0
+    assert "not guaranteed" in report["key_levels"]["note"]
     assert report["forecast"]["current_state"] == "UP"
     assert set(report["forecast"]["horizons"]) == {"one_month", "three_months"}
 
