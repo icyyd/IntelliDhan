@@ -51,6 +51,10 @@ risks, and ask diligence questions. It cannot change the three specialist
 scores, deterministic posture, universe rank, sizing, intent state, or execution
 mode. Missing configuration, timeout, refusal, truncation, malformed output, or
 an invented evidence ID visibly disables only the Claude review.
+User capital limits, query risk budgets, reference quantities, watchlists,
+account identity, and other personal state are excluded from the packet. Its
+risk section allowlists market observations such as ATR, realized volatility,
+prior lows, and per-share risk references only.
 
 The default is the current `claude-sonnet-5` API ID and can be pinned with
 `CLAUDE_MULTIBRAIN_MODEL`. The server reads `ANTHROPIC_API_KEY`; never paste the

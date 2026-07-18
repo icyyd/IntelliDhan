@@ -24,7 +24,12 @@ def analysis() -> dict:
         "consensus": {"label": "STRONG_UPTREND", "net_vote": 4},
         "methods": {"sma_200_regime": {"signal": "BULLISH"}},
         "key_levels": {"last_close": 210.0, "sma_200": 185.0},
-        "risk": {"realized_volatility_20d_annualized_pct": 25.0},
+        "risk": {
+            "atr14": 4.0,
+            "realized_volatility_20d_annualized_pct": 25.0,
+            "risk_budget": "PRIVATE-CAPITAL-SENTINEL",
+            "reference_quantity": "PRIVATE-QUANTITY-SENTINEL",
+        },
         "forecast": {
             "strategy_context_status": "VALIDATED_CONTEXT",
             "horizons": {
@@ -109,6 +114,10 @@ def test_packet_contains_public_research_only_and_stable_evidence_ids():
     assert "autotrade" not in serialized
     assert "robinhood" not in serialized
     assert "api_key" not in serialized
+    assert "risk_budget" not in serialized
+    assert "reference_quantity" not in serialized
+    assert "private-capital-sentinel" not in serialized
+    assert "private-quantity-sentinel" not in serialized
 
 
 @pytest.mark.asyncio

@@ -17,6 +17,14 @@ ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 DEFAULT_CLAUDE_MODEL = "claude-sonnet-5"
 CLAUDE_REVIEW_VERSION = "claude-multibrain-review-v1"
+_PUBLIC_MARKET_RISK_FIELDS = (
+    "atr14",
+    "atr14_pct",
+    "realized_volatility_20d_annualized_pct",
+    "prior_20d_low",
+    "two_atr_reference",
+    "risk_per_share_reference",
+)
 _VERDICTS = {
     "SUPPORTS_POSTURE",
     "CHALLENGES_POSTURE",
@@ -92,6 +100,12 @@ def build_claude_research_packet(
         )
         if company.get(key) is not None
     }
+    market_risk = analysis.get("risk", {})
+    market_risk_fields = {
+        key: market_risk.get(key)
+        for key in _PUBLIC_MARKET_RISK_FIELDS
+        if market_risk.get(key) is not None
+    }
     facts = [
         {
             "id": "DETERMINISTIC_POSTURE",
@@ -115,7 +129,7 @@ def build_claude_research_packet(
                 "consensus": analysis.get("consensus"),
                 "methods": analysis.get("methods"),
                 "key_levels": analysis.get("key_levels"),
-                "risk": analysis.get("risk"),
+                "market_risk": market_risk_fields,
             },
         },
         {

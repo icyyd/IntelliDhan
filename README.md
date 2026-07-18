@@ -37,10 +37,11 @@ must not be presented as implemented.
   invent prose, alter rank, or create an execution intent.
 - Optional, signed-in Claude review of the immutable multi-brain dossier packet.
   Claude uses server-side structured output without tools, browsing, MCP, or
-  automation state. It can surface conflicts, risks, and diligence questions,
-  but cannot change deterministic specialist scores, posture, rank, sizing, or
-  execution. Configure only the deployment secret `ANTHROPIC_API_KEY`; never
-  paste the key into the browser or repository.
+  automation or personal sizing state; user capital budgets and reference
+  quantities are excluded. It can surface conflicts, risks, and diligence
+  questions, but cannot change deterministic specialist scores, posture, rank,
+  sizing, or execution. Configure only the deployment secret
+  `ANTHROPIC_API_KEY`; never paste the key into the browser or repository.
 - Optional ADMIN/TRADER dispatch of a server-verified candidate to a published
   ChatGPT Workspace Agent for deeper research. IntelliDhan requests analysis
   only; production requires a dedicated agent with no broker tools and no

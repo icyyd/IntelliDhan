@@ -13,6 +13,15 @@
   configuration, malformed output, invented citations, truncation, and
   endpoint-level failure isolation. The full local baseline is 284 tests passed
   (6 deselected); Ruff, both inline browser scripts, and diff checks pass.
+- Independent review of `b95036f` found that the first packet selector included
+  the analysis risk object wholesale, which could disclose a user-supplied risk
+  budget and derived reference quantity. The selector now allowlists only
+  public market-risk observations, and sentinel regressions prove personal
+  capital and quantity values are excluded before the Anthropic request.
+- The same review found the compact Claude disclosure had hidden its native
+  marker without a replacement and referenced an undefined color token. It now
+  has a visible theme-token chevron with an open-state rotation, retaining
+  native summary semantics and keyboard operation.
 - Repository maintenance is now explicit and tested: every system-changing pass
   must update `README.md` in the same commit, including its last-system-pass
   marker and affected capability, setup, deployment, safety, and document-index

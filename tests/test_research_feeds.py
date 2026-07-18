@@ -620,6 +620,8 @@ def test_landing_page_exposes_welcome_search_levels_and_multibrain_cards():
     assert 'id="analysisKeyLevels"' in source
     assert "research posture" in source
     assert "Claude independent research review" in source
+    assert ".claude-review summary::before" in source
+    assert "--lavender" not in source
     assert "ANTHROPIC_API_KEY" not in source
     assert "Forward edge remains unconfirmed" in source
     assert "currency unavailable" in source
