@@ -19,7 +19,7 @@
   exercised; a clipped-suggestion defect was found and corrected by keeping the
   results in the hero's normal flow. Light/dark themes were checked and the
   console was clean.
-- Full verification after independent review: 245 tests passed (5 deselected),
+- Full verification after independent review: 246 tests passed (5 deselected),
   Ruff passed, both inline
   scripts parsed, DOM IDs are unique, and `git diff --check` is clean.
 - Draft PR #12 received a changes-requested engineering pass. Corrections keep
@@ -27,7 +27,10 @@
   on-demand analysis, require explicit alert selection before detail reveal,
   and make autocomplete keyboard/race behavior deterministic. The corrected
   mobile flow and pending-request cancellation were browser-tested with a clean
-  console; CI was green on the initial checkpoint and will rerun after push.
+  console. A re-review accessibility finding now preserves the risk warning and
+  Retry node across unchanged 15-second refreshes; a behavior test verifies
+  focus-safe node identity. CI was green on the prior checkpoint and will rerun
+  after the final push.
 - No merge or deployment is authorized by this checkpoint.
 
 ## 2026-07-18 — Multi-brain stock analysis work in progress

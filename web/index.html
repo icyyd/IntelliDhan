@@ -2669,13 +2669,22 @@ function renderRisk(s){
   panel.hidden=!ownerAuthenticated;
   if(panel.hidden) return;
   if(budgetsStatus==="loading"){
-    output.innerHTML=`<div class="empty" role="status">Loading capital and risk limits…</div>`;
+    const stateKey="loading";
+    if(output.dataset.riskState!==stateKey||!output.firstElementChild){
+      output.dataset.riskState=stateKey;
+      output.innerHTML=`<div class="empty" role="status">Loading capital and risk limits…</div>`;
+    }
     return;
   }
   if(budgetsStatus!=="ready"||!budgetsCache){
-    output.innerHTML=`<div class="empty" role="alert"><b>Risk limits unavailable.</b>${esc(budgetsError||"Capital limits could not be verified.")} Do not approve execution until they reload.<button class="auto-configure" type="button" onclick="loadCapitalLimits()">Retry limits</button></div>`;
+    const stateKey=`error:${budgetsError||"unavailable"}`;
+    if(output.dataset.riskState!==stateKey||!output.firstElementChild){
+      output.dataset.riskState=stateKey;
+      output.innerHTML=`<div class="empty" role="alert"><b>Risk limits unavailable.</b>${esc(budgetsError||"Capital limits could not be verified.")} Do not approve execution until they reload.<button class="auto-configure" type="button" onclick="loadCapitalLimits()">Retry limits</button></div>`;
+    }
     return;
   }
+  output.dataset.riskState="ready";
   // Compare shared signal-plan risk with the signed-in user's review ceiling.
   const committed = {};
   activeAlerts(s).forEach(a=>{
@@ -3236,7 +3245,7 @@ document.getElementById("homeStockSearch").addEventListener("input",event=>{
 });
 document.getElementById("homeStockSearch").addEventListener("keydown",event=>{
   const open=!document.getElementById("homeSearchSuggestions").hidden;
-  if(event.key==="Escape"){ event.preventDefault(); hideHomeSuggestions(); }
+  if(event.key==="Escape"){ if(open) event.preventDefault(); hideHomeSuggestions(); }
   else if((event.key==="ArrowDown"||event.key==="ArrowUp")&&open){ event.preventDefault(); const next=homeSearchActive<0?(event.key==="ArrowDown"?0:homeSearchResults.length-1):homeSearchActive+(event.key==="ArrowDown"?1:-1); setHomeSearchActive(next); }
   else if(event.key==="Enter"&&open&&homeSearchActive>=0){ event.preventDefault(); chooseHomeSuggestion(homeSearchResults[homeSearchActive]); }
 });

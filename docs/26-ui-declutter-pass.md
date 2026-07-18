@@ -81,7 +81,7 @@ permission to copy their execution behavior.
   and desktop.
 - Light and dark themes were inspected, and the final browser console contained
   no errors.
-- Automated verification passed with 245 tests (5 deselected), Ruff, two parsed
+- Automated verification passed with 246 tests (5 deselected), Ruff, two parsed
   inline scripts, unique DOM IDs, and a clean `git diff --check`.
 
 ## Independent review corrections
@@ -98,3 +98,8 @@ permission to copy their execution behavior.
   submit, selection, outside click, or Escape.
 - Browser recheck confirmed the active-option marker, cancellation of a pending
   `Micro` search, no mobile overflow, and a clean console.
+- Re-review found that a persistent budget error could recreate its live region
+  on each 15-second state poll. Unchanged error/loading states now preserve the
+  same warning and Retry node, avoiding repeated screen-reader announcements or
+  lost keyboard focus. A Node-backed behavior test verifies node identity across
+  repeated renders and replacement only when the error changes.
