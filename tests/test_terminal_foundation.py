@@ -1,6 +1,7 @@
 """Trustworthy-terminal foundation: durability, auth, DQ, discovery, parity."""
 
 import asyncio
+import json
 import time as wall_time
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
@@ -259,6 +260,8 @@ def test_discovery_is_technical_only_and_future_claims_stay_explicit():
     }
     assert row["pillars"]["quality"] is None
     assert row["pillars"]["valuation"] is None
+    # Provider math uses NumPy internally, but the gateway contract is native JSON.
+    json.dumps(row)
 
 
 def completed_daily_bars(symbol: str, final_session: date, count: int = 300) -> list[Bar]:

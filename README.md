@@ -20,8 +20,12 @@ must not be presented as implemented.
   deployments require PostgreSQL or a mounted persistent volume, enforced by a
   readiness gate when `INTELLIDHAN_REQUIRE_DURABLE_STATE=true`.
 - Live data-quality quarantine and readiness-aware `/api/health`.
-- Adjusted, settled-session technical EOD ranking with partial-scan failures and
-  missing fundamental pillars shown explicitly.
+- Adjusted, settled-session smart-play ranking for momentum leaders, breakout
+  watches, and trend pullbacks, with partial-scan failures and configured-universe
+  scope shown explicitly.
+- Optional, account-only OpenAI thesis synthesis from server evidence with
+  a closed evidence-selection schema and server-rendered narrative; it cannot
+  invent prose, alter rank, or create an execution intent.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
   forward evidence and fixed-rule backtests.
 
@@ -58,6 +62,7 @@ the Account panel to create the first administrator. See
 | 19 | [Trend Analysis &amp; On-Demand Module](docs/19-trend-analysis-and-on-demand-module.md) | Cross-ticker trend methods, walk-forward evidence, and arbitrary-symbol analysis contract |
 | 20 | [One-Stop Terminal Gap Analysis](docs/20-one-stop-terminal-gap-analysis.md) | Full-solution audit and prioritized terminal roadmap |
 | 21 | [Accounts &amp; Personal Settings](docs/21-accounts-and-personal-settings.md) | Account/session architecture, roles, user-owned database state, APIs, and deployment requirements |
+| 22 | [Smart-Play Scanner &amp; AI Thesis](docs/22-smart-play-scanner-and-ai-thesis.md) | Fixed momentum/breakout/pullback rules, walk-forward diagnostic, OpenAI evidence contract, and card-first UX |
 
 ## Core Product Tenets
 

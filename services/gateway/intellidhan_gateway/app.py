@@ -36,6 +36,7 @@ from intellidhan_gateway.auth import (
     verify_password,
     websocket_principal,
 )
+from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisService
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.stock_analysis import StockAnalysisService
@@ -45,6 +46,7 @@ WEB_DIR = Path(__file__).resolve().parents[3] / "web"
 loop = LiveLoop()
 stock_analyzer = StockAnalysisService()
 discovery = DiscoveryService()
+ai_thesis_service = OpenAIThesisService()
 rate_limiter = RateLimiter()
 
 DEFAULT_PREFERENCES = {
@@ -462,6 +464,54 @@ async def discover_stocks(
         raise HTTPException(status_code=504, detail="discovery provider timed out") from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail="discovery provider failed") from exc
+
+
+@app.post("/api/discover/thesis")
+async def build_discovery_thesis(request: Request, payload: dict = Body(...)):
+    """Synthesize one eligible smart play; never changes rank or execution state."""
+    principal = _require_personal(request)
+    rate_limiter.check(_client_key(request, "discovery-thesis"), limit=6, window_seconds=60)
+    try:
+        symbol = stock_analyzer.normalize_symbol(str(payload.get("symbol", "")))
+        play_key = str(payload.get("play_key", "")).strip().upper() or None
+        web_research = payload.get("web_research", False)
+        if not isinstance(web_research, bool):
+            raise ValueError("web_research must be true or false")
+        if web_research:
+            raise ValueError(
+                "AI web research is disabled until inline claim-level citations are implemented"
+            )
+        scan = await asyncio.wait_for(discovery.universe_scan(), timeout=45)
+        if scan.get("complete") is not True:
+            raise AIThesisUnavailable(
+                "AI thesis generation requires a complete configured-universe scan; "
+                "retry after the listed provider failures recover"
+            )
+        candidate = next((row for row in scan["rows"] if row["symbol"] == symbol), None)
+        if candidate is None:
+            raise LookupError(f"{symbol} is not in the configured discovery universe")
+        candidate = dict(candidate)
+        if play_key:
+            play = candidate.get("plays", {}).get(play_key)
+            if play is None:
+                raise ValueError("unknown smart-play setup")
+            candidate["selected_play"] = play
+        return await asyncio.wait_for(
+            ai_thesis_service.generate(
+                candidate,
+                user_id=principal.user_id,
+                web_research=web_research,
+            ),
+            timeout=50,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except AIThesisUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="AI thesis generation timed out") from exc
 
 
 @app.get("/api/dossier/{symbol}")
