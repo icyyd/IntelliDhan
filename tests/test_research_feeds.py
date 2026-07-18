@@ -8,6 +8,7 @@ from intellidhan_gateway.app import app, loop
 from intellidhan_gateway.research_feeds import (
     ResearchFeedService,
     parse_alpha_news,
+    parse_alpha_overview,
     parse_finnhub_social,
     parse_sec_filings,
     parse_sec_fundamentals,
@@ -143,6 +144,25 @@ def test_news_and_social_scores_are_low_level_context_not_prose():
     assert social["score"] == 70.0
     assert social["mentions"] == 10
     assert "never triggers a trade" in social["limitation"]
+
+
+def test_company_overview_is_descriptive_and_keeps_estimates_display_only():
+    result = parse_alpha_overview(
+        {
+            "Symbol": "AAPL",
+            "Name": "Apple Inc",
+            "Description": "Apple designs and sells consumer technology products and services.",
+            "Sector": "TECHNOLOGY",
+            "Industry": "CONSUMER ELECTRONICS",
+            "MarketCapitalization": "3500000000000",
+            "PERatio": "31.2",
+            "AnalystTargetPrice": "250.00",
+        }
+    )
+    assert result["status"] == "AVAILABLE"
+    assert result["profile"]["market_cap"] == 3_500_000_000_000
+    assert result["profile"]["analyst_target_price"] == 250.0
+    assert "display-only" in result["limitation"]
 
 
 def test_news_parser_excludes_stale_and_malformed_articles():
@@ -380,6 +400,23 @@ def test_focus_rank_fails_closed_for_partial_universe(client, monkeypatch):
     assert result["errors"] == {"MSFT": "provider failed"}
 
 
+def test_search_endpoint_forwards_bounded_company_query(client, monkeypatch):
+    from intellidhan_gateway import app as app_module
+
+    async def search(query, limit=8):
+        return {
+            "query": query,
+            "status": "AVAILABLE",
+            "results": [{"symbol": "AAPL", "name": "Apple Inc."}],
+        }
+
+    monkeypatch.setattr(app_module.research_feed_service, "search", search)
+    result = client.get("/api/search?q=apple&limit=5")
+    assert result.status_code == 200
+    assert result.json()["results"][0]["symbol"] == "AAPL"
+    assert client.get("/api/search?q=apple&limit=20").status_code == 422
+
+
 def test_signed_in_dossier_includes_current_research_evidence(client, monkeypatch):
     from intellidhan_gateway import app as app_module
 
@@ -414,3 +451,16 @@ def test_signed_in_dossier_includes_current_research_evidence(client, monkeypatc
     assert result["coverage"]["fundamentals"] == "AVAILABLE"
     assert result["coverage"]["events"] == "FILING_CONTEXT_AVAILABLE"
     assert result["coverage"]["news"] == "AVAILABLE"
+    assert result["intelligence"]["multi_brain"]["status"] == "RESEARCH_ONLY"
+
+
+def test_landing_page_exposes_welcome_search_levels_and_multibrain_cards():
+    source = open("web/index.html", encoding="utf-8").read()
+    assert 'id="deskSummary"' in source
+    assert 'id="homeStockSearchForm"' in source
+    assert 'id="homeSearchSuggestions" role="listbox"' in source
+    assert 'fetchJSON(`/api/search?q=${encodeURIComponent(query)}&limit=7`)' in source
+    assert 'id="homeKeyLevels"' in source
+    assert 'id="analysisKeyLevels"' in source
+    assert "research posture" in source
+    assert "Forward edge remains unconfirmed" in source

@@ -47,6 +47,26 @@
 - Both horizons are `NO_BENCHMARK_EDGE`; no regression promotion is authorized.
   Transparent fixed votes remain production-authoritative.
 
+### Product checkpoint `dynamic-dossier-v1`
+
+- The Today screen now has a personalized welcome, ticker/company search,
+  compact on-demand levels, and a direct path to the full dossier.
+- The dossier presents completed-bar trend posture separately from validated
+  forward edge, key levels, company/business context, SEC financial and filing
+  evidence, news, social attention, and the three specialist opinions.
+- Alpha Vantage `OVERVIEW` adds a bounded business description, sector,
+  industry, market cap, and valuation context when configured. These fields are
+  display-only and cannot alter specialist scores or posture.
+- Desktop (1280 px) and mobile (390 px) browser checks show no horizontal
+  overflow. Homepage key-level search and the full AAPL dossier were exercised.
+- Browser testing exposed a Yahoo adjusted-price floating-point boundary defect
+  in a 10-year AAPL row. The provider now repairs only epsilon-scale OHLC noise
+  and rejects materially invalid rows; regression tests cover both paths.
+- Signed-out research enrichment correctly remains unavailable while technical
+  analysis and levels remain usable. Authenticated provider rendering is
+  covered by API/static tests; no credentials were invented for visual QA.
+- No merge or deployment is authorized by this checkpoint.
+
 **Last updated:** 2026-07-18
 
 This is the concise handoff file for agents working on IntelliDhan. It

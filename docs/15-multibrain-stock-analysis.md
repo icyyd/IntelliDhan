@@ -104,9 +104,13 @@ the configured scanner universe:
 2. Corporate-action-adjusted daily analysis and key levels.
 3. SEC company identity, fiscal profile, recent supported filings, and XBRL
    financial-quality facts when configured.
-4. Recent provider news and social aggregates when configured.
-5. Three specialist cards and one deterministic reconciled posture.
-6. Source timestamps, missing coverage, validation results, and limitations.
+4. A plain-language company overview, sector/industry, market capitalization,
+   and valuation context from Alpha Vantage when configured. These fields are
+   display-only; provider estimates and valuation multiples cannot affect the
+   posture.
+5. Recent provider news and social aggregates when configured.
+6. Three specialist cards and one deterministic reconciled posture.
+7. Source timestamps, missing coverage, validation results, and limitations.
 
 Key levels must be computed from completed adjusted bars and labeled as
 references: last close, rising/falling 200-day average, 55-day breakout,
@@ -149,6 +153,11 @@ The effectiveness test is intentionally narrower than the live dossier:
   overlapping-label leakage, and no claim of profitability from classification
   accuracy alone.
 
+Adjusted-feed rows with only floating-point OHLC boundary noise may be clamped
+to the observed open/close boundary. Materially invalid rows are rejected and
+left as observable gaps instead of crashing the whole dossier or inventing a
+range.
+
 The candidate regression is promotable only if the frozen out-of-sample result
 improves Brier score across the pooled universe, does not depend on one ticker,
 and retains acceptable turnover/cost and drawdown behavior. Otherwise the UI
@@ -164,4 +173,3 @@ vote remains authoritative.
 - No broker order, Robinhood intent, auto-trade mode change, or sizing decision.
 - No promise of profit, accuracy, real-time completeness, or universal ticker
   coverage.
-

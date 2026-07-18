@@ -341,6 +341,56 @@ def parse_alpha_news(
     }
 
 
+def parse_alpha_overview(payload: dict[str, Any]) -> dict[str, Any]:
+    """Extract bounded company context without turning estimates into signal inputs."""
+    symbol = str(payload.get("Symbol", "")).strip().upper()
+    description = str(payload.get("Description", "")).strip()[:2_000]
+    if not symbol or not description:
+        return {
+            "status": "UNAVAILABLE",
+            "profile": {},
+            "reason": "A current company overview was not available.",
+        }
+
+    def text_field(key: str, limit: int = 160) -> str | None:
+        value = str(payload.get(key, "")).strip()
+        return value[:limit] or None
+
+    def number_field(key: str) -> float | None:
+        return _finite(payload.get(key))
+
+    profile = {
+        "symbol": symbol,
+        "name": text_field("Name"),
+        "description": description,
+        "sector": text_field("Sector"),
+        "industry": text_field("Industry"),
+        "exchange": text_field("Exchange", 40),
+        "currency": text_field("Currency", 12),
+        "country": text_field("Country", 80),
+        "fiscal_year_end": text_field("FiscalYearEnd", 32),
+        "latest_quarter": text_field("LatestQuarter", 20),
+        "market_cap": number_field("MarketCapitalization"),
+        "ebitda": number_field("EBITDA"),
+        "pe_ratio": number_field("PERatio"),
+        "peg_ratio": number_field("PEGRatio"),
+        "dividend_yield": number_field("DividendYield"),
+        "profit_margin": number_field("ProfitMargin"),
+        "operating_margin": number_field("OperatingMarginTTM"),
+        "return_on_equity": number_field("ReturnOnEquityTTM"),
+        "analyst_target_price": number_field("AnalystTargetPrice"),
+        "source": "Alpha Vantage company overview",
+    }
+    return {
+        "status": "AVAILABLE",
+        "profile": {key: value for key, value in profile.items() if value is not None},
+        "limitation": (
+            "Current descriptive and valuation context only. Provider estimates and valuation "
+            "fields are display-only and do not affect the research posture."
+        ),
+    }
+
+
 def parse_finnhub_social(payload: dict[str, Any]) -> dict[str, Any]:
     observations = []
     platform_counts: dict[str, int] = {}
@@ -602,6 +652,50 @@ class ResearchFeedService:
                 "reason": "The current news feed could not be refreshed.",
             }
 
+    async def _overview(self, symbol: str, *, refresh: bool) -> dict[str, Any]:
+        api_key = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
+        if not api_key:
+            return {
+                "status": "NOT_CONFIGURED",
+                "source": "Alpha Vantage company overview",
+                "profile": {},
+                "reason": "The company overview feed is not configured.",
+            }
+        key = f"alpha-overview:{symbol}"
+        cached = self._read_cache(key, 21_600, refresh)
+        if cached is not None:
+            return cached
+        try:
+            payload = await self._json(
+                ALPHA_VANTAGE_URL,
+                params={"function": "OVERVIEW", "symbol": symbol, "apikey": api_key},
+                max_bytes=1_000_000,
+            )
+            if payload.get("Information") or payload.get("Note"):
+                raise LookupError
+            result = parse_alpha_overview(payload)
+            result.update(
+                {
+                    "source": "Alpha Vantage company overview",
+                    "as_of": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+            return self._write_cache(key, result)
+        except LookupError:
+            return {
+                "status": "UNAVAILABLE",
+                "source": "Alpha Vantage company overview",
+                "profile": {},
+                "reason": "The company overview feed is unavailable or rate-limited.",
+            }
+        except Exception:
+            return {
+                "status": "UNAVAILABLE",
+                "source": "Alpha Vantage company overview",
+                "profile": {},
+                "reason": "The company overview feed could not be refreshed.",
+            }
+
     async def _social(self, symbol: str, *, refresh: bool) -> dict[str, Any]:
         api_key = os.getenv("FINNHUB_API_KEY", "").strip()
         if not api_key:
@@ -639,8 +733,9 @@ class ResearchFeedService:
     async def analyze(
         self, symbol: str, technical: dict[str, Any], *, refresh: bool = False
     ) -> dict[str, Any]:
-        sec, news, social = await asyncio.gather(
+        sec, overview, news, social = await asyncio.gather(
             self._sec(symbol, refresh=refresh),
+            self._overview(symbol, refresh=refresh),
             self._news(symbol, refresh=refresh),
             self._social(symbol, refresh=refresh),
         )
@@ -692,6 +787,17 @@ class ResearchFeedService:
             if used_weight
             else None
         )
+        sec_profile = sec.get("profile", {}) if sec.get("status") == "AVAILABLE" else {}
+        overview_profile = (
+            overview.get("profile", {}) if overview.get("status") == "AVAILABLE" else {}
+        )
+        company = {**sec_profile, **overview_profile}
+        if sec_profile.get("exchanges"):
+            company["exchanges"] = sec_profile["exchanges"]
+        if sec_profile.get("fiscal_year_end"):
+            company["fiscal_year_end_code"] = sec_profile["fiscal_year_end"]
+        company["overview_status"] = overview.get("status")
+        company["overview_limitation"] = overview.get("limitation") or overview.get("reason")
         return {
             "symbol": symbol,
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -705,7 +811,7 @@ class ResearchFeedService:
             "pillars": pillars,
             "technical": technical,
             "fundamentals": fundamental,
-            "company": sec.get("profile", {}),
+            "company": company,
             "filings": sec.get("filings", {"status": sec.get("status"), "items": []}),
             "news": news,
             "social": social,
@@ -717,12 +823,18 @@ class ResearchFeedService:
                     "status": news.get("status"),
                     "as_of": news.get("content_as_of"),
                 },
+                {
+                    "name": "Alpha Vantage company overview",
+                    "status": overview.get("status"),
+                    "as_of": overview.get("as_of"),
+                },
                 {"name": "Finnhub", "status": social.get("status"), "as_of": social.get("as_of")},
             ],
             "limitations": [
                 "Overall is a transparent research rank, not a probability of profit or order signal.",
                 "Unavailable pillars are excluded and weights are renormalized; coverage is shown.",
                 "Filing metrics use current standard XBRL facts and are not yet sector-relative.",
+                "Company overview fields are descriptive/display-only and do not affect posture.",
                 "News and social tone are low-weight context because attention can reverse or be manipulated.",
             ],
         }
