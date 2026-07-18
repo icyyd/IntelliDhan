@@ -135,7 +135,7 @@ def test_agent_endpoint_requires_bearer_scheme(client, monkeypatch):
     r = client.get("/api/autotrade/intents",
                    headers={"Authorization": "Bearer correct-agent-token"})
     assert r.status_code == 200
-    assert r.json()["contract_version"] == "1.0"
+    assert r.json()["contract_version"] == "1.1"
 
 
 def test_control_token_does_not_grant_agent_access(client, monkeypatch):
@@ -173,7 +173,17 @@ def test_supervised_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated
     assert len(r.json()["intents"]) == 1
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
-                    json={"agent": "claude"}, headers=agent)
+                    json={}, headers=agent)
+    assert r.status_code == 422
+    assert "claim agent must be codex" in r.json()["detail"]
+
+    r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
+                    json={"agent": "retired-agent"}, headers=agent)
+    assert r.status_code == 422
+    assert "claim agent must be codex" in r.json()["detail"]
+
+    r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
+                    json={"agent": "codex"}, headers=agent)
     assert r.status_code == 200 and r.json()["status"] == "CLAIMED"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/receipt",

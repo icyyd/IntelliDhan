@@ -50,4 +50,4 @@ python -m intellidhan_learning.backtest --days 55                             # 
 - Event bus (Redis Streams + deterministic in-memory twin), TimescaleDB persistence (hypertables, idempotent upserts), backfill CLI (`python -m intellidhan_ingestor.backfill`), session recorder + replay harness.
 - **Exit criterion met:** the committed golden session (`fixtures/golden-sessions/qqq-complex-5m.jsonl`, 1,248 real 5m bars × 4 symbols) replays bus→engine→snapshots deterministically (sha256-asserted), with the identical digest over real Redis and in-memory transports, and persists to TimescaleDB idempotently.
 
-Next (Phase 1): MTF trend engine + level maps, factor framework, first Swing strategies, Robinhood MCP bridge, Alert Composer + Telegram bot.
+Next (Phase 1): MTF trend engine + level maps, factor framework, first Swing strategies, Codex + official Robinhood MCP bridge, Alert Composer + Telegram bot.

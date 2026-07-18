@@ -14,7 +14,7 @@ IntelliDhan is currently strongest as a **personal technical signal cockpit**:
 it monitors a configured 12-symbol universe, computes multi-timeframe technical
 and auction state, evaluates five strategies, shows signal/suppression cards,
 persists operational and paper state, and exposes a guarded
-Claude-to-Robinhood intent bridge. The on-demand stock module adds transparent
+Codex-to-Robinhood intent bridge. The on-demand stock module adds transparent
 trend state, fixed-rule backtests, and a conservative forward-outcome layer.
 
 It is **not yet a one-stop stock-picking and analysis terminal**. The implemented
@@ -396,7 +396,7 @@ review.
 - Mark every spec feature `IMPLEMENTED`, `PARTIAL`, `RESEARCH`, or `PLANNED`.
 - Resolve the contradiction between the original “not an auto-trader” language
   and the later `ARMED` intent mode by documenting exactly what IntelliDhan,
-  Claude, Robinhood MCP, and the user each authorize.
+  Codex, Robinhood MCP, and the user each authorize.
 - Keep one generated capability matrix as the product source of truth.
 
 ## 12. Prioritized delivery plan

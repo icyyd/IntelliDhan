@@ -40,6 +40,9 @@ must not be presented as implemented.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
   forward evidence and fixed-rule backtests; signed-in configured-universe
   dossiers also expose the current SEC/news/social research snapshot.
+- Credential-free Codex execution intents for Robinhood's official Trading MCP.
+  Contract v1.1 accepts only explicit `codex` claims; execution remains `OFF`
+  by default and broker authentication stays in the local Codex host.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
@@ -47,6 +50,9 @@ least 24 characters for first-admin setup, optionally set a separate
 `INTELLIDHAN_INVITE_CODE`, and configure durable state before production. Open
 the Account panel to create the first administrator. See
 [Accounts and personal settings](docs/21-accounts-and-personal-settings.md).
+For broker automation, trust the repository, authenticate the declared MCP with
+`codex mcp login robinhood-trading`, and follow the mandatory
+[Codex + Robinhood execution contract](docs/27-codex-robinhood-execution.md).
 
 ## Document Index
 
@@ -79,6 +85,7 @@ the Account panel to create the first administrator. See
 | 24 | [Daily Brief Landing Integration](docs/24-daily-brief-landing-integration.md) | Private artifact adapter, freshness/fallback contract, setup-card UX, and deployment configuration |
 | 25 | [Signal Terminal Redesign](docs/25-signal-terminal-redesign.md) | Agent-readable Today hierarchy, multi-feed rank contract, rich alerts, strategy evidence boundaries, and rollout plan |
 | 26 | [UI Decluttering Pass](docs/26-ui-declutter-pass.md) | Reduced Today hierarchy, removed duplicate panels, and progressive-disclosure contract |
+| 27 | [Codex + Robinhood Execution](docs/27-codex-robinhood-execution.md) | Codex-only claim contract, official MCP setup, decommission migration, and fail-closed execution loop |
 
 ## Core Product Tenets
 
@@ -94,6 +101,6 @@ the Account panel to create the first administrator. See
 "75% chance of profitability" is a gated calibration claim, not a marketing
 label. Unvalidated evidence is capped below the live threshold, and no strategy
 is currently assumed qualified. The platform is not financial advice. It can
-create supervised, credential-free execution intents for a primary agent using
-Robinhood MCP; real execution remains fail-closed behind explicit evidence,
+create supervised, credential-free execution intents for OpenAI Codex using the
+official Robinhood Trading MCP; real execution remains fail-closed behind explicit evidence,
 allowlist, risk, owner, agent-review, protection, and reconciliation controls.

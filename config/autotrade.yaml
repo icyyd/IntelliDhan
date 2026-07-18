@@ -1,7 +1,7 @@
 autotrade:
   # OFF creates no execution intents. SHADOW records non-executable intents.
   # SUPERVISED requires approval per intent. ARMED is time-limited and lets
-  # Claude claim eligible intents without per-order UI approval.
+  # Codex claim eligible intents without per-order UI approval.
   mode: "OFF"
   armed_until: null
   min_confidence: 0.75
@@ -13,6 +13,6 @@ autotrade:
   allowed_modules: []
   allow_options: false
   require_explicit_calibration: true
-  agent: claude
+  agent: codex
   revision: 1
   updated_at: "2026-07-12T00:00:00Z"

@@ -1,5 +1,33 @@
 # IntelliDhan Agent Context
 
+## 2026-07-18 — Codex becomes the sole Robinhood execution agent
+
+- Active isolated branch/worktree: `codex/codex-robinhood-primary` at
+  `/Users/dhanvin/Documents/IntelliDhan-codex-robinhood`, based on merged
+  `main` commit `7620024`. The collaborators' dirty checkout is untouched.
+- Active agent contract: `AGENTS.md` and
+  `docs/27-codex-robinhood-execution.md`. The project-scoped, credential-free
+  MCP declaration is `.codex/config.toml`.
+- Auto-trade contract v1.1 requires an explicit `{"agent":"codex"}` claim.
+  Missing or other identities fail closed. The default policy remains `OFF`.
+- Loading any pre-Codex policy normalizes it to Codex, disarms it, clears the
+  arming window, increments its revision, and persists the safe state.
+- Existing non-Codex claims retain broker-receipt reconciliation but receive
+  `cancel_requested` and `revoked_at`; they cannot be used for a new placement.
+- The retired contract moved to
+  `docs/decommissioned/claude-robinhood-agent-contract.md`. Historical,
+  read-only daily-brief provider labels remain isolated from execution.
+- Deployment cutover requires rotating `AUTOTRADE_AGENT_TOKEN`, authenticating
+  Codex to the official Robinhood MCP, and validating `SHADOW` before any
+  separately authorized supervised or armed use.
+- Verification baseline: 253 tests passed (5 deselected), Ruff passed, both
+  inline scripts parsed, project MCP TOML parsed, and `git diff --check` is
+  clean. A local isolated-state smoke test returned liveness 200, contract v1.1
+  with effective mode `OFF`, and 422 for a retired-agent claim. No Robinhood MCP
+  login or broker tool was invoked.
+- No merge, deployment, secret rotation, MCP authentication, policy arming, or
+  broker action is authorized by this checkpoint.
+
 ## 2026-07-18 — UI decluttering pass implemented
 
 - Active isolated branch/worktree: `codex/ui-declutter` at
@@ -31,10 +59,8 @@
   Retry node across unchanged 15-second refreshes; a behavior test verifies
   focus-safe node identity.
 - Final implementation head `a83f099` received an independent clean re-review
-  with no actionable findings. Both GitHub CI jobs (`test` and
-  `account-postgres`) passed, and draft PR #12 is mergeable. It remains draft
-  and unmerged pending explicit user confirmation.
-- No merge or deployment is authorized by this checkpoint.
+  with no actionable findings. PR #12 was merged into `main` as `7620024`; both
+  PR and post-merge GitHub CI jobs (`test` and `account-postgres`) passed.
 
 ## 2026-07-18 — Multi-brain stock analysis work in progress
 
@@ -124,13 +150,13 @@
 **Last updated:** 2026-07-18
 
 This is the concise handoff file for agents working on IntelliDhan. It
-summarizes current implementation state and does not replace `CLAUDE.md` or the
+summarizes current implementation state and does not replace `AGENTS.md` or the
 detailed documents under `docs/`.
 
 ## 1. Git and review state
 
 - Production branch: `main`
-- Merged implementation commit: `3208730` (PR #11 merge commit)
+- Merged implementation commit: `7620024` (PR #12 merge commit)
 - The dependency stack landed in order on 2026-07-18: [#4](https://github.com/icyyd/IntelliDhan/pull/4),
   [#5](https://github.com/icyyd/IntelliDhan/pull/5),
   [#6](https://github.com/icyyd/IntelliDhan/pull/6),
@@ -234,9 +260,9 @@ An alert card must make units unambiguous:
   `RESEARCH` or `WATCH` results can be added to the Research watchlist.
 - AI cannot change deterministic rank, invent evidence, create an execution
   intent, or place an order.
-- Execution defaults to `OFF`. Robinhood execution must follow `CLAUDE.md`, use
-  only the official Trading MCP, run pre-trade review, and preserve the required
-  claim/receipt/reconciliation loop.
+- Execution defaults to `OFF`. Robinhood execution must follow `AGENTS.md` and
+  `docs/27-codex-robinhood-execution.md`, use only the official Trading MCP, run
+  pre-trade review, and preserve the required claim/receipt/reconciliation loop.
 
 ## 6. Latest frozen evidence
 

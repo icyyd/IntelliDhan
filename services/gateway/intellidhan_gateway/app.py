@@ -38,6 +38,7 @@ from intellidhan_gateway.auth import (
     websocket_principal,
 )
 from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisService
+from intellidhan_gateway.autotrade import AUTOTRADE_CONTRACT_VERSION
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.daily_brief import DailyBriefService
 from intellidhan_gateway.live import LiveLoop
@@ -980,7 +981,7 @@ async def list_autotrade_intents(request: Request, status: str | None = None):
     except ValueError as exc:
         raise _autotrade_error(exc) from exc
     return {
-        "contract_version": "1.0",
+        "contract_version": AUTOTRADE_CONTRACT_VERSION,
         "effective_mode": loop.autotrade.effective_mode().value,
         "intents": [item.model_dump(mode="json") for item in intents],
     }
@@ -992,7 +993,7 @@ async def claim_autotrade_intent(
 ):
     _require_token(request, "AUTOTRADE_AGENT_TOKEN")
     try:
-        return loop.autotrade.claim(intent_id, payload.get("agent", "claude")).model_dump(
+        return loop.autotrade.claim(intent_id, payload.get("agent", "")).model_dump(
             mode="json"
         )
     except (ValueError, KeyError) as exc:
