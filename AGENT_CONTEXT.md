@@ -33,6 +33,20 @@
   virtual environment was used read-only with this worktree's packages supplied
   through `PYTHONPATH`.
 
+### Regression checkpoint `technical-panel-regression-v1`
+
+- Added a chronological pooled regression harness with matured-label admission,
+  non-overlapping outcomes, training-only standardization, ridge regularization,
+  development-only feature-set selection, and a later validation window.
+- Live 10-year configured-universe results are recorded in
+  `docs/16-multibrain-validation-results.md` and JSON evidence artifacts.
+- 21-session validation: core regression Brier 0.22974 vs fixed vote 0.22759
+  (-0.94% relative); 2/12 symbols improved.
+- 63-session validation: core regression Brier 0.22147 vs fixed vote 0.21928
+  (-1.00% relative); 5/12 symbols improved.
+- Both horizons are `NO_BENCHMARK_EDGE`; no regression promotion is authorized.
+  Transparent fixed votes remain production-authoritative.
+
 **Last updated:** 2026-07-18
 
 This is the concise handoff file for agents working on IntelliDhan. It
