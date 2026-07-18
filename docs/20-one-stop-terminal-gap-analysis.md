@@ -394,9 +394,10 @@ review.
   package that are not implemented as documented.
 - Convert `docs/14-roadmap.md` from week estimates to capability/status gates.
 - Mark every spec feature `IMPLEMENTED`, `PARTIAL`, `RESEARCH`, or `PLANNED`.
-- Resolve the contradiction between the original “not an auto-trader” language
-  and the later `ARMED` intent mode by documenting exactly what IntelliDhan,
-  Codex, Robinhood MCP, and the user each authorize.
+- Keep the resolved execution-mode language in docs 00, 13, and 27 synchronized:
+  default `OFF`, non-executing `SHADOW`, per-intent `SUPERVISED`, and separately
+  authorized, time-limited `ARMED` execution through Codex and the official
+  Robinhood MCP.
 - Keep one generated capability matrix as the product source of truth.
 
 ## 12. Prioritized delivery plan

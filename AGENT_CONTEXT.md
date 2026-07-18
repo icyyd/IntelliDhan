@@ -33,8 +33,12 @@
 - Initial independent review of commit `e8d8fef` found five blockers: a reusable
   legacy bearer, incomplete persisted-policy migration, over-broad contract
   archival, a loose claim schema, and stale architecture/go-live claims. The
-  follow-up hardening addresses each finding; clean re-review is still required
-  before merge.
+  follow-up hardening at `c7d64d0` cleared all five. Re-review then found one
+  remaining documentation inconsistency: the core vision and risk guardrail
+  still claimed every order required per-order confirmation. Docs 00, 13, and
+  20 now accurately distinguish default `OFF`, non-executing `SHADOW`,
+  per-intent `SUPERVISED`, and separately authorized, time-limited `ARMED` use.
+  A final clean re-review remains required before merge.
 - Local verification baseline after hardening: 256 tests passed (6 deselected),
   Ruff passed, both inline scripts parsed, project MCP TOML parsed, and
   `git diff --check` is clean. An isolated-state smoke test returned liveness
