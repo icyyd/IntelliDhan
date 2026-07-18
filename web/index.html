@@ -1205,6 +1205,99 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   .curated-list{grid-template-columns:1fr}
   .contract-strip{grid-template-columns:1fr}
 }
+
+/* ── Calm terminal hierarchy ──────────────────────────────────────────
+   One command surface, one market strip, and progressive disclosure for
+   secondary research. Empty detail panels stay out of the reading path. */
+.shell{grid-template-columns:70px minmax(0,1fr) 280px; gap:14px}
+.workspace,.decision-rail{gap:14px}
+.terminal-hero{
+  grid-template-columns:minmax(0,1.05fr) minmax(330px,.95fr); gap:20px;
+  padding:21px 22px; border-radius:26px;
+}
+.terminal-hero::before{width:210px; height:210px; right:-80px; top:-125px}
+.terminal-hero::after{display:none}
+.terminal-hero h1{margin:8px 0 7px; font-size:clamp(28px,3.2vw,38px); line-height:1.04}
+.terminal-hero p{font-size:12.5px; line-height:1.55}
+.terminal-stats{display:flex; align-items:center; align-self:auto; gap:14px; margin-top:15px}
+.terminal-stat{display:inline-flex; align-items:baseline; gap:5px; min-width:0; padding:0; border:0; border-radius:0; background:none}
+.terminal-stat+.terminal-stat{padding-left:14px; border-left:1px solid rgba(255,255,255,.11)}
+.terminal-stat b{display:inline; font-size:14px}
+.terminal-stat small{display:inline; margin:0; color:#AAB4CD; font-size:9.5px; white-space:nowrap}
+.terminal-hero .home-search-card{display:block; align-self:center; margin:0; padding:0; border:0; border-radius:0; background:none; box-shadow:none}
+.terminal-hero .home-search-copy{margin-bottom:9px}
+.terminal-hero .home-search-copy b{color:#F7F9FF; font-size:12px}
+.terminal-hero .home-search-copy small{color:#9EAAC4; font-size:10px}
+.terminal-hero .home-search-wrap{min-width:0}
+.terminal-hero .home-search-form input{min-height:46px; border-color:rgba(255,255,255,.10); background:rgba(4,9,20,.32)}
+.terminal-hero .home-search-form button{min-width:98px}
+.terminal-hero .search-suggestions{position:static; max-height:230px; margin-top:7px; overflow-y:auto}
+.terminal-hero .home-levels{grid-template-columns:repeat(2,minmax(0,1fr)); margin-top:10px; padding-top:10px}
+.terminal-hero .home-level-symbol,.terminal-hero .home-level-action{grid-column:1/-1}
+
+.anchor-strip{gap:0; overflow:hidden; border:1px solid var(--border); border-radius:20px; background:var(--panel-gradient); box-shadow:var(--shadow-card)}
+.anchor-card{display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto auto; min-height:68px; padding:11px 15px; border:0; border-right:1px solid var(--border); border-radius:0; background:transparent}
+.anchor-card:last-child{border-right:0}
+.anchor-card::after{display:none}
+.anchor-symbol{font-size:14px}
+.anchor-role{font-size:9px}
+.anchor-price{grid-column:2; grid-row:1; margin:0; align-self:center; font-size:16px; text-align:right}
+.anchor-foot{grid-column:1/-1; margin-top:3px; font-size:9px}
+
+.focus-shell{display:block}
+.focus-main{padding:18px}
+.focus-heading{margin-bottom:13px}
+.focus-heading h2{font-size:17px}
+.curated-panel{position:static; margin-top:15px; padding:13px 0 0; border:0; border-top:1px solid var(--border-soft); border-radius:0; background:none; box-shadow:none}
+.curated-panel summary{display:flex; align-items:center; gap:10px; min-height:40px; padding:0 2px; color:var(--text); cursor:pointer; list-style:none}
+.curated-panel summary::-webkit-details-marker{display:none}
+.curated-panel summary span{min-width:0; flex:1}
+.curated-panel summary b{display:block; font-size:12px}
+.curated-panel summary small{display:block; margin-top:2px; color:var(--text-faint); font-size:9.5px}
+.curated-panel summary>svg{color:var(--text-faint); transition:transform 180ms ease}
+.curated-panel[open] summary>svg{transform:rotate(90deg)}
+.curated-body{padding:8px 2px 1px}
+.curated-body>p{margin:0 0 10px; color:var(--text-faint); font-size:10.5px; line-height:1.45}
+.curated-list{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px}
+
+.autotrade-panel{padding:16px}
+.autotrade-panel .panel-head{margin-bottom:8px}
+.auto-stats{display:flex; gap:0; margin:0 0 10px}
+.auto-stats>span{flex:1; padding:2px 8px; border-radius:0; background:none}
+.auto-stats>span:first-child{padding-left:0}
+.auto-stats>span+span{border-left:1px solid var(--border-soft)}
+.auto-stats small{font-size:9px}
+.auto-configure{min-height:38px; padding:7px}
+.risk-panel[hidden],.context-panel[hidden],.market-panel[hidden]{display:none}
+
+.bottom-drawer{max-width:760px; margin-left:auto; margin-right:auto}
+.bd-body{padding-top:2px}
+
+@media (max-width:1180px){
+  .shell{grid-template-columns:70px minmax(0,1fr)}
+  .decision-rail{grid-column:2; display:grid; grid-template-columns:repeat(2,minmax(0,1fr))}
+  .terminal-hero{grid-template-columns:minmax(0,1fr) minmax(310px,.9fr)}
+}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr; padding:0 12px 16px}
+  .navrail{display:none}
+  .decision-rail{grid-column:1; grid-template-columns:1fr}
+  .terminal-hero{grid-template-columns:1fr}
+  .terminal-hero .home-search-card{padding-top:15px; border-top:1px solid rgba(255,255,255,.10)}
+  .curated-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:600px){
+  .terminal-hero{padding:18px}
+  .terminal-stats{display:flex; flex-wrap:wrap; gap:8px 11px}
+  .terminal-stat+.terminal-stat{padding-left:11px}
+  .home-search-form{display:grid; grid-template-columns:minmax(0,1fr) auto}
+  .anchor-card{padding:10px 9px}
+  .anchor-head{display:block}
+  .anchor-price{font-size:13px}
+  .anchor-foot{overflow:hidden; text-overflow:ellipsis}
+  .focus-main{padding:14px}
+  .curated-list{grid-template-columns:1fr}
+}
 </style>
 <script>try{if(localStorage.getItem("id-theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
 </head>
@@ -1273,27 +1366,30 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
         <div class="terminal-kicker">Real-time signal engine</div>
         <h1 id="deskTitle">Welcome to your market desk.</h1>
         <p id="deskSummary">Start with today's brief, then search any ticker for the levels and evidence that can change the thesis.</p>
+        <div class="terminal-stats" aria-label="Signal summary">
+          <span class="terminal-stat"><b id="summarySignals">—</b><small>active</small></span>
+          <span class="terminal-stat"><b id="summarySuppressed">—</b><small>held back</small></span>
+          <span class="terminal-stat"><b id="summaryNext">—</b><small>next scan</small></span>
+        </div>
       </div>
-      <div class="terminal-stats" aria-label="Signal summary">
-        <div class="terminal-stat"><b id="summarySignals">—</b><small>Active plans</small></div>
-        <div class="terminal-stat"><b id="summarySuppressed">—</b><small>Held back honestly</small></div>
-        <div class="terminal-stat"><b id="summaryNext">—</b><small>Next scan</small></div>
+      <div class="home-search-card" aria-labelledby="homeSearchTitle">
+        <div class="home-search-copy"><b id="homeSearchTitle">Analyze a ticker</b><small>Completed-bar levels, business quality, catalysts, and sentiment.</small></div>
+        <div class="home-search-wrap">
+          <form class="home-search-form" id="homeStockSearchForm"><input id="homeStockSearch" type="search" maxlength="80" autocomplete="off" placeholder="Search AAPL or Apple" aria-label="Ticker or company" role="combobox" aria-controls="homeSearchSuggestions" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false"><button type="submit">Get levels</button></form>
+          <div class="search-suggestions" id="homeSearchSuggestions" role="listbox" hidden></div>
+        </div>
+        <div class="home-levels" id="homeKeyLevels" aria-live="polite" hidden></div>
       </div>
-    </section>
-
-    <section class="home-search-card" aria-labelledby="homeSearchTitle">
-      <div class="home-search-copy"><b id="homeSearchTitle">What are you watching?</b><small>Search a ticker or company for completed-bar levels, business quality, catalysts, and social attention.</small></div>
-      <div class="home-search-wrap">
-        <form class="home-search-form" id="homeStockSearchForm"><input id="homeStockSearch" type="search" maxlength="80" autocomplete="off" placeholder="Search AAPL or Apple" aria-label="Ticker or company" role="combobox" aria-controls="homeSearchSuggestions" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false"><button type="submit">Get levels</button></form>
-        <div class="search-suggestions" id="homeSearchSuggestions" role="listbox" hidden></div>
-      </div>
-      <div class="home-levels" id="homeKeyLevels" aria-live="polite" hidden></div>
     </section>
 
     <section class="anchor-strip" id="focusAnchors" aria-label="SPX, SPY and QQQ market pulse">
       <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPX</span><span class="anchor-role">Broad market</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading current context</div></div>
       <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPY</span><span class="anchor-role">Liquidity proxy</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading current context</div></div>
       <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">QQQ</span><span class="anchor-role">Growth leadership</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading current context</div></div>
+    </section>
+
+    <section class="daily-setup" id="dailySetup" aria-labelledby="dailySetupTitle" hidden>
+      <div class="daily-loading">Loading today's analysis and setup…</div>
     </section>
 
     <section class="focus-shell" aria-label="Current focus and curated watchlist">
@@ -1306,26 +1402,15 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
           </div>
         </div>
         <div class="focus-grid" id="focusGrid" aria-live="polite"><div class="empty">Building the current focus list…</div></div>
+        <details class="curated-panel">
+          <summary><span><b id="curatedTitle">Curated radar</b><small>Expand the wider research watchlist</small></span><svg class="icon"><use href="#i-chevron-right"/></svg></summary>
+          <div class="curated-body">
+            <p>Current research candidates across the configured universe. Open a name for the complete dossier.</p>
+            <div class="curated-list" id="curatedFocusList"><div class="empty">Loading candidates…</div></div>
+            <div class="feed-stack" id="focusFeedStatus" aria-label="Research feed status"></div>
+          </div>
+        </details>
       </div>
-      <aside class="curated-panel" aria-labelledby="curatedTitle">
-        <h2 id="curatedTitle">Curated radar</h2>
-        <p>Best current research candidates across the configured universe. Open a name for the complete dossier.</p>
-        <div class="curated-list" id="curatedFocusList"><div class="empty">Loading candidates…</div></div>
-        <div class="feed-stack" id="focusFeedStatus" aria-label="Research feed status"></div>
-      </aside>
-    </section>
-
-    <section class="strategy-shelf" aria-labelledby="strategyShelfTitle">
-      <div class="strategy-shelf-head"><h2 id="strategyShelfTitle">Strategy lanes</h2><p>Methods are evidence, not magic switches.</p></div>
-      <div class="strategy-lanes">
-        <article class="strategy-lane"><div class="strategy-lane-top"><b>0DTE momentum</b><span id="lane0dteCount">0 active</span></div><p>Fast confirmation with a hard clock, defined risk and a no-chase entry zone.</p><div class="method-chips"><span>Opening range</span><span>9EMA</span><span>RVOL</span><span>VWAP</span></div></article>
-        <article class="strategy-lane"><div class="strategy-lane-top"><b>Swing continuation</b><span id="laneSwingCount">0 active</span></div><p>Trend, relative strength and catalyst-aware setups over days to weeks.</p><div class="method-chips"><span>12–1 momentum</span><span>Breakout</span><span>Pullback</span><span>Earnings</span></div></article>
-        <article class="strategy-lane"><div class="strategy-lane-top"><b>LEAPS research</b><span>gated</span></div><p>Long-duration ideas require both financial strength and supportive price structure.</p><div class="method-chips"><span>SEC filings</span><span>Quality</span><span>Trend</span><span>Risk-defined</span></div></article>
-      </div>
-    </section>
-
-    <section class="daily-setup" id="dailySetup" aria-labelledby="dailySetupTitle" hidden>
-      <div class="daily-loading">Loading today's analysis and setup…</div>
     </section>
 
     <section class="data-quality-notice" id="dataQualityNotice" role="status" aria-live="polite" hidden>
@@ -1348,7 +1433,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       <div id="queueSuppressed" hidden></div>
     </section>
 
-    <section class="panel context-panel" id="contextPanel" aria-labelledby="contextTitle">
+    <section class="panel context-panel" id="contextPanel" aria-labelledby="contextTitle" hidden>
       <div class="context-head">
         <div>
           <div class="context-kicker" id="contextTitle">Selected setup</div>
@@ -1372,7 +1457,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       </div>
     </section>
 
-    <section class="panel market-panel">
+    <section class="panel market-panel" hidden aria-hidden="true">
       <div class="panel-head"><h2>Market pulse</h2><span class="count" id="symCount"></span></div>
       <div id="matrix"></div>
     </section>
@@ -1573,17 +1658,16 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
     </section>
 
     <section class="panel autotrade-panel" aria-labelledby="autotradeTitle">
-      <div class="panel-head"><h2 id="autotradeTitle">Auto-trade bridge</h2><span class="auto-mode off" id="autotradeMode">OFF</span></div>
-      <div class="auto-agent"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b>Claude → Robinhood MCP</b><small>Broker authentication remains with the primary agent</small></span></div>
+      <div class="panel-head"><h2 id="autotradeTitle">Automation</h2><span class="auto-mode off" id="autotradeMode">OFF</span></div>
       <div class="auto-stats">
         <span><b id="autotradeReady">0</b><small>Ready</small></span>
         <span><b id="autotradeApproval">0</b><small>Needs approval</small></span>
         <span><b id="autotradeExpiry">—</b><small>Armed until</small></span>
       </div>
-      <button class="auto-configure" id="autotradeConfigure" type="button" onclick="openAutotrade()"><svg class="icon"><use href="#i-gear"/></svg> Configure automation</button>
+      <button class="auto-configure" id="autotradeConfigure" type="button" onclick="openAutotrade()"><svg class="icon"><use href="#i-gear"/></svg> Review settings</button>
     </section>
 
-    <div class="panel risk-panel">
+    <div class="panel risk-panel" id="riskPanel" hidden>
       <div class="panel-head"><h2>Capital &amp; risk</h2></div>
       <div id="riskUsage"></div>
     </div>
@@ -1599,13 +1683,12 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 
 <footer class="bottom-drawer">
   <div class="bd-tabs" role="tablist">
-    <button class="bd-tab active" data-tab="suppression">Why signals were held back</button>
-    <button class="bd-tab" data-tab="evidence">Historical reliability</button>
+    <button class="bd-tab active" data-tab="evidence">Historical reliability</button>
     <button class="bd-tab" data-tab="performance">Paper Performance</button>
   </div>
   <div class="bd-body">
-    <div class="bd-panel active" id="bdSuppression"></div>
-    <div class="bd-panel" id="bdEvidence"></div>
+    <div class="bd-panel" id="bdSuppression" hidden></div>
+    <div class="bd-panel active" id="bdEvidence"></div>
     <div class="bd-panel" id="bdPerformance"></div>
   </div>
 </footer>
@@ -1811,7 +1894,8 @@ function selectSymbol(symbol){
   renderContext(lastState);
   renderMatrix(lastState);
   renderTracking(lastState);
-  document.getElementById("contextPanel").scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  const panel=document.getElementById("contextPanel");
+  if(!panel.hidden) panel.scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
 }
 function selectAlert(alertId){
   const alert = activeAlerts(lastState||{}).find(a=>a.alert_id===alertId);
@@ -2046,6 +2130,8 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   document.getElementById("briefPanel").hidden=true;
   document.getElementById("briefBody").replaceChildren();
   document.getElementById("dailySetup").hidden=true;
+  document.getElementById("contextPanel").hidden=true;
+  document.getElementById("riskPanel").hidden=true;
   document.getElementById("focusAnchors").innerHTML=["SPX","SPY","QQQ"].map(symbol=>`<article class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">${symbol}</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot warn"></span>Sign in to refresh</div></article>`).join("");
   document.getElementById("focusGrid").innerHTML=`<div class="empty">Sign in to build the current focus list.</div>`;
   document.getElementById("curatedFocusList").innerHTML=`<div class="empty">Sign in to load candidates.</div>`;
@@ -2125,8 +2211,6 @@ function renderOverview(s){
   document.getElementById("summarySignals").textContent=activeAlerts(s).length;
   document.getElementById("summarySuppressed").textContent=(s.suppressed||[]).length+heldDataAlerts(s).length;
   document.getElementById("summaryNext").textContent=s.session==="RTH"?"5 min":"Next open";
-  document.getElementById("lane0dteCount").textContent=activeAlerts(s).filter(alert=>alert.module==="0DTE").length+" active";
-  document.getElementById("laneSwingCount").textContent=activeAlerts(s).filter(alert=>alert.module==="SWING").length+" active";
 }
 
 function renderDataQualityNotice(s){
@@ -2246,6 +2330,9 @@ function renderContext(s){
   const d=s.symbols[selectedSymbol] || {};
   const dq=symbolDataQuality(s,selectedSymbol);
   const alert=selectedAlert(s);
+  const panel=document.getElementById("contextPanel");
+  if(!alert){ panel.hidden=true; return; }
+  panel.hidden=false;
   const ev=alert ? evidenceFor(alert.strategy) : null;
   document.getElementById("contextTitle").textContent=alert?"Selected setup":"Market context";
   document.getElementById("contextSymbol").textContent=selectedSymbol||"—";
@@ -2562,8 +2649,10 @@ function renderSuppressedTab(s){
 }
 
 function renderSuppressionTape(s){
+  const output=document.getElementById("bdSuppression");
+  if(!output) return;
   const sup = (s.suppressed||[]).slice().reverse();
-  document.getElementById("bdSuppression").innerHTML = sup.length ? sup.map(x=>
+  output.innerHTML = sup.length ? sup.map(x=>
     `<div class="suppressed-item"><span class="gate">${esc(plainGate(x.gate))}</span> ${x.symbol} ${x.strategy.replace(/_/g,' ')}${x.composite?` <span class="num">score ${x.composite.toFixed(0)}</span>`:""} — ${esc(plainSuppressionDetail(x.detail,x.gate))}</div>`
   ).join("") : `<div class="empty">Nothing evaluated yet.</div>`;
 }
@@ -2580,6 +2669,9 @@ function renderPerformance(s){
 }
 
 function renderRisk(s){
+  const panel=document.getElementById("riskPanel");
+  panel.hidden=!ownerAuthenticated||!budgetsCache;
+  if(panel.hidden) return;
   // Compare shared signal-plan risk with the signed-in user's review ceiling.
   const committed = {};
   activeAlerts(s).forEach(a=>{
