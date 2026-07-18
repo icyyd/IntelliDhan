@@ -44,7 +44,10 @@
   never assumed. Final reconciliation wording now uses durable Codex receipts
   rather than assigning a named Robinhood polling tool to an IntelliDhan
   service; tax-lot coverage follows the same runtime-discovery boundary. A
-  final clean re-review remains required before merge.
+  final independent review of implementation head `129679f` found no actionable
+  issues and approved the change. The reviewer confirmed the complete active
+  documentation set has no remaining authoritative hard-coded Robinhood tool or
+  IntelliDhan-held MCP credential/write/poller claim.
 - Local verification baseline after hardening: 256 tests passed (6 deselected),
   Ruff passed, both inline scripts parsed, project MCP TOML parsed, and
   `git diff --check` is clean. An isolated-state smoke test returned liveness
@@ -53,6 +56,9 @@
   claim. The PostgreSQL migration test is included for CI.
 - Draft PR #13 tracks the branch:
   https://github.com/icyyd/IntelliDhan/pull/13
+- GitHub CI at independently reviewed head `129679f` is green: `test` and
+  `account-postgres` both passed. The PR is mergeable but remains draft and
+  unmerged pending explicit user confirmation.
 - No merge, deployment, secret rotation, MCP authentication, policy arming, or
   broker action is authorized by this checkpoint.
 
