@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from intellidhan_gateway.app import app, loop
+from intellidhan_gateway.claude_research import ClaudeResearchReviewer
 from intellidhan_gateway.research_feeds import (
     ResearchFeedService,
     parse_alpha_news,
@@ -387,6 +388,11 @@ def client(tmp_path, monkeypatch):
     from intellidhan_gateway import app as app_module
 
     monkeypatch.setattr(app_module, "rate_limiter", type(app_module.rate_limiter)())
+    monkeypatch.setattr(
+        app_module,
+        "claude_research_reviewer",
+        ClaudeResearchReviewer(api_key=""),
+    )
     with TestClient(app) as test_client:
         assert test_client.post("/api/auth/session", json={"token": OWNER}).status_code == 200
         yield test_client
@@ -526,15 +532,78 @@ def test_signed_in_dossier_includes_current_research_evidence(client, monkeypatc
             "filings": {"status": "AVAILABLE", "items": [{"form": "10-Q"}]},
         }
 
+    async def claude_review(symbol, analysis, intelligence, consensus):
+        assert symbol == "NVDA"
+        assert consensus["status"] == "RESEARCH_ONLY"
+        return {
+            "provider": "Anthropic Claude",
+            "status": "READY",
+            "verdict": "INSUFFICIENT_EVIDENCE",
+            "summary": "More completed price and filed business evidence is needed.",
+            "risks": [],
+            "guardrails": {
+                "changes_deterministic_posture": False,
+                "execution_eligible": False,
+                "broker_access": False,
+            },
+        }
+
     monkeypatch.setattr(app_module.stock_analyzer, "analyze", analyze)
     monkeypatch.setattr(app_module.discovery, "universe_scan", scan)
     monkeypatch.setattr(app_module.research_feed_service, "analyze", intelligence)
+    monkeypatch.setattr(app_module.claude_research_reviewer, "review", claude_review)
     result = client.get("/api/dossier/NVDA").json()
     assert result["intelligence"]["overall"]["status"] == "RESEARCH_ONLY"
     assert result["coverage"]["fundamentals"] == "AVAILABLE"
     assert result["coverage"]["events"] == "FILING_CONTEXT_AVAILABLE"
     assert result["coverage"]["news"] == "AVAILABLE"
     assert result["intelligence"]["multi_brain"]["status"] == "RESEARCH_ONLY"
+    claude = result["intelligence"]["multi_brain"]["claude_review"]
+    assert claude["status"] == "READY"
+    assert claude["provider"] == "Anthropic Claude"
+    assert claude["guardrails"]["execution_eligible"] is False
+
+
+def test_claude_failure_does_not_fail_deterministic_dossier(client, monkeypatch):
+    from intellidhan_gateway import app as app_module
+
+    async def analyze(symbol, **kwargs):
+        return {
+            "symbol": symbol,
+            "as_of": "2026-07-17T20:00:00Z",
+            "price": 150.0,
+            "consensus": {"label": "UPTREND", "net_vote": 2},
+            "methods": {},
+            "key_levels": {},
+            "risk": {},
+            "forecast": {"strategy_context_status": "UNCONFIRMED", "horizons": {}},
+        }
+
+    async def intelligence(symbol, discovery_context):
+        return {
+            "symbol": symbol,
+            "status": "AVAILABLE",
+            "company": {},
+            "fundamentals": {"status": "UNAVAILABLE", "metrics": []},
+            "filings": {"status": "UNAVAILABLE", "items": []},
+            "news": {"status": "UNAVAILABLE"},
+            "social": {"status": "UNAVAILABLE"},
+            "pillars": {},
+        }
+
+    async def broken_review(*args, **kwargs):
+        raise AttributeError("malformed provider payload")
+
+    monkeypatch.setattr(app_module.stock_analyzer, "analyze", analyze)
+    monkeypatch.setattr(app_module.research_feed_service, "analyze", intelligence)
+    monkeypatch.setattr(app_module.claude_research_reviewer, "review", broken_review)
+
+    response = client.get("/api/dossier/AAPL")
+    assert response.status_code == 200
+    multi_brain = response.json()["intelligence"]["multi_brain"]
+    assert multi_brain["posture"] == "INSUFFICIENT_EVIDENCE"
+    assert multi_brain["claude_review"]["status"] == "UNAVAILABLE"
+    assert multi_brain["claude_review"]["guardrails"]["execution_eligible"] is False
 
 
 def test_landing_page_exposes_welcome_search_levels_and_multibrain_cards():
@@ -550,5 +619,9 @@ def test_landing_page_exposes_welcome_search_levels_and_multibrain_cards():
     assert 'id="homeKeyLevels"' in source
     assert 'id="analysisKeyLevels"' in source
     assert "research posture" in source
+    assert "Claude independent research review" in source
+    assert ".claude-review summary::before" in source
+    assert "--lavender" not in source
+    assert "ANTHROPIC_API_KEY" not in source
     assert "Forward edge remains unconfirmed" in source
     assert "currency unavailable" in source

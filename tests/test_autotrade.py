@@ -1,12 +1,14 @@
-"""Guardrails and lifecycle tests for the Claude→Robinhood MCP intent bridge."""
+"""Guardrails and lifecycle tests for the Codex→Robinhood MCP intent bridge."""
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
+import yaml
 
 from intellidhan_engine.calibration import CalibrationMap
 from intellidhan_gateway.autotrade import AutomationMode, AutotradeManager, IntentStatus
+from intellidhan_gateway.terminal_store import TerminalStore
 from intellidhan_schemas.signals import (
     Action,
     Alert,
@@ -162,7 +164,7 @@ def test_supervised_approval_claim_receipt_and_persistence(tmp_path, calibrated)
     intent = manager.on_alert(make_alert())
     assert intent.status == IntentStatus.AWAITING_APPROVAL
     assert manager.approve(intent.intent_id).status == IntentStatus.READY
-    assert manager.claim(intent.intent_id).status == IntentStatus.CLAIMED
+    assert manager.claim(intent.intent_id, "codex").status == IntentStatus.CLAIMED
     executed = manager.record_receipt(
         intent.intent_id,
         {
@@ -202,12 +204,12 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
     second = manager.on_alert(make_alert(alert_id="alr_test_spy_2"))
     assert manager.approve(second.intent_id).status == IntentStatus.READY
     health["reason"] = "SPY market data is stale"
-    assert manager.claim(second.intent_id).status == IntentStatus.BLOCKED
+    assert manager.claim(second.intent_id, "codex").status == IntentStatus.BLOCKED
 
     health["reason"] = None
     third = manager.on_alert(make_alert(alert_id="alr_test_spy_3"))
     manager.approve(third.intent_id)
-    manager.claim(third.intent_id)
+    manager.claim(third.intent_id, "codex")
     changed = manager.block_symbol("SPY", "SPY feed failed after claim")
     assert third in changed
     assert third.status == IntentStatus.CLAIMED
@@ -220,7 +222,7 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
     assert executed.status == IntentStatus.EXECUTED
     executed.valid_until = datetime.now(timezone.utc) - timedelta(seconds=1)
     with pytest.raises(ValueError, match="only READY intents"):
-        manager.claim(executed.intent_id)
+        manager.claim(executed.intent_id, "codex")
     assert executed.status == IntentStatus.EXECUTED
 
     manager.block_symbol("SPY", "SPY feed remains unavailable")
@@ -238,7 +240,7 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
 
     late = manager.on_alert(make_alert(alert_id="alr_test_spy_late_cancel"))
     manager.approve(late.intent_id)
-    manager.claim(late.intent_id)
+    manager.claim(late.intent_id, "codex")
     manager.record_receipt(late.intent_id, {"status": "CANCELLED"})
     late_fill = manager.record_receipt(
         late.intent_id,
@@ -265,3 +267,96 @@ def test_real_repo_policy_file_loads_and_defaults_to_off(tmp_path):
     manager = AutotradeManager(policy_path, tmp_path / "state.json")
     assert manager.policy.mode == AutomationMode.OFF
     assert manager.status()["effective_mode"] == "OFF"
+    assert manager.status()["agent"] == "codex"
+    assert manager.status()["contract_version"] == "1.1"
+
+
+def test_only_codex_can_claim_ready_intents(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert())
+
+    with pytest.raises(ValueError, match="claim agent must be codex"):
+        manager.claim(intent.intent_id, "retired-agent")
+
+    assert intent.status == IntentStatus.READY
+    claimed = manager.claim(intent.intent_id, "codex")
+    assert claimed.status == IntentStatus.CLAIMED
+    assert claimed.claim["agent"] == "codex"
+
+
+def test_pre_codex_policy_is_disarmed_and_normalized(tmp_path):
+    policy = tmp_path / "policy.yaml"
+    policy.write_text(
+        """autotrade:
+  mode: ARMED
+  armed_until: 2099-01-01T00:00:00Z
+  agent: codex
+  revision: 9
+"""
+    )
+
+    manager = AutotradeManager(policy, tmp_path / "state.json")
+
+    assert manager.policy.agent == "codex"
+    assert manager.policy.contract_version == "1.1"
+    assert manager.policy.mode == AutomationMode.OFF
+    assert manager.policy.armed_until is None
+    assert manager.policy.revision == 10
+    persisted = yaml.safe_load(policy.read_text())["autotrade"]
+    assert persisted["agent"] == "codex"
+    assert persisted["contract_version"] == "1.1"
+    assert persisted["mode"] == "OFF"
+
+
+def test_pre_codex_policy_in_settings_store_is_disarmed(tmp_path):
+    store = TerminalStore(tmp_path / "settings.sqlite3")
+    store.init_schema()
+    store.put_setting(
+        "autotrade_policy",
+        {
+            "mode": "ARMED",
+            "armed_until": "2099-01-01T00:00:00Z",
+            "agent": "codex",
+            "revision": 4,
+        },
+    )
+
+    manager = AutotradeManager(
+        tmp_path / "policy.yaml",
+        tmp_path / "state.json",
+        state_store=store,
+    )
+
+    assert manager.policy.mode == AutomationMode.OFF
+    assert manager.policy.contract_version == "1.1"
+    assert manager.policy.revision == 5
+    persisted = store.get_setting("autotrade_policy")
+    assert persisted["mode"] == "OFF"
+    assert persisted["contract_version"] == "1.1"
+
+
+def test_retired_agent_claim_is_revoked_but_keeps_receipt_path(
+    tmp_path, calibrated
+):
+    policy = tmp_path / "policy.yaml"
+    state = tmp_path / "state.json"
+    manager = AutotradeManager(policy, state)
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert())
+    manager.claim(intent.intent_id, "codex")
+    intent.claim["agent"] = "retired-agent"
+    manager._persist_state()
+
+    restored = AutotradeManager(policy, state)
+    migrated = restored.intents[intent.intent_id]
+    assert migrated.status == IntentStatus.CLAIMED
+    assert migrated.claim["cancel_requested"] is True
+    assert migrated.claim["revoked_at"]
+    assert "no longer authorized" in migrated.claim["revoked_reason"]
+
+    late_fill = restored.record_receipt(
+        intent.intent_id,
+        {"status": "EXECUTED", "broker_order_id": "late-broker-truth"},
+    )
+    assert late_fill.status == IntentStatus.EXECUTED

@@ -38,7 +38,10 @@
 ## Phase 5 — Polish & Feedback Loop (Weeks 15–18)
 - Calibration dashboards, auto-demotion live, weekly review generator, journal.
 - Mental Game toolkit (doc 17): warmup/cooldown flows, A/B/C tagging, emotional maps, mental hand history, behavioral error detectors + intervention ladder, 20-Trade Sample Mode.
-- Order staging via Robinhood MCP (behind toggle + confirm modal), positions-aware conflict warnings.
+- Codex intent/receipt execution loop through the official Robinhood MCP,
+  default `OFF`, `SHADOW` qualification, per-intent `SUPERVISED`, separately
+  authorized time-limited `ARMED`, and positions-aware conflict warnings (doc
+  27).
 - Performance hardening, mobile PWA pass, accessibility audit, backup/restore.
 **Exit criteria:** full-platform game-day (simulated CPI day replay) with zero guardrail violations.
 

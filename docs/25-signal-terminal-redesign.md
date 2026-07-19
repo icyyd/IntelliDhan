@@ -170,8 +170,9 @@ AI may not:
 - create an execution intent or place an order.
 
 This keeps OpenAI analysis useful while preserving reproducibility. Broker
-execution remains governed by `CLAUDE.md`, the intent claim/receipt loop, and
-the official Robinhood Trading MCP.
+execution remains governed by `AGENTS.md`,
+`docs/27-codex-robinhood-execution.md`, the intent claim/receipt loop, and the
+official Robinhood Trading MCP.
 
 ## 5. Strategy refinement without false profitability claims
 

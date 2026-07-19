@@ -1,8 +1,8 @@
 """Agent-mediated auto-trading intent queue.
 
 IntelliDhan owns eligibility, risk policy, arming, idempotency, and audit state.
-The external primary agent (Claude) owns Robinhood MCP authentication plus the
-review/place tool calls.  No Robinhood credential or MCP session enters this
+The external primary agent (OpenAI Codex) owns Robinhood MCP authentication plus
+the review/place tool calls. No Robinhood credential or MCP session enters this
 process.
 """
 
@@ -13,13 +13,17 @@ import os
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Literal, Protocol
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intellidhan_engine.calibration import CalibrationMap
 from intellidhan_schemas.signals import Action, Alert, Vehicle
+
+
+AUTOTRADE_CONTRACT_VERSION = "1.1"
+EXECUTION_AGENT = "codex"
 
 
 class AutomationMode(str, Enum):
@@ -68,6 +72,7 @@ class SettingsStore(Protocol):
 class AutotradePolicy(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    contract_version: Literal["1.1"] = "1.1"
     mode: AutomationMode = AutomationMode.OFF
     armed_until: datetime | None = None
     min_confidence: float = Field(default=0.75, ge=0.50, le=0.95)
@@ -79,7 +84,7 @@ class AutotradePolicy(BaseModel):
     allowed_modules: list[str] = []
     allow_options: bool = False
     require_explicit_calibration: bool = True
-    agent: str = "claude"
+    agent: Literal["codex"] = "codex"
     revision: int = 1
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -149,18 +154,50 @@ class AutotradeManager:
         )
         self.state_store = state_store
         self.symbol_gate = symbol_gate
+        self._policy_migrated = False
         self.policy = self._load_policy()
         self.intents: dict[str, ExecutionIntent] = self._load_state()
+        claims_migrated = self._revoke_untrusted_claims()
+        if self._policy_migrated:
+            self._persist_policy()
+        if claims_migrated:
+            self._persist_state()
+
+    def _normalize_loaded_policy(self, payload: Any) -> dict[str, Any]:
+        """Move any pre-Codex execution policy to the safe Codex baseline.
+
+        Existing deployments may have a persisted agent identity that no longer
+        owns execution. The cutover is intentionally fail-closed: normalize the
+        identity, disarm the policy, and require an operator to review and arm it
+        again under the new agent token.
+        """
+        clean = dict(payload or {})
+        if (
+            clean.get("contract_version") != AUTOTRADE_CONTRACT_VERSION
+            or clean.get("agent") != EXECUTION_AGENT
+        ):
+            clean["contract_version"] = AUTOTRADE_CONTRACT_VERSION
+            clean["agent"] = EXECUTION_AGENT
+            clean["mode"] = AutomationMode.OFF.value
+            clean["armed_until"] = None
+            clean["revision"] = int(clean.get("revision") or 0) + 1
+            clean["updated_at"] = datetime.now(timezone.utc)
+            self._policy_migrated = True
+        return clean
 
     def _load_policy(self) -> AutotradePolicy:
         if self.state_store is not None:
             persisted = self.state_store.get_setting("autotrade_policy")
             if persisted:
-                return AutotradePolicy.model_validate(persisted)
+                return AutotradePolicy.model_validate(
+                    self._normalize_loaded_policy(persisted)
+                )
         if not self.policy_path.exists():
             return AutotradePolicy()
         raw = yaml.safe_load(self.policy_path.read_text()) or {}
-        return AutotradePolicy.model_validate(raw.get("autotrade", raw))
+        return AutotradePolicy.model_validate(
+            self._normalize_loaded_policy(raw.get("autotrade", raw))
+        )
 
     def _load_state(self) -> dict[str, ExecutionIntent]:
         if self.state_store is not None:
@@ -178,6 +215,21 @@ class AutotradeManager:
             for item in raw.get("intents", [])
         }
 
+    def _revoke_untrusted_claims(self) -> bool:
+        """Preserve broker truth while preventing retired agents from placing."""
+        changed = False
+        for intent in self.intents.values():
+            if intent.status != IntentStatus.CLAIMED:
+                continue
+            claim = intent.claim or {}
+            if claim.get("agent") == self.policy.agent or claim.get("revoked_at"):
+                continue
+            changed = self._mutate_revoked_claim(
+                intent,
+                "execution agent is no longer authorized; reconcile broker state",
+            ) or changed
+        return changed
+
     def _persist_policy(self) -> None:
         if self.state_store is not None:
             self.state_store.put_setting(
@@ -190,7 +242,7 @@ class AutotradeManager:
 
     def _persist_state(self) -> None:
         payload = {
-            "contract_version": "1.0",
+            "contract_version": AUTOTRADE_CONTRACT_VERSION,
             "intents": [
                 item.model_dump(mode="json")
                 for item in sorted(self.intents.values(), key=lambda x: x.created_at)
@@ -402,7 +454,9 @@ class AutotradeManager:
         intent.reasons.append(detail)
         return self._transition(intent, IntentStatus.REJECTED)
 
-    def claim(self, intent_id: str, agent: str = "claude") -> ExecutionIntent:
+    def claim(self, intent_id: str, agent: str) -> ExecutionIntent:
+        if agent != self.policy.agent:
+            raise ValueError(f"claim agent must be {self.policy.agent}")
         intent = self._get(intent_id)
         now = datetime.now(timezone.utc)
         if intent.status not in {IntentStatus.READY, IntentStatus.CLAIMED}:
@@ -484,13 +538,13 @@ class AutotradeManager:
         for item in items:
             counts[item.status.value] = counts.get(item.status.value, 0) + 1
         return {
-            "contract_version": "1.0",
+            "contract_version": AUTOTRADE_CONTRACT_VERSION,
             "effective_mode": self.effective_mode().value,
             "policy": self.policy.model_dump(mode="json"),
             "counts": counts,
             "ready": counts.get(IntentStatus.READY.value, 0),
             "awaiting_approval": counts.get(IntentStatus.AWAITING_APPROVAL.value, 0),
-            "agent": "claude",
+            "agent": self.policy.agent,
             "broker": "Robinhood Trading MCP",
             "credentials_in_app": False,
         }

@@ -10,10 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
+      - name: Require README updates in system-changing commits
+        if: github.event_name == 'pull_request'
+        run: python scripts/check_readme_updates.py "${{ github.event.pull_request.base.sha }}" HEAD
+      - name: Require README updates on direct main updates
+        if: github.event_name == 'push'
+        run: python scripts/check_readme_updates.py "${{ github.event.before }}" HEAD
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: pytest -v

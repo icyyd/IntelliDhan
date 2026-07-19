@@ -13,7 +13,7 @@ intellidhan/
 │   ├── behavior/            # Behavior plane: error detectors, intervention ladder, mental game
 │   ├── learning/            # Learning plane: trade log, paper executor, settlement, calibration
 │   ├── delivery/            # Delivery plane: outbox workers (WS/Telegram/push), briefings
-│   └── gateway/             # API gateway: FastAPI REST+WS, auth, order-staging confirm flow
+│   └── gateway/             # API gateway: REST+WS, auth, auto-trade policy/intents/receipts
 ├── web/                     # React app (Vite, TanStack, Zustand, TradingView/Lightweight charts)
 ├── config/                  # universe.yaml, strategies/, glossary.yaml, budgets — versioned data
 ├── fixtures/                # Golden sessions, hand-labeled profiles, indicator test vectors
@@ -50,4 +50,11 @@ python -m intellidhan_learning.backtest --days 55                             # 
 - Event bus (Redis Streams + deterministic in-memory twin), TimescaleDB persistence (hypertables, idempotent upserts), backfill CLI (`python -m intellidhan_ingestor.backfill`), session recorder + replay harness.
 - **Exit criterion met:** the committed golden session (`fixtures/golden-sessions/qqq-complex-5m.jsonl`, 1,248 real 5m bars × 4 symbols) replays bus→engine→snapshots deterministically (sha256-asserted), with the identical digest over real Redis and in-memory transports, and persists to TimescaleDB idempotently.
 
-Next (Phase 1): MTF trend engine + level maps, factor framework, first Swing strategies, Robinhood MCP bridge, Alert Composer + Telegram bot.
+Implemented foundation: MTF trend engine and level maps, factor framework,
+strategy registry and alert composition, delivery paths, and a guarded
+Codex-to-official-Robinhood-MCP intent/claim/receipt bridge (contract v1.1,
+`OFF` by default).
+
+Next: qualify strategies with point-in-time evidence, complete the shared risk
+ledger and provider routing, and validate the broker loop in `SHADOW` before
+any separately authorized supervised use.

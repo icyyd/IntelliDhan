@@ -13,10 +13,12 @@ import time
 from contextlib import asynccontextmanager, suppress
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
-from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, ConfigDict
 
 from intellidhan_gateway.auth import (
     OWNER_COOKIE,
@@ -38,6 +40,8 @@ from intellidhan_gateway.auth import (
     websocket_principal,
 )
 from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisService
+from intellidhan_gateway.autotrade import AUTOTRADE_CONTRACT_VERSION
+from intellidhan_gateway.claude_research import ClaudeResearchReviewer
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.daily_brief import DailyBriefService
 from intellidhan_gateway.live import LiveLoop
@@ -61,6 +65,7 @@ discovery = DiscoveryService()
 daily_brief_service = DailyBriefService()
 research_feed_service = ResearchFeedService()
 ai_thesis_service = OpenAIThesisService()
+claude_research_reviewer = ClaudeResearchReviewer()
 workspace_agent_service = WorkspaceAgentTriggerService()
 rate_limiter = RateLimiter()
 
@@ -74,6 +79,12 @@ DEFAULT_PREFERENCES = {
 VALID_ROLES = {"ADMIN", "TRADER", "VIEWER"}
 _DUMMY_PASSWORD_HASH = hash_password("not-a-real-account-password")
 WS_SESSION_RECHECK_SECONDS = 30.0
+
+
+class CodexClaimRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent: Literal["codex"]
 
 
 @asynccontextmanager
@@ -130,6 +141,10 @@ def _require_control(request: Request) -> None:
     if principal:
         raise HTTPException(status_code=403, detail="administrator access is required")
     _require_token(request, "AUTOTRADE_CONTROL_TOKEN", control=True)
+
+
+def _require_codex_agent(request: Request) -> None:
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
 
 
 def _require_personal(request: Request, *, roles: set[str] | None = None):
@@ -779,7 +794,23 @@ async def stock_dossier(
     research_pillars = intelligence.get("pillars", {}) if intelligence else {}
     filings = intelligence.get("filings", {}) if intelligence else {}
     if intelligence and intelligence.get("status") != "UNAVAILABLE":
-        intelligence["multi_brain"] = build_research_consensus(analysis, intelligence)
+        multi_brain = build_research_consensus(analysis, intelligence)
+        try:
+            multi_brain["claude_review"] = await asyncio.wait_for(
+                claude_research_reviewer.review(
+                    normalized,
+                    analysis,
+                    intelligence,
+                    multi_brain,
+                ),
+                timeout=25,
+            )
+        except Exception:
+            multi_brain["claude_review"] = claude_research_reviewer.status(
+                "UNAVAILABLE",
+                "Claude research review is temporarily unavailable; deterministic research is unchanged.",
+            )
+        intelligence["multi_brain"] = multi_brain
     company = intelligence.get("company", {}) if intelligence else {}
     return {
         "security": loop.store.get_security(normalized) or {
@@ -974,13 +1005,13 @@ async def reject_autotrade_intent(
 
 @app.get("/api/autotrade/intents")
 async def list_autotrade_intents(request: Request, status: str | None = None):
-    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
     try:
         intents = loop.autotrade.list_intents(status)
     except ValueError as exc:
         raise _autotrade_error(exc) from exc
     return {
-        "contract_version": "1.0",
+        "contract_version": AUTOTRADE_CONTRACT_VERSION,
         "effective_mode": loop.autotrade.effective_mode().value,
         "intents": [item.model_dump(mode="json") for item in intents],
     }
@@ -988,11 +1019,13 @@ async def list_autotrade_intents(request: Request, status: str | None = None):
 
 @app.post("/api/autotrade/intents/{intent_id}/claim")
 async def claim_autotrade_intent(
-    intent_id: str, request: Request, payload: dict = Body(default={})
+    intent_id: str,
+    request: Request,
+    payload: CodexClaimRequest = Body(...),
+    _agent_auth: None = Depends(_require_codex_agent),
 ):
-    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
     try:
-        return loop.autotrade.claim(intent_id, payload.get("agent", "claude")).model_dump(
+        return loop.autotrade.claim(intent_id, payload.agent).model_dump(
             mode="json"
         )
     except (ValueError, KeyError) as exc:
@@ -1003,7 +1036,7 @@ async def claim_autotrade_intent(
 async def record_autotrade_receipt(
     intent_id: str, request: Request, payload: dict = Body(...)
 ):
-    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
     try:
         return loop.autotrade.record_receipt(intent_id, payload).model_dump(mode="json")
     except (ValueError, KeyError) as exc:

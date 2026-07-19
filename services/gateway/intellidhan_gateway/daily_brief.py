@@ -149,6 +149,8 @@ def _setup_rows(
             continue
         plan = row.get("plan_trend_join") or row.get("plan") or row.get("idea") or ""
         context = row.get("levels") or row.get("trend") or row.get("trend_context") or ""
+        # Provider-labeled notes are read-only research from historical daily
+        # artifacts. They never supply an execution-agent identity or authority.
         analyst_notes = [
             note
             for key, note in row.items()

@@ -1,5 +1,101 @@
 # IntelliDhan Agent Context
 
+## 2026-07-18 — Codex becomes the sole Robinhood execution agent
+
+- Claude is retained as an optional, server-side multi-brain research reviewer,
+  not an execution agent. `ANTHROPIC_API_KEY` enables a structured-output review
+  of the signed-in dossier's bounded evidence packet with no tools, browsing,
+  MCP servers, broker data, or automation state. Claude cannot change the
+  deterministic specialists, posture, rank, sizing, or execution; failures
+  leave deterministic research intact. No API key is stored in the repository.
+- Claude-review verification covers strict structured output, bounded evidence
+  IDs, provider request shape, no tools or MCP servers, cache behavior, missing
+  configuration, malformed output, invented citations, truncation, and
+  endpoint-level failure isolation. The full local baseline is 284 tests passed
+  (6 deselected); Ruff, both inline browser scripts, and diff checks pass.
+- Independent review of `b95036f` found that the first packet selector included
+  the analysis risk object wholesale, which could disclose a user-supplied risk
+  budget and derived reference quantity. The selector now allowlists only
+  public market-risk observations, and sentinel regressions prove personal
+  capital and quantity values are excluded before the Anthropic request.
+- The same review found the compact Claude disclosure had hidden its native
+  marker without a replacement and referenced an undefined color token. It now
+  has a visible theme-token chevron with an open-state rotation, retaining
+  native summary semantics and keyboard operation.
+- Repository maintenance is now explicit and tested: every system-changing pass
+  must update `README.md` in the same commit, including its last-system-pass
+  marker and affected capability, setup, deployment, safety, and document-index
+  truth. Context and PR notes cannot substitute for the README change. CI
+  enforces the same-commit rule for future changes once this bootstrap policy is
+  present on the base branch. The checker fails closed on unavailable history,
+  covers build/tracking and agent configuration, excludes explicitly archived
+  docs plus test/context-only commits, and has temporary-repository tests for
+  bootstrap, invalid-base, regular-commit, merge, and path-scope behavior.
+  Rename collapsing is disabled so moving a system file into an excluded path
+  cannot hide the source-path change.
+- Active isolated branch/worktree: `codex/codex-robinhood-primary` at
+  `/Users/dhanvin/Documents/IntelliDhan-codex-robinhood`, based on merged
+  `main` commit `7620024`. The collaborators' dirty checkout is untouched.
+- Active agent contract: `AGENTS.md` and
+  `docs/27-codex-robinhood-execution.md`. The project-scoped, credential-free
+  MCP declaration is `.codex/config.toml`.
+- Auto-trade contract v1.1 requires a new
+  `AUTOTRADE_CODEX_AGENT_TOKEN` bearer plus an exact
+  `{"agent":"codex"}` body. The retired variable is never read; missing,
+  different, or extra body fields fail closed. The default policy remains
+  `OFF`.
+- Loading any policy without contract version 1.1 normalizes it to Codex,
+  disarms it, clears the arming window, increments its revision, and persists
+  the safe state—even when a legacy policy's arbitrary agent label already
+  said `codex`. SQLite and PostgreSQL persistence paths are covered.
+- Existing non-Codex claims retain broker-receipt reconciliation but receive
+  `cancel_requested` and `revoked_at`; they cannot be used for a new placement.
+- The retired contract moved to
+  `docs/decommissioned/claude-robinhood-agent-contract.md`. Historical,
+  read-only daily-brief provider labels remain isolated from execution.
+- Deployment cutover requires creating a new
+  `AUTOTRADE_CODEX_AGENT_TOKEN` (the retired variable is ignored),
+  authenticating Codex to the official Robinhood MCP, and validating `SHADOW`
+  before any separately authorized supervised or armed use.
+- Active platform-wide safety rules that are unrelated to Claude were retained
+  in `docs/28-platform-safety-and-data-integrity.md`; the decommissioned file is
+  now historical only. `GO-LIVE.md` and `ARCHITECTURE.md` describe the existing
+  bridge and its gated cutover rather than calling it future or manual-only.
+- Initial independent review of commit `e8d8fef` found five blockers: a reusable
+  legacy bearer, incomplete persisted-policy migration, over-broad contract
+  archival, a loose claim schema, and stale architecture/go-live claims. The
+  follow-up hardening at `c7d64d0` cleared all five. Re-review then found one
+  remaining documentation inconsistency: the core vision and risk guardrail
+  still claimed every order required per-order confirmation. Docs 00, 13, and
+  20 now accurately distinguish default `OFF`, non-executing `SHADOW`,
+  per-intent `SUPERVISED`, and separately authorized, time-limited `ARMED` use.
+  A wider follow-up sweep applied the same truth to the architecture, data
+  source, UI, roadmap, and enhancement-review docs; doc 27 is authoritative,
+  IntelliDhan holds no broker credentials/tools, and runtime MCP schemas are
+  never assumed. Final reconciliation wording now uses durable Codex receipts
+  rather than assigning a named Robinhood polling tool to an IntelliDhan
+  service; tax-lot coverage follows the same runtime-discovery boundary. A
+  final independent review of implementation head `129679f` found no actionable
+  issues and approved the change. The reviewer confirmed the complete active
+  documentation set has no remaining authoritative hard-coded Robinhood tool or
+  IntelliDhan-held MCP credential/write/poller claim.
+- Local verification baseline after README-policy hardening: 277 tests passed
+  (6 deselected), including 25 focused contract/policy tests. Ruff passed, both
+  inline scripts parsed, project MCP TOML parsed, and `git diff --check` is
+  clean. Independent review of exact system head `de1a57c` found no actionable
+  README-enforcement, Codex-cutover, security, or documentation issue. An
+  isolated-state smoke test returned liveness 200, rejected the retired bearer
+  with 401, accepted the new bearer, reported
+  contract v1.1 with effective mode `OFF`, and returned 422 for a non-Codex
+  claim. The PostgreSQL migration test is included for CI.
+- Draft PR #13 tracks the branch:
+  https://github.com/icyyd/IntelliDhan/pull/13
+- GitHub CI at independently reviewed system head `de1a57c` is green: `test` and
+  `account-postgres` both passed. The PR is mergeable but remains draft and
+  unmerged pending explicit user confirmation.
+- No merge, deployment, secret rotation, MCP authentication, policy arming, or
+  broker action is authorized by this checkpoint.
+
 ## 2026-07-18 — UI decluttering pass implemented
 
 - Active isolated branch/worktree: `codex/ui-declutter` at
@@ -31,10 +127,8 @@
   Retry node across unchanged 15-second refreshes; a behavior test verifies
   focus-safe node identity.
 - Final implementation head `a83f099` received an independent clean re-review
-  with no actionable findings. Both GitHub CI jobs (`test` and
-  `account-postgres`) passed, and draft PR #12 is mergeable. It remains draft
-  and unmerged pending explicit user confirmation.
-- No merge or deployment is authorized by this checkpoint.
+  with no actionable findings. PR #12 was merged into `main` as `7620024`; both
+  PR and post-merge GitHub CI jobs (`test` and `account-postgres`) passed.
 
 ## 2026-07-18 — Multi-brain stock analysis work in progress
 
@@ -124,13 +218,13 @@
 **Last updated:** 2026-07-18
 
 This is the concise handoff file for agents working on IntelliDhan. It
-summarizes current implementation state and does not replace `CLAUDE.md` or the
+summarizes current implementation state and does not replace `AGENTS.md` or the
 detailed documents under `docs/`.
 
 ## 1. Git and review state
 
 - Production branch: `main`
-- Merged implementation commit: `3208730` (PR #11 merge commit)
+- Merged implementation commit: `7620024` (PR #12 merge commit)
 - The dependency stack landed in order on 2026-07-18: [#4](https://github.com/icyyd/IntelliDhan/pull/4),
   [#5](https://github.com/icyyd/IntelliDhan/pull/5),
   [#6](https://github.com/icyyd/IntelliDhan/pull/6),
@@ -234,9 +328,9 @@ An alert card must make units unambiguous:
   `RESEARCH` or `WATCH` results can be added to the Research watchlist.
 - AI cannot change deterministic rank, invent evidence, create an execution
   intent, or place an order.
-- Execution defaults to `OFF`. Robinhood execution must follow `CLAUDE.md`, use
-  only the official Trading MCP, run pre-trade review, and preserve the required
-  claim/receipt/reconciliation loop.
+- Execution defaults to `OFF`. Robinhood execution must follow `AGENTS.md` and
+  `docs/27-codex-robinhood-execution.md`, use only the official Trading MCP, run
+  pre-trade review, and preserve the required claim/receipt/reconciliation loop.
 
 ## 6. Latest frozen evidence
 
