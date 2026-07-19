@@ -3,7 +3,8 @@
 **Version:** 0.2 alpha · **Date:** 2026-07-19 · **Status:** Working personal-terminal foundation
 
 **Last system pass:** 4A IntelliDhan brand foundation with a soft-flared
-editorial identity, orange signal bindu, production SVG stack, and a restrained
+editorial identity, orange signal bindu, portable outlined SVG artwork,
+deterministic share imagery, AA light-mode tokens, and a restrained
 midnight-navy/orange terminal theme; browser-validated in dark/light modes at
 375–1440px and covered by the full non-integration regression suite
 
@@ -19,9 +20,11 @@ must not be presented as implemented.
 - Card-first Today terminal with SPX/SPY/QQQ context, a deterministic top-three
   focus list, curated radar, rich signal plans, Discover, Analyze, 0DTE, and
   Swing tasks.
-- Production brand assets, favicon/share artwork, agent-readable design tokens,
-  and a responsive dark/light visual theme. Orange marks brand, focus, and
-  primary actions; labeled green/red remain reserved for market semantics.
+- Production brand assets, favicon, deterministic 1200×630 share artwork,
+  agent-readable design tokens, and a responsive dark/light visual theme.
+  External brand lettering is outlined for portable rendering; orange marks
+  brand, focus, and primary actions while labeled green/red remain reserved for
+  market semantics.
 - Optional SEC filing/financial-strength, Alpha Vantage news-tone, and Finnhub
   social-attention enrichment. Every provider carries source status and missing
   inputs are excluded with visible score coverage.

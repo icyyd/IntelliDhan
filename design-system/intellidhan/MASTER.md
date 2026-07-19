@@ -45,6 +45,9 @@ Never encode trade state with color alone; pair color with text and/or an icon.
 - Market data: **JetBrains Mono**, 500–700. Use for tickers, prices, levels,
   timestamps, and performance metrics.
 - Maintain a system fallback stack and do not render paragraphs in the serif.
+- External brand SVGs use outlined glyphs so the lockup and social artwork are
+  deterministic when Newsreader or Manrope is unavailable. The live terminal
+  keeps system fallbacks while the current Google Fonts dependency is active.
 
 ## Surfaces and geometry
 
@@ -68,7 +71,7 @@ zone, invalidation, and risk without opening a chart.
 ## Accessibility and responsive rules
 
 - Minimum body contrast is WCAG AA (4.5:1); large display text is 3:1.
-- Use a visible 2px burnt-orange focus ring with 2px offset.
+- Use a visible 2px theme action-orange focus ring with 2px offset.
 - Interactive targets are at least 44px where space permits.
 - Respect `prefers-reduced-motion` and the product reduced-motion preference.
 - Verify at 375px, 768px, 1024px, and 1440px with no horizontal page scroll.
@@ -83,7 +86,8 @@ Production assets live in `web/assets/brand/`:
 - `intellidhan-mark-inverse.svg` — dark-surface monogram;
 - `intellidhan-lockup.svg` — horizontal brand lockup;
 - `favicon.svg` — app/browser tile;
-- `social-card.svg` — 1200×630 share card;
+- `social-card.svg` — editable 1200×630 share-card source with outlined text;
+- `social-card.png` — deterministic 1200×630 delivery export for previews;
 - `intellidhan-theme.css` — web implementation tokens and overrides;
 - `intellidhan-brand-board.png` — approved visual reference, not a source asset.
 

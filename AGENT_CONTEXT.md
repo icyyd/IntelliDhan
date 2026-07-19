@@ -425,7 +425,7 @@ For each coherent work unit:
 7. request independent review for material or risk-sensitive changes;
 8. never merge or deploy without the user's confirmation.
 
-## 2026-07-19 — 4A brand refresh ready for review
+## 2026-07-19 — 4A brand refresh under draft-PR review
 
 - Branch: `codex/brand-refresh` in isolated worktree
   `/Users/dhanvin/Documents/IntelliDhan-brand-refresh`.
@@ -441,14 +441,21 @@ For each coherent work unit:
   and JetBrains Mono for market data. Orange is limited to brand, focus,
   selection, and primary actions; labeled green/red remain market semantics.
 - Static assets are exposed through FastAPI at `/assets`.
+- Independent review found and the branch now fixes three production blockers:
+  the lotus geometry is closed without a color notch/cusp at 16–256px;
+  light-mode small text meets AA on every card surface; and external wordmark
+  lettering is outlined so SVG/social rendering is font-independent.
+- `social-card.png` is the deterministic 1200×630 delivery export and the web
+  shell publishes it through Open Graph and Twitter metadata.
 - Strategy, data, auth, multi-brain analysis, and Robinhood behavior remain out
   of scope and unchanged.
 - Adobe was requested but the connector required reauthentication. Native SVG
   and CSS sources remain Adobe/Illustrator-ready when authentication is restored.
-- Verification: all five SVG sources parsed and rendered; brand/UI focused tests
-  passed; the full non-integration suite passed (`289 passed, 6 deselected`);
-  Ruff passed on touched Python; `/assets` returned correct MIME types; dark and
-  light themes rendered without browser errors; widths 375, 768, 1024, and
-  1440px had no horizontal overflow.
-- Remaining: push, draft PR, and independent review. No merge or deployment is
-  authorized by this pass.
+- Verification after the review fixes: focused brand/UI tests passed (`15`);
+  the full non-integration suite passed (`293 passed, 6 deselected`); Ruff and
+  diff checks passed; dark/light browser passes had no console or overflow
+  regressions; and the logo was raster-inspected at 16, 24, 34, 256, lockup,
+  and social sizes.
+- Draft PR: `#14`. Remaining: commit/push the review fixes, wait for CI, and
+  obtain independent re-review. No merge or deployment is authorized by this
+  pass.

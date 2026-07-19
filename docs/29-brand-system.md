@@ -29,13 +29,16 @@ board.
 | `intellidhan-mark-inverse.svg` | Monogram on midnight/navy surfaces |
 | `intellidhan-lockup.svg` | Horizontal presentation and external collateral |
 | `favicon.svg` | Browser/app icon on a midnight rounded tile |
-| `social-card.svg` | 1200×630 social/share card |
+| `social-card.svg` | Editable 1200×630 social/share card with outlined text |
+| `social-card.png` | Deterministic 1200×630 Open Graph/Twitter delivery asset |
 | `intellidhan-theme.css` | Platform palette, typography, and component layer |
 | `intellidhan-brand-board.png` | Approved visual reference only |
 
 SVG is the source of truth. Raster exports should be generated from these files
 at delivery size so edges remain sharp. Do not trace the reference PNG back into
-production artwork.
+production artwork. The lockup and share-card lettering is converted to vector
+outlines, so exported geometry does not depend on installed fonts. Accessible
+names remain in each SVG's `title` and `desc` elements.
 
 ## 3. Palette
 
@@ -64,7 +67,10 @@ replace the orange bindu in the identity.
 - **JetBrains Mono** 500–700: tickers, prices, levels, timestamps, and metrics.
 
 The wordmark should not be recreated with a generic sans. Conversely, dense
-trading data should never use the display serif.
+trading data should never use the display serif. The live app currently loads
+these families from Google Fonts with system fallbacks and `display=swap`;
+external brand SVGs do not depend on that request. Self-host subsetted WOFF2
+files in a later deployment-hardening pass if privacy policy or CSP requires it.
 
 ## 5. Logo usage
 
@@ -97,15 +103,21 @@ The agent-readable implementation contract is maintained in
 The 2026-07-19 implementation pass verified:
 
 - XML parsing and raster render inspection for the mark, inverse mark, lockup,
-  favicon, and share card;
-- removal of a vector endpoint artifact beneath the lotus across all variants;
-- correct `/assets` responses and SVG/CSS MIME types from the FastAPI gateway;
+  favicon, and share card at 16, 24, 34, 256, and presentation sizes;
+- a shared closed lotus base with three readable petal peaks and no marigold
+  notch or endpoint cusp across all five SVG variants;
+- deterministic outlined lettering in external artwork and an exact 1200×630
+  PNG share export wired into Open Graph and Twitter metadata;
+- WCAG AA small-text contrast for light-mode faint/action/evidence tokens across
+  panel, elevated, card-gradient, and page surfaces;
+- correct `/assets` SVG/CSS/PNG MIME types, ETag revalidation, and traversal
+  rejection from the FastAPI gateway;
 - dark and light browser themes with no console errors;
 - no horizontal document overflow at 375, 768, 1024, or 1440px;
 - focused brand/UI tests and the full non-integration regression suite
-  (`289 passed, 6 deselected`);
+  (`293 passed, 6 deselected`);
 - Ruff checks for the touched Python files.
 
 The Adobe connector required reauthentication during this pass. The checked-in
-SVG files are the editable, Adobe/Illustrator-ready source assets; no production
+SVG files are editable, Adobe/Illustrator-ready vector sources; no production
 behavior depends on Adobe availability.
