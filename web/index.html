@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IntelliDhan — Command Center</title>
+<meta name="theme-color" content="#071B36">
+<meta name="description" content="IntelliDhan is an evidence-aware stock analysis and real-time trading signal terminal.">
+<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&amp;display=swap" rel="stylesheet">
+<title>IntelliDhan — Signal &amp; Analysis Terminal</title>
 <style>
 /* ── Design tokens (doc 18 §7.4) ─────────────────────────────────────── */
 :root{
@@ -1300,6 +1306,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   .curated-list{grid-template-columns:1fr}
 }
 </style>
+<link rel="stylesheet" href="/assets/brand/intellidhan-theme.css">
 <script>try{if(localStorage.getItem("id-theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
 </head>
 <body>
@@ -1325,7 +1332,11 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 </svg>
 
 <header class="topbar">
-  <div class="brand"><b>Intelli</b>Dhan</div>
+  <a class="brand brand-lockup" href="/" aria-label="IntelliDhan home">
+    <img class="brand-mark brand-mark-dark" src="/assets/brand/intellidhan-mark-inverse.svg" alt="" width="34" height="34">
+    <img class="brand-mark brand-mark-light" src="/assets/brand/intellidhan-mark.svg" alt="" width="34" height="34">
+    <span class="brand-wordmark">Intelli<b>Dhan</b></span>
+  </a>
   <div class="tape" id="tape"></div>
   <div class="spacer"></div>
   <button class="cmdk-btn" onclick="openPalette()" aria-label="Open command palette"><svg class="icon"><use href="#i-search"/></svg> <span class="cmdk-btn-label">Jump to…</span> <kbd>⌘K</kbd></button>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">IntelliDhan monogram</title>
+  <desc id="desc">An ID monogram with a lotus and an upward market signal ending in an orange dot.</desc>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M86 47h48c49 0 81 32 81 80 0 49-32 82-79 82" stroke="#F6A800" stroke-width="24"/>
+    <path d="M53 65v98c0 31 19 48 52 48" stroke="#071B36" stroke-width="24"/>
+    <path d="M127 158c4-35 23-61 57-69" stroke="#071B36" stroke-width="10"/>
+  </g>
+  <circle cx="53" cy="35" r="14" fill="#071B36"/>
+  <circle cx="187" cy="88" r="14" fill="#E56F2D"/>
+  <path d="M128 220c-24-17-27-43 0-68 27 25 24 51 0 68Z" fill="#071B36"/>
+  <path d="M125 221c-32 2-51-14-53-43 28-1 49 15 53 43Z" fill="#071B36"/>
+  <path d="M131 221c32 2 51-14 53-43-28-1-49 15-53 43Z" fill="#071B36"/>
+</svg>

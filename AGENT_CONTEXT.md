@@ -424,3 +424,27 @@ For each coherent work unit:
 6. push the feature branch and keep the draft PR current;
 7. request independent review for material or risk-sensitive changes;
 8. never merge or deploy without the user's confirmation.
+
+## 2026-07-19 — 4A brand refresh in progress
+
+- Branch: `codex/brand-refresh` in isolated worktree
+  `/Users/dhanvin/Documents/IntelliDhan-brand-refresh`.
+- Base: fetched `origin/main` at `f5ad24d`.
+- The original worktree's unrelated uncommitted Workspace Agent changes were not
+  modified, staged, or moved.
+- Locked identity: soft-flared 4A wordmark; ID/lotus/signal monogram; burnt-orange
+  bindu `#E56F2D`; midnight `#071B36`; marigold `#F6A800`.
+- Brand stack: `web/assets/brand/`; design contract:
+  `design-system/intellidhan/MASTER.md`; human guide:
+  `docs/29-brand-system.md`.
+- Product theme uses Newsreader for restrained display moments, Manrope for UI,
+  and JetBrains Mono for market data. Orange is limited to brand, focus,
+  selection, and primary actions; labeled green/red remain market semantics.
+- Static assets are exposed through FastAPI at `/assets`.
+- Strategy, data, auth, multi-brain analysis, and Robinhood behavior remain out
+  of scope and unchanged.
+- Adobe was requested but the connector required reauthentication. Native SVG
+  and CSS sources remain Adobe/Illustrator-ready when authentication is restored.
+- Remaining: automated tests, SVG render QA, dark/light responsive browser QA,
+  incremental commits, draft PR, and independent review. No merge or deployment
+  is authorized by this pass.

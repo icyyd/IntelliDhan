@@ -18,6 +18,7 @@ from typing import Literal
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
 from intellidhan_gateway.auth import (
@@ -105,6 +106,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="IntelliDhan", lifespan=lifespan)
+app.mount("/assets", StaticFiles(directory=WEB_DIR / "assets"), name="assets")
 
 
 def _require_token(request: Request, env_name: str, *, control: bool = False) -> None:
