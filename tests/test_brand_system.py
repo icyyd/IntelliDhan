@@ -130,15 +130,47 @@ def _contrast_ratio(foreground: str, background: str) -> float:
     return (lighter + 0.05) / (darker + 0.05)
 
 
-def test_light_theme_small_text_tokens_meet_aa_on_every_card_surface():
+def _blend(foreground: str, alpha: float, background: str) -> str:
+    front = [int(foreground[index : index + 2], 16) for index in (1, 3, 5)]
+    back = [int(background[index : index + 2], 16) for index in (1, 3, 5)]
+    channels = [
+        round(alpha * front_value + (1 - alpha) * back_value)
+        for front_value, back_value in zip(front, back)
+    ]
+    return "#" + "".join(f"{channel:02X}" for channel in channels)
+
+
+def test_light_theme_small_text_tokens_meet_aa_on_card_and_badge_surfaces():
     source = (BRAND / "intellidhan-theme.css").read_text(encoding="utf-8")
     light = re.search(r':root\[data-theme="light"\]\{(.*?)\n\}', source, re.S)
     assert light
     tokens = dict(re.findall(r"--([\w-]+):(#[0-9A-Fa-f]{6});", light.group(1)))
     surfaces = ("#FFFCF6", "#F8F4EC", "#F4EFE6", "#F3F0E9", "#F8F1E8")
-    for token in ("text-faint", "cyan", "gold"):
+    for token in ("text-faint", "cyan", "gold", "teal", "red", "amber", "slate"):
         for surface in surfaces:
             assert _contrast_ratio(tokens[token], surface) >= 4.5
+
+    tinted_badges = {
+        "slate": (("#64748B", 0.14),),
+        "teal": tuple(
+            ("#5EEAD4", alpha)
+            for alpha in (0.08, 0.10, 0.11, 0.12, 0.13, 0.14)
+        ),
+        "red": tuple(
+            ("#FB7185", alpha)
+            for alpha in (0.08, 0.10, 0.11, 0.12, 0.13, 0.14)
+        ),
+        "gold": (("#D9B54A", 0.12), ("#F6C86B", 0.10)),
+        "cyan": tuple(
+            ("#E56F2D", alpha)
+            for alpha in (0.055, 0.06, 0.075, 0.10, 0.11, 0.12)
+        ),
+    }
+    for token, overlays in tinted_badges.items():
+        for surface in surfaces:
+            for tint, alpha in overlays:
+                background = _blend(tint, alpha, surface)
+                assert _contrast_ratio(tokens[token], background) >= 4.5
 
     assert _contrast_ratio(tokens["on-accent"], tokens["cyan"]) >= 4.5
     assert "color:var(--brand-orange)" not in source

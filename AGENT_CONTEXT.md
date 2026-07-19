@@ -443,19 +443,20 @@ For each coherent work unit:
 - Static assets are exposed through FastAPI at `/assets`.
 - Independent review found and the branch now fixes three production blockers:
   the lotus geometry is closed without a color notch/cusp at 16–256px;
-  light-mode small text meets AA on every card surface; and external wordmark
-  lettering is outlined so SVG/social rendering is font-independent.
+  light-mode small brand and semantic text meets AA on flat and tinted card
+  surfaces; and external wordmark lettering is outlined so SVG/social rendering
+  is font-independent.
 - `social-card.png` is the deterministic 1200×630 delivery export and the web
   shell publishes it through Open Graph and Twitter metadata.
 - Strategy, data, auth, multi-brain analysis, and Robinhood behavior remain out
   of scope and unchanged.
 - Adobe was requested but the connector required reauthentication. Native SVG
   and CSS sources remain Adobe/Illustrator-ready when authentication is restored.
-- Verification after the review fixes: focused brand/UI tests passed (`15`);
-  the full non-integration suite passed (`293 passed, 6 deselected`); Ruff and
-  diff checks passed; dark/light browser passes had no console or overflow
-  regressions; and the logo was raster-inspected at 16, 24, 34, 256, lockup,
-  and social sizes.
-- Draft PR: `#14`. Remaining: commit/push the review fixes, wait for CI, and
-  obtain independent re-review. No merge or deployment is authorized by this
-  pass.
+- Verification after the semantic-contrast follow-up: focused brand/UI tests
+  passed (`15`); the full non-integration suite passed (`293 passed, 6
+  deselected`); Ruff and diff checks passed; dark/light browser passes had no
+  console or overflow regressions; and the logo was raster-inspected at 16, 24,
+  34, 256, lockup, and social sizes.
+- Draft PR: `#14`. Remaining: commit/push the semantic-token fix, wait for CI,
+  and obtain final independent re-review. No merge or deployment is authorized
+  by this pass.

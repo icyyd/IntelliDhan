@@ -176,9 +176,10 @@ button,input,select{font-family:var(--sans)}
   --text-faint:#596A80;
   --cyan:#AD440E;
   --gold:#875B00;
-  --teal:#137B62;
-  --red:#BF394B;
-  --amber:#966B13;
+  --teal:#0E7159;
+  --red:#B23143;
+  --amber:#8D6108;
+  --slate:#526176;
   --on-accent:#FFFFFF;
   --body-glow:radial-gradient(circle at 10% 0%,rgba(229,111,45,.06),transparent 29rem);
   --glass-a:rgba(255,252,246,.94);

@@ -4,9 +4,9 @@
 
 **Last system pass:** 4A IntelliDhan brand foundation with a soft-flared
 editorial identity, orange signal bindu, portable outlined SVG artwork,
-deterministic share imagery, AA light-mode tokens, and a restrained
-midnight-navy/orange terminal theme; browser-validated in dark/light modes at
-375–1440px and covered by the full non-integration regression suite
+deterministic share imagery, AA light-mode brand/semantic tokens, and a
+restrained midnight-navy/orange terminal theme; browser-validated in dark/light
+modes at 375–1440px and covered by the full non-integration regression suite
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal

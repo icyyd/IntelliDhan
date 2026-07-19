@@ -108,8 +108,9 @@ The 2026-07-19 implementation pass verified:
   notch or endpoint cusp across all five SVG variants;
 - deterministic outlined lettering in external artwork and an exact 1200×630
   PNG share export wired into Open Graph and Twitter metadata;
-- WCAG AA small-text contrast for light-mode faint/action/evidence tokens across
-  panel, elevated, card-gradient, and page surfaces;
+- WCAG AA small-text contrast for light-mode faint, action, evidence, disabled,
+  warning, bullish, and bearish tokens across flat and tinted panel, elevated,
+  card-gradient, badge, and page surfaces;
 - correct `/assets` SVG/CSS/PNG MIME types, ETag revalidation, and traversal
   rejection from the FastAPI gateway;
 - dark and light browser themes with no console errors;
