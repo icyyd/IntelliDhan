@@ -425,7 +425,7 @@ For each coherent work unit:
 7. request independent review for material or risk-sensitive changes;
 8. never merge or deploy without the user's confirmation.
 
-## 2026-07-19 — 4A brand refresh in progress
+## 2026-07-19 — 4A brand refresh ready for review
 
 - Branch: `codex/brand-refresh` in isolated worktree
   `/Users/dhanvin/Documents/IntelliDhan-brand-refresh`.
@@ -445,6 +445,10 @@ For each coherent work unit:
   of scope and unchanged.
 - Adobe was requested but the connector required reauthentication. Native SVG
   and CSS sources remain Adobe/Illustrator-ready when authentication is restored.
-- Remaining: automated tests, SVG render QA, dark/light responsive browser QA,
-  incremental commits, draft PR, and independent review. No merge or deployment
-  is authorized by this pass.
+- Verification: all five SVG sources parsed and rendered; brand/UI focused tests
+  passed; the full non-integration suite passed (`289 passed, 6 deselected`);
+  Ruff passed on touched Python; `/assets` returned correct MIME types; dark and
+  light themes rendered without browser errors; widths 375, 768, 1024, and
+  1440px had no horizontal overflow.
+- Remaining: push, draft PR, and independent review. No merge or deployment is
+  authorized by this pass.

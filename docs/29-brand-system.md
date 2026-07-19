@@ -91,3 +91,21 @@ the analytics experience ornate or gaudy.
 The agent-readable implementation contract is maintained in
 `design-system/intellidhan/MASTER.md`, with terminal-specific rules in
 `design-system/intellidhan/pages/terminal.md`.
+
+## 7. Verification record
+
+The 2026-07-19 implementation pass verified:
+
+- XML parsing and raster render inspection for the mark, inverse mark, lockup,
+  favicon, and share card;
+- removal of a vector endpoint artifact beneath the lotus across all variants;
+- correct `/assets` responses and SVG/CSS MIME types from the FastAPI gateway;
+- dark and light browser themes with no console errors;
+- no horizontal document overflow at 375, 768, 1024, or 1440px;
+- focused brand/UI tests and the full non-integration regression suite
+  (`289 passed, 6 deselected`);
+- Ruff checks for the touched Python files.
+
+The Adobe connector required reauthentication during this pass. The checked-in
+SVG files are the editable, Adobe/Illustrator-ready source assets; no production
+behavior depends on Adobe availability.
