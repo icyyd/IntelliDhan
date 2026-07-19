@@ -457,6 +457,7 @@ For each coherent work unit:
   deselected`); Ruff and diff checks passed; dark/light browser passes had no
   console or overflow regressions; and the logo was raster-inspected at 16, 24,
   34, 256, lockup, and social sizes.
-- Draft PR: `#14`. Remaining: commit/push the semantic-token fix, wait for CI,
-  and obtain final independent re-review. No merge or deployment is authorized
-  by this pass.
+- Draft PR: `#14`. The semantic badges passed the second review; the final
+  follow-up darkens `text-faint` and tests it over tint-a through tint-e.
+  Remaining: commit/push, wait for CI, and obtain final independent re-review.
+  No merge or deployment is authorized by this pass.

@@ -151,6 +151,9 @@ def test_light_theme_small_text_tokens_meet_aa_on_card_and_badge_surfaces():
             assert _contrast_ratio(tokens[token], surface) >= 4.5
 
     tinted_badges = {
+        "text-faint": tuple(
+            ("#071B36", alpha) for alpha in (0.026, 0.034, 0.042, 0.052, 0.06)
+        ),
         "slate": (("#64748B", 0.14),),
         "teal": tuple(
             ("#5EEAD4", alpha)
