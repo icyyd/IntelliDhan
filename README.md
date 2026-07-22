@@ -34,6 +34,9 @@ must not be presented as implemented.
   but does not yet return its output.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
   forward evidence and fixed-rule backtests.
+- Separate, research-only `EMA9_CROSSOVER` harness with completed-bar
+  cross semantics, next-bar fills, gap-aware continuous ATR trailing stops,
+  cost-aware walk-forward tuning, and explicit no-promotion reporting.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
@@ -70,6 +73,7 @@ the Account panel to create the first administrator. See
 | 21 | [Accounts &amp; Personal Settings](docs/21-accounts-and-personal-settings.md) | Account/session architecture, roles, user-owned database state, APIs, and deployment requirements |
 | 22 | [Smart-Play Scanner &amp; AI Thesis](docs/22-smart-play-scanner-and-ai-thesis.md) | Fixed momentum/breakout/pullback rules, walk-forward diagnostic, OpenAI evidence contract, and card-first UX |
 | 23 | [ChatGPT Workspace Agent Dispatch](docs/23-chatgpt-workspace-agent-dispatch.md) | Published-agent API trigger, security boundary, setup, UX, and operational contract |
+| 24 | [9EMA Crossover Backtest](docs/24-ema9-crossover-backtest.md) | Exact close-cross rule, continuous ATR trail, walk-forward tuning, and promotion gates |
 
 ## Core Product Tenets
 
