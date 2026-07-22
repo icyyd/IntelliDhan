@@ -36,7 +36,9 @@ must not be presented as implemented.
   forward evidence and fixed-rule backtests.
 - Separate, research-only `EMA9_CROSSOVER` harness with completed-bar
   cross semantics, next-bar fills, gap-aware continuous ATR trailing stops,
-  cost-aware walk-forward tuning, and explicit no-promotion reporting.
+  cost-aware walk-forward tuning, strict fresh-cross confirmation, re-entry
+  cooldown, and explicit no-promotion reporting. A second regression pass
+  found no stable way to increase coverage and net expectancy together.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at

@@ -1,6 +1,7 @@
 """Regression tests for the literal close-cross and continuous stop model."""
 
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -102,3 +103,43 @@ def test_tuner_does_not_promote_small_samples():
     report = tune_ema9_crossover(bars, cfg(confirmation_bars=1))
     assert report["winner"] is None
     assert "n>=30" in report["selection_rule"]
+
+
+def test_warmup_above_ema_does_not_create_phantom_cross():
+    # A trend that is already above the EMA when the indicator warms must not
+    # be treated as a new crossing event.
+    bars = [bar(i, 100.0 + i * 0.5) for i in range(40)]
+    assert backtest_ema9_crossover(bars, cfg(confirmation_bars=1)) == []
+
+
+def test_data_end_uses_last_processed_rth_bar():
+    et = ZoneInfo("America/New_York")
+    stamps = []
+    day = datetime(2025, 1, 2, tzinfo=et)
+    while len(stamps) < 28:
+        for minutes in range(600, 960, 30):  # 10:00 through 15:30 ET
+            stamps.append(day.replace(hour=minutes // 60, minute=minutes % 60))
+            if len(stamps) == 28:
+                break
+        day += timedelta(days=1)
+        while day.weekday() >= 5:
+            day += timedelta(days=1)
+    bars = [Bar(symbol="SPY", timeframe=Timeframe.M30, ts_close=ts,
+                open=100, high=100.5, low=99.5, close=100,
+                volume=100, source="test") for ts in stamps[:-2]]
+    bars.extend([
+        Bar(symbol="SPY", timeframe=Timeframe.M30, ts_close=stamps[-2],
+            open=100, high=102.5, low=99.5, close=102,
+            volume=100, source="test"),
+        Bar(symbol="SPY", timeframe=Timeframe.M30, ts_close=stamps[-1],
+            open=102, high=103, low=101.5, close=102.5, volume=100, source="test"),
+        # Non-RTH data must not become the DATA_END exit when rth_only=True.
+        Bar(symbol="SPY", timeframe=Timeframe.M30,
+            ts_close=stamps[-1].replace(hour=17, minute=30),
+            open=102.5, high=103, low=102, close=102.8, volume=100, source="test"),
+    ])
+    trades = backtest_ema9_crossover(
+        bars, cfg(confirmation_bars=1, initial_stop_atr=3, trail_atr=3,
+                  require_ema21_alignment=False, rth_only=True))
+    assert trades
+    assert trades[-1].exit_ts.astimezone(et).time().hour <= 16

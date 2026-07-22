@@ -56,6 +56,7 @@ class Ema9CrossoverConfig:
     trail_activation_r: float = 0.75
     confirmation_bars: int = 2
     require_ema21_alignment: bool = True
+    reentry_cooldown_bars: int = 1
     allow_short: bool = False
     rth_only: bool = True
     flatten_time_et: str = "15:55"
@@ -71,6 +72,8 @@ class Ema9CrossoverConfig:
             raise ValueError("trail activation cannot be negative")
         if self.confirmation_bars not in (1, 2, 3):
             raise ValueError("confirmation_bars must be 1, 2, or 3")
+        if self.reentry_cooldown_bars < 0 or self.reentry_cooldown_bars > 5:
+            raise ValueError("reentry_cooldown_bars must be between 0 and 5")
         if self.cost_bps_per_side < 0 or self.stop_limit_offset_atr < 0:
             raise ValueError("cost and stop-limit offset cannot be negative")
 
@@ -201,19 +204,26 @@ def _simulate_symbol(bars: list[Bar], config: Ema9CrossoverConfig) -> list[Ema9T
     prev_ema21: float | None = None
     position: _Position | None = None
     pending: tuple[int, datetime, float] | None = None
+    cooldown = 0
+    last_processed_bar: Bar | None = None
     above_count = below_count = 0
     trades: list[Ema9Trade] = []
 
     for bar in bars:
         if config.rth_only and not _is_rth(bar):
             continue
+        last_processed_bar = bar
+        cooldown_active = cooldown > 0
+        if cooldown_active:
+            cooldown -= 1
+        just_stopped = False
 
         flatten_bar = _is_flatten_bar(bar, config)
 
         # Entries happen on the next bar, using only the prior completed bar's
         # ATR.  The order is then exposed to this bar's full range.
         current_atr = atr_engine.value
-        if pending is not None and position is None and not flatten_bar:
+        if pending is not None and position is None and not flatten_bar and not cooldown_active:
             direction, signal_ts, signal_atr = pending
             entry = bar.open
             risk = max(entry * 1e-6, signal_atr * config.initial_stop_atr)
@@ -258,6 +268,8 @@ def _simulate_symbol(bars: list[Bar], config: Ema9CrossoverConfig) -> list[Ema9T
                 position.gap_fallback = position.gap_fallback or fallback
                 trades.append(_close_trade(position, bar.ts_close, fill, "TRAIL_STOP", config))
                 position = None
+                cooldown = config.reentry_cooldown_bars
+                just_stopped = config.reentry_cooldown_bars > 0
 
         # Update indicators only after the intrabar risk check.  Values are
         # therefore those of the just-closed bar, exactly what a live engine
@@ -283,13 +295,16 @@ def _simulate_symbol(bars: list[Bar], config: Ema9CrossoverConfig) -> list[Ema9T
             above_count += 1
             below_count = 0
         elif bar.close > current_ema:
-            above_count = above_count + 1 if above_count else 1
+            # Confirmation only continues after a *fresh* cross.  Starting a
+            # count merely because price is already above EMA9 would create
+            # phantom entries after a stop and violate the literal rule.
+            above_count = above_count + 1 if above_count else 0
             below_count = 0
         elif down_cross:
             below_count += 1
             above_count = 0
         elif bar.close < current_ema:
-            below_count = below_count + 1 if below_count else 1
+            below_count = below_count + 1 if below_count else 0
             above_count = 0
         else:
             above_count = below_count = 0
@@ -326,11 +341,13 @@ def _simulate_symbol(bars: list[Bar], config: Ema9CrossoverConfig) -> list[Ema9T
                     position.current_stop = candidate
                     position.stop_updates += 1
 
-        if position is None:
+        if position is None and not just_stopped and not cooldown_active:
             if above_count >= config.confirmation_bars and long_allowed:
                 pending = (1, bar.ts_close, updated_atr)
+                above_count = 0
             elif below_count >= config.confirmation_bars and config.allow_short and short_allowed:
                 pending = (-1, bar.ts_close, updated_atr)
+                below_count = 0
             elif below_count >= config.confirmation_bars:
                 pending = None
 
@@ -338,8 +355,8 @@ def _simulate_symbol(bars: list[Bar], config: Ema9CrossoverConfig) -> list[Ema9T
             pending = None
         prev_close, prev_ema, prev_ema21 = bar.close, current_ema, current_ema21
 
-    if position is not None and bars:
-        last = bars[-1]
+    if position is not None and last_processed_bar is not None:
+        last = last_processed_bar
         trades.append(_close_trade(position, last.ts_close, last.close,
                                     "DATA_END", config))
     return trades
@@ -416,17 +433,19 @@ def tune_ema9_crossover(bars: Iterable[Bar], base: Ema9CrossoverConfig | None = 
     base = base or Ema9CrossoverConfig()
     bars = list(bars)
     grid = []
-    for initial, trail, activation, confirmation, trend_filter in (
-        (i, t, a, c, tf)
+    for initial, trail, activation, confirmation, trend_filter, cooldown in (
+        (i, t, a, c, tf, cd)
         for i in (1.0, 1.25, 1.5)
         for t in (1.25, 1.5, 1.75, 2.0)
         for a in (0.5, 0.75, 1.0)
         for c in (1, 2)
         for tf in (False, True)
+        for cd in (0, 1)
     ):
         grid.append(replace(base, initial_stop_atr=initial, trail_atr=trail,
                             trail_activation_r=activation, confirmation_bars=confirmation,
-                            require_ema21_alignment=trend_filter))
+                            require_ema21_alignment=trend_filter,
+                            reentry_cooldown_bars=cooldown))
     rows = []
     split_by_index: list[dict[str, list[Ema9Trade]]] = []
     for config in grid:
@@ -438,7 +457,8 @@ def tune_ema9_crossover(bars: Iterable[Bar], base: Ema9CrossoverConfig | None = 
                            "trail_atr": config.trail_atr,
                            "trail_activation_r": config.trail_activation_r,
                            "confirmation_bars": config.confirmation_bars,
-                           "require_ema21_alignment": config.require_ema21_alignment},
+                           "require_ema21_alignment": config.require_ema21_alignment,
+                           "reentry_cooldown_bars": config.reentry_cooldown_bars},
             "train": performance_report(splits["train"]),
             "validation": performance_report(splits["validation"]),
         })
