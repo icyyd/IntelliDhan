@@ -35,7 +35,12 @@
   pass redacts non-admin broker events, preserves `research_only` through every
   runner mode plus a delivery-side guard, adds the capital-review claim gate,
   and moves events to immutable unique database rows.
-- Corrective local verification: 303 tests passed (6 integration tests
+- Re-review found two additional edge cases: expired-lease reclaim reused an old
+  capital observation, and an event from a replica-lost intent snapshot could
+  be hidden by the API join. Reclaims now require another fresh review; every
+  immutable event embeds bounded intent identity so orphan history remains
+  visible to administrators without relying on the mutable snapshot.
+- Corrective local verification: 305 tests passed (6 integration tests
   deselected), Ruff passed, and `git diff --check` is clean. PostgreSQL CI also
   exercises immutable event-row insertion and idempotency.
 - Broker execution remains `OFF`. No live order, policy arming, merge,

@@ -71,9 +71,11 @@ must not be presented as implemented.
   chronological 55-day study failed its sample/stability bar, so no profitability
   or probability claim is made.
 - Authenticated `/api/trade-log` combines signal plans, paper outcomes, and
-  immutable per-event intent history; global broker events are ADMIN/owner-only.
-  Future executable intents require a fresh machine-checked buying-power review
-  and carry an 80% ceiling, never an instruction to risk or spend 80%.
+  immutable, self-identifying per-event intent history; global broker events are
+  ADMIN/owner-only and remain visible even if replica snapshots race. Future
+  executable intents—including expired-lease reclaims—require a fresh
+  machine-checked buying-power review and carry an 80% ceiling, never an
+  instruction to risk or spend 80%.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at

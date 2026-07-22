@@ -72,6 +72,8 @@ claiming any future live intent, Codex must fetch fresh buying power from the
 dedicated Robinhood Agentic account and submit it to the authenticated
 `capital-review` endpoint. The application rejects stale/wrong-account reviews
 and blocks required capital above that ceiling.
+An expired two-minute claim lease cannot be reclaimed with the old observation;
+Codex must submit another fresh capital review first.
 Eighty percent is a maximum exposure, not a sizing target: per-order dollar
 risk, daily loss, open-intent, liquidity, and protective-exit limits may reduce
 the order substantially. The system never upsizes a small risk-defined plan to

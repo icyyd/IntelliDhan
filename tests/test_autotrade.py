@@ -167,6 +167,25 @@ def test_capital_review_rejects_stale_or_wrong_account_observations(tmp_path, ca
         )
 
 
+def test_expired_claim_lease_requires_a_new_capital_review(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert())
+    pass_capital_review(manager, intent)
+    manager.claim(intent.intent_id, "codex")
+    old = datetime.now(timezone.utc) - timedelta(minutes=5)
+    intent.claim["lease_until"] = old.isoformat()
+    intent.capital_check["observed_at"] = old.isoformat()
+
+    with pytest.raises(ValueError, match="buying-power review is stale"):
+        manager.claim(intent.intent_id, "codex")
+
+    pass_capital_review(manager, intent)
+    reclaimed = manager.claim(intent.intent_id, "codex")
+    assert reclaimed.status == IntentStatus.CLAIMED
+    assert datetime.fromisoformat(reclaimed.capital_check["observed_at"]) > old
+
+
 def test_intent_audit_log_preserves_lifecycle_events(tmp_path, calibrated):
     manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
     manager.update_policy(live_policy("SUPERVISED"))
@@ -210,6 +229,37 @@ def test_durable_event_rows_survive_replica_last_writer_wins(tmp_path, calibrate
     ]
     assert {item["detail"] for item in events[-2:]} == {"replica one", "replica two"}
     assert len({item["event_id"] for item in events}) == 3
+
+
+def test_orphaned_replica_event_remains_visible_with_immutable_metadata(
+    tmp_path, calibrated
+):
+    store = TerminalStore(tmp_path / "replicas.sqlite3")
+    store.init_schema()
+    first = AutotradeManager(
+        tmp_path / "policy.yaml", tmp_path / "state.json", state_store=store
+    )
+    first.update_policy(live_policy())
+    second = AutotradeManager(
+        tmp_path / "policy.yaml", tmp_path / "state.json", state_store=store
+    )
+
+    lost_from_snapshot = first.on_alert(make_alert(alert_id="alr_replica_one"))
+    retained_in_snapshot = second.on_alert(make_alert(alert_id="alr_replica_two"))
+    reopened = AutotradeManager(
+        tmp_path / "policy.yaml", tmp_path / "state.json", state_store=store
+    )
+
+    assert lost_from_snapshot.intent_id not in reopened.intents
+    assert retained_in_snapshot.intent_id in reopened.intents
+    log = reopened.audit_log()
+    by_id = {item["intent_id"]: item for item in log}
+    assert {lost_from_snapshot.intent_id, retained_in_snapshot.intent_id} <= set(by_id)
+    orphan = by_id[lost_from_snapshot.intent_id]
+    assert orphan["alert_id"] == "alr_replica_one"
+    assert orphan["symbol"] == "SPY"
+    assert orphan["strategy"] == "TEST_STRATEGY"
+    assert orphan["mode"] == "ARMED"
 
 
 def test_live_mode_requires_explicit_allowlists_and_time_limit(tmp_path, calibrated):

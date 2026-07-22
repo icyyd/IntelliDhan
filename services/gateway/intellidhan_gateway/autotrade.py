@@ -135,6 +135,11 @@ class IntentEvent(BaseModel):
     from_status: IntentStatus | None = None
     to_status: IntentStatus
     detail: str | None = None
+    alert_id: str | None = None
+    symbol: str | None = None
+    strategy: str | None = None
+    module: str | None = None
+    mode: AutomationMode | None = None
 
 
 class ExecutionIntent(BaseModel):
@@ -247,9 +252,7 @@ class AutotradeManager:
                 # One-time migration from the older embedded event list.
                 for intent in intents.values():
                     for event in intent.events:
-                        self.state_store.append_autotrade_event(
-                            intent.intent_id, event.model_dump(mode="json")
-                        )
+                        self._persist_event(intent, event)
             return intents
         if not self.state_path.exists():
             return {}
@@ -302,8 +305,16 @@ class AutotradeManager:
 
     def _persist_event(self, intent: ExecutionIntent, event: IntentEvent) -> None:
         if self.state_store is not None:
+            payload = event.model_dump(mode="json")
+            payload.update({
+                "alert_id": intent.alert_id,
+                "symbol": intent.symbol,
+                "strategy": intent.strategy,
+                "module": intent.module,
+                "mode": intent.mode.value,
+            })
             self.state_store.append_autotrade_event(
-                intent.intent_id, event.model_dump(mode="json")
+                intent.intent_id, payload
             )
 
     def effective_mode(self, now: datetime | None = None) -> AutomationMode:
@@ -376,6 +387,11 @@ class AutotradeManager:
             event="INTENT_CREATED",
             to_status=status,
             detail="; ".join(reasons) if reasons else None,
+            alert_id=alert.alert_id,
+            symbol=alert.symbol,
+            strategy=alert.strategy,
+            module=alert.module.value,
+            mode=self.policy.mode,
         )
         intent = ExecutionIntent(
             intent_id=intent_id,
@@ -543,8 +559,15 @@ class AutotradeManager:
         if agent != self.policy.agent:
             raise ValueError(f"capital review agent must be {self.policy.agent}")
         intent = self._get(intent_id)
-        if intent.status != IntentStatus.READY:
-            raise ValueError("capital review requires a READY intent")
+        now = datetime.now(timezone.utc)
+        if intent.status == IntentStatus.CLAIMED:
+            if (intent.claim or {}).get("revoked_at"):
+                raise ValueError("intent claim was revoked; a fresh alert is required")
+            lease = (intent.claim or {}).get("lease_until")
+            if lease and datetime.fromisoformat(lease) > now:
+                raise ValueError("capital review cannot replace an active claim lease")
+        elif intent.status != IntentStatus.READY:
+            raise ValueError("capital review requires a READY or expired-lease intent")
         if buying_power <= 0:
             raise ValueError("buying power must be positive")
         if currency != "USD":
@@ -553,7 +576,6 @@ class AutotradeManager:
             raise ValueError("capital review must target the dedicated Agentic account")
         if observed_at.tzinfo is None or observed_at.utcoffset() is None:
             raise ValueError("capital review timestamp must include a timezone")
-        now = datetime.now(timezone.utc)
         observed = observed_at.astimezone(timezone.utc)
         age = (now - observed).total_seconds()
         if age < -5 or age > CAPITAL_REVIEW_MAX_AGE_SECONDS:
@@ -609,16 +631,15 @@ class AutotradeManager:
         reason = self._symbol_gate_reason(intent.symbol)
         if reason:
             return self._block_intent(intent, reason)
-        if intent.status == IntentStatus.READY:
-            capital_reason = self._capital_check_reason(intent, now)
-            if capital_reason:
-                raise ValueError(capital_reason)
         if intent.status == IntentStatus.CLAIMED:
             if (intent.claim or {}).get("revoked_at"):
                 raise ValueError("intent claim was revoked; a fresh alert is required")
             lease = (intent.claim or {}).get("lease_until")
             if lease and datetime.fromisoformat(lease) > now:
                 raise ValueError("intent already has an active claim")
+        capital_reason = self._capital_check_reason(intent, now)
+        if capital_reason:
+            raise ValueError(capital_reason)
         intent.claim = {
             "agent": agent,
             "claimed_at": now.isoformat(),
@@ -704,12 +725,18 @@ class AutotradeManager:
         if self.state_store is not None:
             durable = self.state_store.list_autotrade_events()
             event_pairs = [
-                (self.intents.get(row.pop("intent_id")), IntentEvent.model_validate(row))
+                (
+                    row["intent_id"],
+                    self.intents.get(row["intent_id"]),
+                    IntentEvent.model_validate({
+                        key: value for key, value in row.items() if key != "intent_id"
+                    }),
+                )
                 for row in durable
             ]
         else:
             event_pairs = [
-                (intent, event)
+                (intent.intent_id, intent, event)
                 for intent in self.intents.values()
                 for event in (
                     intent.events or [IntentEvent(
@@ -720,18 +747,26 @@ class AutotradeManager:
                     )]
                 )
             ]
-        for intent, event in event_pairs:
-            if intent is not None:
-                rows.append({
-                    **event.model_dump(mode="json"),
-                    "intent_id": intent.intent_id,
-                    "alert_id": intent.alert_id,
-                    "symbol": intent.symbol,
-                    "strategy": intent.strategy,
-                    "module": intent.module,
-                    "mode": intent.mode.value,
-                })
-        rows.sort(key=lambda item: (item["at"], item["intent_id"], item["seq"]), reverse=True)
+        for intent_id, intent, event in event_pairs:
+            rows.append({
+                **event.model_dump(mode="json"),
+                "intent_id": intent_id,
+                "alert_id": event.alert_id or (intent.alert_id if intent else None),
+                "symbol": event.symbol or (intent.symbol if intent else None),
+                "strategy": event.strategy or (intent.strategy if intent else None),
+                "module": event.module or (intent.module if intent else None),
+                "mode": (
+                    event.mode.value if event.mode
+                    else intent.mode.value if intent
+                    else None
+                ),
+            })
+        rows.sort(
+            key=lambda item: (
+                item["at"], item["intent_id"], item["seq"], item["event_id"]
+            ),
+            reverse=True,
+        )
         return rows[:max(1, min(limit, 5000))]
 
     def status(self) -> dict[str, Any]:
@@ -856,6 +891,11 @@ class AutotradeManager:
             from_status=previous,
             to_status=status,
             detail=detail,
+            alert_id=intent.alert_id,
+            symbol=intent.symbol,
+            strategy=intent.strategy,
+            module=intent.module,
+            mode=intent.mode,
         )
         intent.events.append(item)
         self._persist_event(intent, item)
