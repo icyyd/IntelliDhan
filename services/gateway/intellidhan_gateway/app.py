@@ -86,6 +86,8 @@ class CodexClaimRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     agent: Literal["codex"]
+    underlying_price: float = Field(gt=0)
+    observed_at: datetime
 
 
 class CodexCapitalReviewRequest(BaseModel):
@@ -996,11 +998,17 @@ async def get_trade_log(
             loop.autotrade.audit_log(limit) if broker_history_visible else []
         ),
         "automation_trades": (
-            [
-                {**event, "mode": intent.mode.value}
-                for intent in loop.autotrade.list_intents()
-                for event in intent.trade_events
-            ][-limit:][::-1]
+            sorted(
+                [
+                    {**event, "mode": intent.mode.value}
+                    for intent in loop.autotrade.list_intents()
+                    for event in intent.trade_events
+                ],
+                key=lambda event: (
+                    event.get("observed_at") or event.get("recorded_at") or ""
+                ),
+                reverse=True,
+            )[:limit]
             if broker_history_visible else []
         ),
         "broker_history_visible": broker_history_visible,
@@ -1076,9 +1084,12 @@ async def claim_autotrade_intent(
     _agent_auth: None = Depends(_require_codex_agent),
 ):
     try:
-        return loop.autotrade.claim(intent_id, payload.agent).model_dump(
-            mode="json"
-        )
+        return loop.autotrade.claim(
+            intent_id,
+            payload.agent,
+            underlying_price=payload.underlying_price,
+            observed_at=payload.observed_at,
+        ).model_dump(mode="json")
     except (ValueError, KeyError) as exc:
         raise _autotrade_error(exc) from exc
 

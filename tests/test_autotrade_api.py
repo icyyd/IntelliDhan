@@ -222,17 +222,30 @@ def test_live_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated):
     assert r.json()["detail"][0]["type"] == "missing"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
-                    json={"agent": "retired-agent"}, headers=agent)
+                    json={
+                        "agent": "retired-agent",
+                        "underlying_price": 500.0,
+                        "observed_at": datetime.now(timezone.utc).isoformat(),
+                    }, headers=agent)
     assert r.status_code == 422
     assert r.json()["detail"][0]["type"] == "literal_error"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
-                    json={"agent": "codex", "unexpected": True}, headers=agent)
+                    json={
+                        "agent": "codex",
+                        "underlying_price": 500.0,
+                        "observed_at": datetime.now(timezone.utc).isoformat(),
+                        "unexpected": True,
+                    }, headers=agent)
     assert r.status_code == 422
     assert r.json()["detail"][0]["type"] == "extra_forbidden"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
-                    json={"agent": "codex"}, headers=agent)
+                    json={
+                        "agent": "codex",
+                        "underlying_price": 500.0,
+                        "observed_at": datetime.now(timezone.utc).isoformat(),
+                    }, headers=agent)
     assert r.status_code == 422
     assert "buying-power review is required" in r.json()["detail"]
 
@@ -251,12 +264,18 @@ def test_live_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated):
     assert r.json()["capital_check"]["passed"] is True
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
-                    json={"agent": "codex"}, headers=agent)
+                    json={
+                        "agent": "codex",
+                        "underlying_price": 500.0,
+                        "observed_at": datetime.now(timezone.utc).isoformat(),
+                    }, headers=agent)
     assert r.status_code == 200 and r.json()["status"] == "CLAIMED"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/receipt",
                     json={"status": "EXECUTED", "broker_order_id": "rh-1",
                           "average_price": 500.1, "filled_quantity": 10,
+                          "observed_at": datetime.now(timezone.utc).isoformat(),
+                          "pretrade_alerts": [],
                           "reason": "reviewed trend entry filled"},
                     headers=agent)
     assert r.status_code == 200 and r.json()["status"] == "EXECUTED"
@@ -270,7 +289,7 @@ def test_claim_openapi_requires_exact_codex_body(client):
     body_schema = request_body["content"]["application/json"]["schema"]
     component_name = body_schema["$ref"].rsplit("/", 1)[-1]
     component = schema["components"]["schemas"][component_name]
-    assert component["required"] == ["agent"]
+    assert set(component["required"]) == {"agent", "underlying_price", "observed_at"}
     assert component["additionalProperties"] is False
     agent_schema = component["properties"]["agent"]
     assert agent_schema.get("const") == "codex" or agent_schema.get("enum") == [

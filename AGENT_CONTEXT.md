@@ -2,6 +2,20 @@
 
 # 2026-07-21 — Two-mode 9EMA option lifecycle
 
+- Independent review of checkpoint `bcbd8fd` found bearish-plan, kill-switch,
+  migration, claim-time risk, entry-zone/sellout, receipt-schema, Simulation
+  evidence, durable-journal, and ordering defects. The corrective pass supports
+  bearish signals only as long puts; preserves the underlying entry zone;
+  requires authoritative sellout time; rechecks fresh option and underlying
+  quotes plus current capital/risk caps at claim; bounds claim leases; and
+  revokes placement authority on Live expiry or a switch to Simulation.
+- Simulation entries now require a fresh healthy two-sided official-MCP quote
+  that still passes spread, volume, open-interest, sellout, selection-age, and
+  underlying entry-zone gates. Broker receipts use an allowlisted schema,
+  bind fill identity/quantity to the selected option, normalize prices, and
+  compute exit P&L server-side. Full receipt and trade details are copied into
+  immutable event rows and the UI sorts the combined journal globally newest
+  first.
 - Continued draft PR #17 on `codex/9ema-0dte-autotrader`; no merge, deploy,
   execution-mode change, or broker order was performed.
 - Auto-trade contract v2.0 now exposes only `SIMULATION` and time-limited

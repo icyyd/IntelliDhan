@@ -50,7 +50,6 @@ class IntentStatus(str, Enum):
 
 
 TERMINAL_STATUSES = {
-    IntentStatus.SHADOW,
     IntentStatus.BLOCKED,
     IntentStatus.REJECTED,
     IntentStatus.FAILED,
@@ -60,6 +59,7 @@ TERMINAL_STATUSES = {
 }
 
 BLOCKABLE_STATUSES = {
+    IntentStatus.SHADOW,
     IntentStatus.AWAITING_APPROVAL,
     IntentStatus.READY,
 }
@@ -138,6 +138,8 @@ class IntentEvent(BaseModel):
     strategy: str | None = None
     module: str | None = None
     mode: AutomationMode | None = None
+    receipt: dict[str, Any] | None = None
+    trade_event: dict[str, Any] | None = None
 
 
 class ExecutionIntent(BaseModel):
@@ -183,7 +185,38 @@ class OptionCandidate(BaseModel):
     volume: int = Field(ge=0)
     open_interest: int = Field(ge=0)
     quote_at: datetime
+    sellout_at: datetime
     tradable: bool = True
+
+
+class BrokerReceipt(BaseModel):
+    """Allowlisted normalized fields copied from an official MCP result."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    status: Literal["EXECUTED", "REJECTED", "FAILED", "CANCELLED", "CLOSED"]
+    reason: str = Field(min_length=1, max_length=500)
+    observed_at: datetime
+    broker_order_id: str | None = Field(default=None, max_length=200)
+    option_id: str | None = Field(default=None, max_length=200)
+    filled_quantity: int | None = Field(default=None, ge=1)
+    average_price: float | None = Field(default=None, gt=0)
+    pretrade_alerts: list[str] = Field(default_factory=list, max_length=100)
+
+
+class SimulationReceipt(BaseModel):
+    """Fresh official-MCP quote used for a hypothetical fill."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    event: Literal["ENTRY", "EXIT"]
+    reason: str = Field(min_length=1, max_length=500)
+    observed_at: datetime
+    bid_price: float = Field(ge=0)
+    ask_price: float = Field(gt=0)
+    underlying_price: float = Field(gt=0)
+    volume: int = Field(ge=0)
+    open_interest: int = Field(ge=0)
 
 
 class AutotradeManager:
@@ -266,6 +299,10 @@ class AutotradeManager:
             }:
                 # Keep the broker-truth receipt path for in-flight exposure.
                 clean["mode"] = AutomationMode.LIVE.value
+                if status == IntentStatus.CLAIMED.value:
+                    claim = dict(clean.get("claim") or {})
+                    claim["migration_receipt_only"] = True
+                    clean["claim"] = claim
             else:
                 clean["mode"] = AutomationMode.SIMULATION.value
                 clean["status"] = IntentStatus.BLOCKED.value
@@ -317,6 +354,16 @@ class AutotradeManager:
                 for intent_id, events in by_intent.items():
                     if intent_id in intents:
                         intents[intent_id].events = events
+                        durable_trades = [
+                            event.trade_event for event in events if event.trade_event
+                        ]
+                        if durable_trades:
+                            intents[intent_id].trade_events = durable_trades
+                        durable_receipts = [
+                            event.receipt for event in events if event.receipt
+                        ]
+                        if durable_receipts:
+                            intents[intent_id].receipt = durable_receipts[-1]
             else:
                 # One-time migration from the older embedded event list.
                 for intent in intents.values():
@@ -340,6 +387,13 @@ class AutotradeManager:
             if intent.status != IntentStatus.CLAIMED:
                 continue
             claim = intent.claim or {}
+            if claim.pop("migration_receipt_only", False):
+                intent.claim = claim
+                changed = self._mutate_revoked_claim(
+                    intent,
+                    "pre-v2 claim is receipt-only; placement authority was revoked",
+                ) or changed
+                continue
             if claim.get("agent") == self.policy.agent or claim.get("revoked_at"):
                 continue
             changed = self._mutate_revoked_claim(
@@ -430,14 +484,37 @@ class AutotradeManager:
         candidate.allowed_modules = sorted({x.upper() for x in candidate.allowed_modules})
         self.policy = candidate
         self._persist_policy()
+        if candidate.mode == AutomationMode.SIMULATION:
+            self._disable_live_authority(
+                "execution mode switched to Simulation; placement authority revoked",
+                now=now,
+            )
         return self.policy
+
+    def _disable_live_authority(self, reason: str, *, now: datetime) -> None:
+        changed = False
+        for intent in self.intents.values():
+            if intent.mode != AutomationMode.LIVE:
+                continue
+            if intent.status in BLOCKABLE_STATUSES:
+                self._mutate_blocked(intent, reason, now=now)
+                changed = True
+            elif intent.status == IntentStatus.CLAIMED:
+                changed = self._mutate_revoked_claim(intent, reason, now=now) or changed
+        if changed:
+            self._persist_state()
 
     def on_alert(self, alert: Alert, now: datetime | None = None) -> ExecutionIntent | None:
         now = now or datetime.now(timezone.utc)
         intent_id = f"ati_{alert.alert_id}"
         if intent_id in self.intents:
             intent = self.intents[intent_id]
-            if intent.mode == AutomationMode.LIVE and alert.status != "ACTIVE":
+            allowed_statuses = (
+                {"ACTIVE"}
+                if intent.mode == AutomationMode.LIVE
+                else {"ACTIVE", "SHADOW"}
+            )
+            if alert.status not in allowed_statuses:
                 return self._block_intent(intent, f"alert status is {alert.status.lower()}")
             reason = self._symbol_gate_reason(intent.symbol)
             if reason:
@@ -513,7 +590,14 @@ class AutotradeManager:
             reasons.append("per-order risk cap exceeded")
         if alert.vehicle == Vehicle.OPTION and not policy.allow_options:
             reasons.append("options automation disabled")
-        if alert.action not in {Action.EQUITY_BUY, Action.BTO}:
+        dynamic_scalp_option = (
+            alert.module.value == "0DTE"
+            and alert.strategy.upper() == "EMA9_MTF_0DTE"
+        )
+        supported_long_open = alert.action in {Action.EQUITY_BUY, Action.BTO} or (
+            dynamic_scalp_option and alert.action == Action.EQUITY_SELL
+        )
+        if not supported_long_open:
             reasons.append("only long-opening orders are supported")
         symbol_reason = self._symbol_gate_reason(alert.symbol)
         if symbol_reason:
@@ -531,15 +615,16 @@ class AutotradeManager:
         ]
         if live and len(open_intents) >= policy.max_open_intents:
             reasons.append("open-intent cap reached")
-        day = now.date()
+        day = now.astimezone(ET).date()
         reserved = sum(
             item.dollar_risk for item in self.intents.values()
-            if item.created_at.date() == day
+            if item.created_at.astimezone(ET).date() == day
             and item.status in {
                 IntentStatus.AWAITING_APPROVAL,
                 IntentStatus.READY,
                 IntentStatus.CLAIMED,
                 IntentStatus.EXECUTED,
+                IntentStatus.CLOSED,
             }
         )
         if live and reserved + alert.dollar_risk > policy.max_daily_dollar_risk:
@@ -713,6 +798,12 @@ class AutotradeManager:
             if not item.tradable:
                 reject("tradability")
                 continue
+            if item.sellout_at.tzinfo is None or item.sellout_at.utcoffset() is None:
+                reject("sellout_timezone")
+                continue
+            if item.sellout_at.astimezone(timezone.utc) <= now + timedelta(minutes=5):
+                reject("sellout_window")
+                continue
             if item.quote_at.tzinfo is None or item.quote_at.utcoffset() is None:
                 reject("quote_timezone")
                 continue
@@ -787,12 +878,12 @@ class AutotradeManager:
             "delta": selected.delta,
             "contracts": quantity,
         }
-        intent.order_plan["entry"] = {
+        intent.order_plan["entry"].update({
             "order_type": "LIMIT",
-            "limit_price": selected.ask_price,
+            "option_limit_price": selected.ask_price,
             "price_basis": "fresh ask; broker review required",
             "time_in_force": "GFD",
-        }
+        })
         intent.order_plan["capital_policy"]["capital_required"] = planned_debit
         intent.order_plan["capital_policy"]["capital_ceiling"] = capital_ceiling
         intent.capital_check = None
@@ -821,11 +912,12 @@ class AutotradeManager:
             for item in self.intents.values()
             if item.intent_id != exclude_intent_id
             and item.mode == AutomationMode.LIVE
-            and item.created_at.date() == now.date()
+            and item.created_at.astimezone(ET).date() == now.astimezone(ET).date()
             and item.status in {
                 IntentStatus.READY,
                 IntentStatus.CLAIMED,
                 IntentStatus.EXECUTED,
+                IntentStatus.CLOSED,
             }
         )
         return max(0.0, self.policy.max_daily_dollar_risk - used)
@@ -933,7 +1025,14 @@ class AutotradeManager:
         self._persist_state()
         return intent
 
-    def claim(self, intent_id: str, agent: str) -> ExecutionIntent:
+    def claim(
+        self,
+        intent_id: str,
+        agent: str,
+        *,
+        underlying_price: float,
+        observed_at: datetime,
+    ) -> ExecutionIntent:
         if agent != self.policy.agent:
             raise ValueError(f"claim agent must be {self.policy.agent}")
         intent = self._get(intent_id)
@@ -953,6 +1052,21 @@ class AutotradeManager:
         reason = self._symbol_gate_reason(intent.symbol)
         if reason:
             return self._block_intent(intent, reason)
+        if underlying_price <= 0:
+            raise ValueError("positive underlying price is required before claim")
+        if observed_at.tzinfo is None or observed_at.utcoffset() is None:
+            raise ValueError("underlying quote timestamp must include a timezone")
+        underlying_age = (
+            now - observed_at.astimezone(timezone.utc)
+        ).total_seconds()
+        if underlying_age < -5 or underlying_age > self.policy.max_option_quote_age_seconds:
+            raise ValueError("underlying quote is stale")
+        try:
+            zone_low, zone_high = intent.order_plan["entry"]["entry_zone"]
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("underlying entry zone is missing or invalid") from exc
+        if not float(zone_low) <= underlying_price <= float(zone_high):
+            raise ValueError("underlying price is outside the approved entry zone")
         if intent.status == IntentStatus.CLAIMED:
             if (intent.claim or {}).get("revoked_at"):
                 raise ValueError("intent claim was revoked; a fresh alert is required")
@@ -965,15 +1079,62 @@ class AutotradeManager:
         intent.claim = {
             "agent": agent,
             "claimed_at": now.isoformat(),
-            "lease_until": (now + timedelta(minutes=2)).isoformat(),
+            "lease_until": min(
+                now + timedelta(minutes=2),
+                intent.valid_until,
+                self.policy.live_until or intent.valid_until,
+            ).isoformat(),
+            "underlying_price": round(float(underlying_price), 6),
+            "underlying_observed_at": observed_at.astimezone(timezone.utc).isoformat(),
         }
         return self._transition(
             intent, IntentStatus.CLAIMED, event="CLAIM_ACQUIRED",
             detail=f"claimed by {agent} with a two-minute lease",
         )
 
-    @staticmethod
-    def _capital_check_reason(intent: ExecutionIntent, now: datetime) -> str | None:
+    def _capital_check_reason(
+        self, intent: ExecutionIntent, now: datetime
+    ) -> str | None:
+        try:
+            required = float(intent.order_plan["capital_policy"]["capital_required"])
+        except (KeyError, TypeError, ValueError):
+            return "capital required is missing or invalid"
+        if required <= 0:
+            return "capital required must be positive"
+        dynamic_scalp_option = (
+            intent.strategy.upper() == "EMA9_MTF_0DTE"
+            and intent.module.upper() == "0DTE"
+        )
+        risk_amount = required if dynamic_scalp_option else float(intent.dollar_risk)
+        if risk_amount > self.policy.max_dollar_risk_per_order + 1e-9:
+            return "order risk exceeds the current per-order risk cap"
+        if risk_amount > self._remaining_daily_risk(
+            now, exclude_intent_id=intent.intent_id
+        ) + 1e-9:
+            return "order risk exceeds the remaining daily risk cap"
+
+        if dynamic_scalp_option:
+            selection = intent.option_selection
+            if not selection:
+                return "fresh option selection is required before claim"
+            try:
+                quote_at = datetime.fromisoformat(str(selection["quote_at"]))
+                sellout_at = datetime.fromisoformat(str(selection["sellout_at"]))
+                planned_debit = float(selection["planned_debit"])
+            except (KeyError, TypeError, ValueError):
+                return "option selection is invalid"
+            if quote_at.tzinfo is None or quote_at.utcoffset() is None:
+                return "option selection quote timestamp is invalid"
+            quote_age = (now - quote_at.astimezone(timezone.utc)).total_seconds()
+            if quote_age < -5 or quote_age > self.policy.max_option_quote_age_seconds:
+                return "option selection quote is stale"
+            if sellout_at.tzinfo is None or sellout_at.utcoffset() is None:
+                return "option sellout timestamp is invalid"
+            if sellout_at.astimezone(timezone.utc) <= now + timedelta(minutes=5):
+                return "option is inside the broker sellout window"
+            if abs(planned_debit - required) > 1e-9:
+                return "option selection debit does not match the order plan"
+
         check = intent.capital_check
         if not check:
             return "fresh Robinhood buying-power review is required before claim"
@@ -988,6 +1149,16 @@ class AutotradeManager:
         age = (now - observed.astimezone(timezone.utc)).total_seconds()
         if age < -5 or age > CAPITAL_REVIEW_MAX_AGE_SECONDS:
             return "Robinhood buying-power review is stale"
+        try:
+            buying_power = float(check["buying_power"])
+            checked_required = float(check["capital_required"])
+        except (KeyError, TypeError, ValueError):
+            return "Robinhood buying-power review values are invalid"
+        if abs(checked_required - required) > 1e-9:
+            return "Robinhood buying-power review does not match the current order"
+        current_maximum = buying_power * self.policy.max_available_capital_fraction
+        if required > current_maximum + 1e-9:
+            return "planned debit exceeds the current buying-power threshold"
         return None
 
     def block_symbol(self, symbol: str, reason: str) -> list[ExecutionIntent]:
@@ -1011,9 +1182,10 @@ class AutotradeManager:
         if intent.mode != AutomationMode.LIVE:
             raise ValueError("broker receipts are only accepted for LIVE intents")
         try:
-            status = IntentStatus(payload["status"])
+            parsed = BrokerReceipt.model_validate(payload)
+            status = IntentStatus(parsed.status)
         except (KeyError, ValueError) as exc:
-            raise ValueError("receipt status is required and invalid") from exc
+            raise ValueError("receipt fields are invalid or not allowlisted") from exc
         allowed = {
             IntentStatus.CLAIMED: {
                 IntentStatus.EXECUTED,
@@ -1028,18 +1200,72 @@ class AutotradeManager:
         }
         if status not in allowed.get(intent.status, set()):
             raise ValueError(f"invalid receipt transition {intent.status.value} → {status.value}")
-        if self._contains_sensitive_key(payload):
-            raise ValueError("receipt contains forbidden account or credential fields")
+        now = datetime.now(timezone.utc)
+        observed = parsed.observed_at
+        if observed.tzinfo is None or observed.utcoffset() is None:
+            raise ValueError("broker receipt timestamp must include a timezone")
+        observed_utc = observed.astimezone(timezone.utc)
+        if observed_utc > now + timedelta(seconds=5):
+            raise ValueError("broker receipt timestamp cannot be in the future")
+
+        receipt = parsed.model_dump(mode="json")
+        receipt["observed_at"] = observed_utc.isoformat()
+        receipt["recorded_at"] = now.isoformat()
+        selection = intent.option_selection
         if status in {IntentStatus.EXECUTED, IntentStatus.CLOSED}:
-            if not str(payload.get("reason") or "").strip():
-                raise ValueError("entry and exit broker receipts require a reason")
-        receipt = dict(payload)
-        receipt["recorded_at"] = datetime.now(timezone.utc).isoformat()
+            if not parsed.broker_order_id:
+                raise ValueError("filled broker receipts require broker_order_id")
+            if parsed.average_price is None or parsed.filled_quantity is None:
+                raise ValueError("filled broker receipts require price and quantity")
+            if parsed.pretrade_alerts:
+                raise ValueError("broker pre-trade alerts block order recording")
+            if selection:
+                selected_id = str(selection["option_id"])
+                if parsed.option_id and parsed.option_id != selected_id:
+                    raise ValueError("broker receipt option does not match selection")
+                receipt["option_id"] = selected_id
+                planned_quantity = int(selection["quantity"])
+                if status == IntentStatus.EXECUTED:
+                    if parsed.filled_quantity > planned_quantity:
+                        raise ValueError("broker fill exceeds selected quantity")
+                else:
+                    entry = next(
+                        (row for row in intent.trade_events if row.get("event") == "ENTRY"),
+                        None,
+                    )
+                    if entry is None:
+                        raise ValueError("broker exit has no recorded entry")
+                    if parsed.filled_quantity != int(entry["quantity"]):
+                        raise ValueError("broker exit must close the full recorded quantity")
         intent.receipt = receipt
-        intent.trade_events.append(self._trade_event(intent, receipt, simulated=False))
+        trade_event = self._trade_event(intent, receipt, simulated=False)
+        if status == IntentStatus.CLOSED:
+            entry = next(
+                row for row in intent.trade_events if row.get("event") == "ENTRY"
+            )
+            quantity = int(entry["quantity"])
+            trade_event["realized_pnl"] = round(
+                (float(trade_event["option_price"]) - float(entry["option_price"]))
+                * 100
+                * quantity,
+                2,
+            )
+            trade_event["return_pct"] = round(
+                (float(trade_event["option_price"]) / float(entry["option_price"]) - 1)
+                * 100,
+                4,
+            )
+        intent.trade_events.append(trade_event)
         broker_id = receipt.get("broker_order_id")
         detail = f"broker order {broker_id}" if broker_id else "broker receipt recorded"
-        return self._transition(intent, status, event="BROKER_RECEIPT", detail=detail)
+        return self._transition(
+            intent,
+            status,
+            event="BROKER_RECEIPT",
+            detail=detail,
+            receipt=receipt,
+            trade_event=trade_event,
+        )
 
     def record_simulation(self, intent_id: str, payload: dict[str, Any]) -> ExecutionIntent:
         """Record an option entry/exit using real observed quotes, without orders."""
@@ -1047,11 +1273,10 @@ class AutotradeManager:
         if intent.mode != AutomationMode.SIMULATION:
             raise ValueError("simulation receipts require a SIMULATION intent")
         try:
-            event = str(payload["event"]).upper()
-        except KeyError as exc:
-            raise ValueError("simulation event is required") from exc
-        if event not in {"ENTRY", "EXIT"}:
-            raise ValueError("simulation event must be ENTRY or EXIT")
+            parsed = SimulationReceipt.model_validate(payload)
+        except ValueError as exc:
+            raise ValueError("simulation receipt fields are invalid") from exc
+        event = parsed.event
         expected = IntentStatus.SHADOW if event == "ENTRY" else IntentStatus.EXECUTED
         if intent.status != expected:
             raise ValueError(
@@ -1059,29 +1284,64 @@ class AutotradeManager:
             )
         if intent.option_selection is None:
             raise ValueError("option selection is required before simulation entry")
-        if event == "ENTRY" and intent.valid_until <= datetime.now(timezone.utc):
+        now = datetime.now(timezone.utc)
+        if event == "ENTRY" and intent.valid_until <= now:
             raise ValueError("simulation entry cannot use an expired intent")
-        reason = str(payload.get("reason") or "").strip()
-        if not reason:
-            raise ValueError("entry and exit receipts require a reason")
-        observed_at = payload.get("observed_at")
-        try:
-            observed = datetime.fromisoformat(str(observed_at))
-        except (TypeError, ValueError) as exc:
-            raise ValueError("observed_at must be an ISO timestamp") from exc
+        symbol_reason = self._symbol_gate_reason(intent.symbol)
+        if symbol_reason:
+            raise ValueError(symbol_reason)
+        observed = parsed.observed_at
         if observed.tzinfo is None or observed.utcoffset() is None:
             raise ValueError("observed_at must include a timezone")
-        option_price = float(payload.get("option_price") or 0)
-        underlying_price = float(payload.get("underlying_price") or 0)
-        if option_price <= 0 or underlying_price <= 0:
-            raise ValueError("positive option_price and underlying_price are required")
+        observed_utc = observed.astimezone(timezone.utc)
+        quote_age = (now - observed_utc).total_seconds()
+        if quote_age < -5 or quote_age > self.policy.max_option_quote_age_seconds:
+            raise ValueError("simulation quote is stale")
+        if parsed.ask_price < parsed.bid_price:
+            raise ValueError("simulation quote has an inverted market")
+        mid = (parsed.bid_price + parsed.ask_price) / 2
+        spread_fraction = (parsed.ask_price - parsed.bid_price) / mid if mid else 1.0
+        if event == "ENTRY":
+            try:
+                selected_at = datetime.fromisoformat(
+                    str(intent.option_selection["recorded_at"])
+                )
+                sellout_at = datetime.fromisoformat(
+                    str(intent.option_selection["sellout_at"])
+                )
+                zone_low, zone_high = intent.order_plan["entry"]["entry_zone"]
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError("option selection or entry zone is invalid") from exc
+            if selected_at.tzinfo is None or selected_at.utcoffset() is None:
+                raise ValueError("option selection timestamp is invalid")
+            selection_age = (now - selected_at.astimezone(timezone.utc)).total_seconds()
+            if selection_age < -5 or selection_age > self.policy.max_option_quote_age_seconds:
+                raise ValueError("option selection is stale; select again before entry")
+            if sellout_at.astimezone(timezone.utc) <= now + timedelta(minutes=5):
+                raise ValueError("option is inside the broker sellout window")
+            if parsed.bid_price <= 0:
+                raise ValueError("simulation entry requires a two-sided market")
+            if spread_fraction > self.policy.max_option_spread_fraction:
+                raise ValueError("simulation entry spread exceeds the liquidity cap")
+            if parsed.volume < self.policy.min_option_volume:
+                raise ValueError("simulation entry volume is below the liquidity floor")
+            if parsed.open_interest < self.policy.min_option_open_interest:
+                raise ValueError("simulation entry open interest is below the liquidity floor")
+            if not float(zone_low) <= parsed.underlying_price <= float(zone_high):
+                raise ValueError("underlying price is outside the approved entry zone")
+        option_price = parsed.ask_price if event == "ENTRY" else parsed.bid_price
         clean = {
             "event": event,
-            "reason": reason,
-            "observed_at": observed.astimezone(timezone.utc).isoformat(),
-            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "reason": parsed.reason,
+            "observed_at": observed_utc.isoformat(),
+            "recorded_at": now.isoformat(),
             "option_price": option_price,
-            "underlying_price": underlying_price,
+            "bid_price": parsed.bid_price,
+            "ask_price": parsed.ask_price,
+            "spread_fraction": round(spread_fraction, 6),
+            "volume": parsed.volume,
+            "open_interest": parsed.open_interest,
+            "underlying_price": parsed.underlying_price,
             "option_id": intent.option_selection["option_id"],
             "quantity": intent.option_selection["quantity"],
             "simulated": True,
@@ -1107,7 +1367,9 @@ class AutotradeManager:
             intent,
             status,
             event=f"SIMULATION_{event}",
-            detail=reason,
+            detail=parsed.reason,
+            receipt=clean,
+            trade_event=clean,
         )
 
     @staticmethod
@@ -1122,27 +1384,13 @@ class AutotradeManager:
             **receipt,
             "event": event,
             "reason": str(receipt.get("reason") or "broker execution receipt"),
+            "option_price": receipt.get("average_price"),
+            "quantity": receipt.get("filled_quantity"),
             "simulated": simulated,
             "intent_id": intent.intent_id,
             "symbol": intent.symbol,
             "strategy": intent.strategy,
         }
-
-    @classmethod
-    def _contains_sensitive_key(cls, value: Any) -> bool:
-        forbidden = {
-            "account", "account_id", "account_number", "rhs_account_number",
-            "rhc_account_number", "token", "password", "cookie", "mfa",
-            "authorization", "secret",
-        }
-        if isinstance(value, dict):
-            return any(
-                str(key).lower() in forbidden or cls._contains_sensitive_key(item)
-                for key, item in value.items()
-            )
-        if isinstance(value, list):
-            return any(cls._contains_sensitive_key(item) for item in value)
-        return False
 
     def list_intents(self, status: str | None = None) -> list[ExecutionIntent]:
         self._expire_stale()
@@ -1240,6 +1488,16 @@ class AutotradeManager:
                         intent, "intent expired while broker outcome was pending", now=now
                     )
                     changed = True
+        if (
+            self.policy.mode == AutomationMode.LIVE
+            and self.effective_mode(now) == AutomationMode.SIMULATION
+        ):
+            if changed:
+                self._persist_state()
+            self._disable_live_authority(
+                "LIVE window expired; placement authority revoked", now=now
+            )
+            return
         if changed:
             self._persist_state()
 
@@ -1266,12 +1524,14 @@ class AutotradeManager:
                 self._persist_state()
         return intent
 
-    def _mutate_blocked(self, intent: ExecutionIntent, reason: str) -> None:
+    def _mutate_blocked(
+        self, intent: ExecutionIntent, reason: str, *, now: datetime | None = None
+    ) -> None:
         if reason not in intent.reasons:
             intent.reasons.append(reason)
         previous = intent.status
         intent.status = IntentStatus.BLOCKED
-        intent.updated_at = datetime.now(timezone.utc)
+        intent.updated_at = now or datetime.now(timezone.utc)
         intent.revision += 1
         self._append_event(
             intent, "INTENT_BLOCKED", previous, IntentStatus.BLOCKED, reason
@@ -1317,6 +1577,8 @@ class AutotradeManager:
         detail: str | None = None,
         *,
         at: datetime | None = None,
+        receipt: dict[str, Any] | None = None,
+        trade_event: dict[str, Any] | None = None,
     ) -> None:
         item = IntentEvent(
             seq=len(intent.events) + 1,
@@ -1330,6 +1592,8 @@ class AutotradeManager:
             strategy=intent.strategy,
             module=intent.module,
             mode=intent.mode,
+            receipt=receipt,
+            trade_event=trade_event,
         )
         intent.events.append(item)
         self._persist_event(intent, item)
@@ -1341,11 +1605,22 @@ class AutotradeManager:
         *,
         event: str = "STATUS_CHANGED",
         detail: str | None = None,
+        receipt: dict[str, Any] | None = None,
+        trade_event: dict[str, Any] | None = None,
     ) -> ExecutionIntent:
         previous = intent.status
         intent.status = status
         intent.updated_at = datetime.now(timezone.utc)
         intent.revision += 1
-        self._append_event(intent, event, previous, status, detail, at=intent.updated_at)
+        self._append_event(
+            intent,
+            event,
+            previous,
+            status,
+            detail,
+            at=intent.updated_at,
+            receipt=receipt,
+            trade_event=trade_event,
+        )
         self._persist_state()
         return intent

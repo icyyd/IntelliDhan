@@ -9,7 +9,9 @@ capital, broker-review, and explicit confirmation gates. Selection prefers the
 highest feasible absolute delta, then uses the maximum whole-contract size
 inside the 80% buying-power, per-order, and daily-risk thresholds. Historical
 evidence still fails promotion, so the strategy remains Simulation-only and no
-real order was placed.
+real order was placed. A safety re-review added bearish long-put support,
+claim-time quote/price/risk revalidation, sellout deadlines, mode-switch claim
+revocation, strict receipt schemas, and immutable full trade-journal events.
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -78,6 +80,8 @@ must not be presented as implemented.
   Dynamic 9EMA option plans accept only fresh liquid 0/1DTE candidates, prefer
   the highest affordable delta, and maximize whole contracts inside all active
   capital and risk caps; long-option premium is treated as maximum order risk.
+  Pending Simulation intents expire with signal validity and block when their
+  source signal is canceled.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at

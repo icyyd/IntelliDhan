@@ -24,8 +24,10 @@ The Codex bearer and operator control tokens are independent secrets:
 
 Never expose setup, invite, control, Codex-agent, broker, or account tokens in
 browser state, URLs, prompts, tool output, logs, analytics, or version control.
-Do not treat a request-body agent label as authentication; the new Codex-only
-bearer is the credential boundary and the literal claim body is defense in depth.
+Do not treat a request-body agent label as authentication; the Codex-only bearer
+is the credential boundary. The allowlisted claim body adds defense in depth and
+also carries the fresh underlying price and timestamp used for the entry-zone
+recheck.
 
 ## Research cannot authorize execution
 

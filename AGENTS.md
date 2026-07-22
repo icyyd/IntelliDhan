@@ -25,8 +25,11 @@ codex mcp login robinhood-trading
   Never guess tool names or fields or use an unofficial Robinhood client.
 - Robinhood credentials, cookies, tokens, account numbers, passwords, and MFA
   secrets never enter IntelliDhan, its prompts, logs, or version control.
-- The claim contract is v2.0 and requires the exact body
-  `{"agent":"codex"}`. Other identities are rejected.
+- The claim contract is v2.0 and accepts only the `codex` agent identity plus a
+  positive fresh underlying price and timezone-aware observation timestamp.
+  The identity fragment remains exactly `{"agent":"codex"}`; the complete
+  allowlisted body adds only `underlying_price` and `observed_at`. Other fields
+  and identities are rejected.
 - Real orders are allowed only in the dedicated Robinhood Agentic account.
   Other connected accounts are read-only for this workflow.
 - There are only two operator modes: `SIMULATION` is the default and can only

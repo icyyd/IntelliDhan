@@ -76,13 +76,20 @@ dedicated Robinhood Agentic account and submit it to the authenticated
 and blocks required capital above that ceiling.
 An expired two-minute claim lease cannot be reclaimed with the old observation;
 Codex must submit another fresh capital review first.
+Every claim also supplies a fresh underlying quote. The application preserves
+and enforces the original underlying entry zone, revalidates selected-option
+quote age and all current caps, and bounds the lease by both intent validity and
+the time-limited Live window. Completed trades continue to consume the daily
+risk budget for that trading day.
 The selector uses the largest whole-contract position inside every active
 threshold. It caps capital at the lesser of 80% of fresh buying power,
 per-order dollar risk, and remaining daily dollar risk. It filters 0/1DTE
 contracts for direction, fresh two-sided quotes, ≤10% spread, minimum volume and
 open interest, and affordability; among survivors it chooses the highest
 absolute delta, then sizes the maximum whole-contract count at the current ask.
-For long options, premium paid is treated as maximum order risk.
+Each candidate also carries the broker's authoritative sellout time and must
+remain outside the final five-minute sellout window. For long options, premium
+paid is treated as maximum order risk.
 
 The application does not store Robinhood credentials or account identifiers.
 It stores the timestamped buying-power amount used for each sizing decision so
@@ -106,11 +113,16 @@ Authenticated users can request `GET /api/trade-log` to retrieve, newest first:
 
 - persisted signal plans, including `research_only` and `SHADOW` status;
 - underlying-level paper trades and outcomes;
-- real-option Simulation entry/exit events with their reasoning; and
+- real-option Simulation entry/exit events with fresh bid/ask and liquidity
+  evidence plus their reasoning; and
 - append-only execution-intent lifecycle events, including claims and broker
   receipts for other eligible strategies. These global broker records are
   visible only to ADMIN and legacy-owner sessions; other accounts receive an
   empty execution-event list.
+
+Full normalized receipts and trade events are embedded in immutable event rows,
+not only the mutable intent snapshot, so replica races cannot silently erase the
+advertised journal. The combined journal is globally sorted newest first.
 
 Every future broker intent includes the multi-cap maximum sizing rule, required
 fresh buying-power check, dedicated Agentic-account scope, protective-exit
