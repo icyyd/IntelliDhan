@@ -78,7 +78,7 @@ def test_brand_theme_keeps_semantic_market_colors_distinct():
     ).read_text(encoding="utf-8")
 
 
-def test_mark_geometry_is_shared_and_has_a_closed_lotus_base():
+def test_d42_owl_lotus_geometry_is_shared_across_brand_assets():
     assets = (
         "intellidhan-mark.svg",
         "intellidhan-mark-inverse.svg",
@@ -87,16 +87,20 @@ def test_mark_geometry_is_shared_and_has_a_closed_lotus_base():
         "social-card.svg",
     )
     required_geometry = (
-        'd="M86 47h48c49 0 81 32 81 80 0 36-18 60-50 73"',
-        'd="M112 208h32l-8 13h-16Z"',
-        'd="M128 220c-24-17-27-43 0-68 27 25 24 51 0 68Z"',
-        'd="M125 221c-32 2-51-14-53-43 28-1 49 15 53 43Z"',
-        'd="M131 221c32 2 51-14 53-43-28-1-49 15-53 43Z"',
+        'd="M128 17C77 17 41 55 41 108v40c0 54 36 91 87 91s87-37 87-91v-40c0-53-36-91-87-91Z"',
+        'd="M128 108C115 79 96 59 70 54c12 15 15 29 14 44-1 21 8 38 25 49-5-17-4-31 2-41 4-7 10-6 17 2Z"',
+        'd="M128 108c13-29 32-49 58-54-12 15-15 29-14 44 1 21-8 38-25 49 5-17 4-31-2-41-4-7-10-6-17 2Z"',
+        'd="M128 155c-18 19-23 43 0 67 23-24 18-48 0-67Z"',
+        'd="M118 222c-35 1-55-20-58-54 29 0 51 19 58 54Z"',
+        'd="M138 222c35 1 55-20 58-54-29 0-51 19-58 54Z"',
     )
     for name in assets:
         source = (BRAND / name).read_text(encoding="utf-8")
         assert all(path in source for path in required_geometry)
-        assert "0 49-32 82-79 82" not in source
+        assert 'd="M86 47h48c49 0 81 32 81 80' not in source
+        assert 'cx="94" cy="101"' in source
+        assert 'cx="162" cy="101"' in source
+        assert 'cx="128" cy="218"' in source
 
 
 def test_external_brand_artwork_uses_outlined_text_and_exact_share_dimensions():

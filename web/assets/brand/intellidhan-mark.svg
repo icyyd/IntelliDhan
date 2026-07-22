@@ -1,15 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
-  <title id="title">IntelliDhan monogram</title>
-  <desc id="desc">An ID monogram with a lotus and an upward market signal ending in an orange dot.</desc>
-  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M86 47h48c49 0 81 32 81 80 0 36-18 60-50 73" stroke="#F6A800" stroke-width="24"/>
-    <path d="M53 65v98c0 31 19 48 52 48" stroke="#071B36" stroke-width="24"/>
-    <path d="M127 158c4-35 23-61 57-69" stroke="#071B36" stroke-width="10"/>
+  <title id="title">IntelliDhan owl and lotus mark</title>
+  <desc id="desc">A calm owl and three-petal lotus drawn in parchment within a midnight oval, with an orange bindu.</desc>
+  <path d="M128 17C77 17 41 55 41 108v40c0 54 36 91 87 91s87-37 87-91v-40c0-53-36-91-87-91Z" fill="#071B36"/>
+  <path d="M128 108C115 79 96 59 70 54c12 15 15 29 14 44-1 21 8 38 25 49-5-17-4-31 2-41 4-7 10-6 17 2Z" fill="#F8F4EC"/>
+  <path d="M128 108c13-29 32-49 58-54-12 15-15 29-14 44 1 21-8 38-25 49 5-17 4-31-2-41-4-7-10-6-17 2Z" fill="#F8F4EC"/>
+  <g fill="none" stroke="#F8F4EC" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M128 155c-18 19-23 43 0 67 23-24 18-48 0-67Z" stroke-width="13"/>
+    <path d="M118 222c-35 1-55-20-58-54 29 0 51 19 58 54Z" stroke-width="13"/>
+    <path d="M138 222c35 1 55-20 58-54-29 0-51 19-58 54Z" stroke-width="13"/>
   </g>
-    <circle cx="53" cy="35" r="14" fill="#071B36"/>
-    <circle cx="187" cy="88" r="14" fill="#E56F2D"/>
-    <path d="M112 208h32l-8 13h-16Z" fill="#071B36"/>
-    <path d="M128 220c-24-17-27-43 0-68 27 25 24 51 0 68Z" fill="#071B36"/>
-    <path d="M125 221c-32 2-51-14-53-43 28-1 49 15 53 43Z" fill="#071B36"/>
-    <path d="M131 221c32 2 51-14 53-43-28-1-49 15-53 43Z" fill="#071B36"/>
+  <circle cx="94" cy="101" r="15" fill="#071B36"/>
+  <circle cx="162" cy="101" r="15" fill="#071B36"/>
+  <circle cx="94" cy="101" r="6" fill="#F8F4EC"/>
+  <circle cx="162" cy="101" r="6" fill="#F8F4EC"/>
+  <circle cx="128" cy="218" r="14" fill="#E56F2D" stroke="#F8F4EC" stroke-width="4"/>
 </svg>

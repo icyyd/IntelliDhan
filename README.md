@@ -1,13 +1,13 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-19 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-07-21 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** 4A IntelliDhan brand foundation with a soft-flared
-editorial identity, orange signal bindu, portable outlined SVG artwork,
+**Last system pass:** D4.2 IntelliDhan owl-and-lotus identity with a soft-flared
+editorial wordmark, orange bindu, portable outlined SVG artwork,
 deterministic share imagery, AA light-mode brand/semantic/faint tokens across
 flat and tinted cards, and a restrained midnight-navy/orange terminal theme;
-browser-validated in dark/light modes at 375–1440px and covered by the full
-non-integration regression suite
+the production mark stays readable from favicon to presentation scale and is
+covered by focused brand checks plus the full non-integration regression suite
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -21,7 +21,7 @@ must not be presented as implemented.
 - Card-first Today terminal with SPX/SPY/QQQ context, a deterministic top-three
   focus list, curated radar, rich signal plans, Discover, Analyze, 0DTE, and
   Swing tasks.
-- Production brand assets, favicon, deterministic 1200×630 share artwork,
+- Production D4.2 owl-and-lotus assets, favicon, deterministic 1200×630 share artwork,
   agent-readable design tokens, and a responsive dark/light visual theme.
   External brand lettering is outlined for portable rendering; orange marks
   brand, focus, and primary actions while labeled green/red remain reserved for
@@ -124,7 +124,7 @@ requires the same-commit README update.
 | 26 | [UI Decluttering Pass](docs/26-ui-declutter-pass.md) | Reduced Today hierarchy, removed duplicate panels, and progressive-disclosure contract |
 | 27 | [Codex + Robinhood Execution](docs/27-codex-robinhood-execution.md) | Codex-only claim contract, official MCP setup, decommission migration, and fail-closed execution loop |
 | 28 | [Platform Safety &amp; Data Integrity](docs/28-platform-safety-and-data-integrity.md) | Active token, research-isolation, persistence, no-lookahead, GitOps, and deployment controls |
-| 29 | [Brand System](docs/29-brand-system.md) | Approved 4A identity, SVG asset stack, palette, typography, usage rules, and product application |
+| 29 | [Brand System](docs/29-brand-system.md) | Approved D4.2 owl-and-lotus identity, SVG asset stack, palette, typography, usage rules, and product application |
 
 ## Core Product Tenets
 

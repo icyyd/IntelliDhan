@@ -2,37 +2,39 @@
 
 **Status:** Implemented foundation
 
-**Direction:** 4A — soft-flared editorial wordmark, orange signal dot
+**Direction:** D4.2 — calm owl-and-lotus mark, soft-flared editorial wordmark,
+orange bindu
 
-**Last updated:** 2026-07-19
+**Last updated:** 2026-07-21
 
 ## 1. Identity
 
-The IntelliDhan identity combines an `ID` monogram, a three-petal lotus, and a
-rising signal curve. The lotus quietly references Indian visual culture without
-turning the product into a religious motif. The curve connects analysis to
-action, while the burnt-orange bindu is the single focal point.
+The IntelliDhan identity combines a watchful owl and a three-petal lotus inside
+a calm midnight oval. The owl represents attentive research and measured
+judgment; the lotus quietly references Indian visual culture and clarity without
+turning the product into a religious motif. A burnt-orange bindu anchors the
+mark as its single focal point.
 
 The wordmark uses a soft flared editorial serif. It gives the product warmth and
 authority without resembling a legacy bank. `Intelli` is midnight navy (or
 parchment on dark surfaces); `Dhan` is marigold.
 
-The approved reference is `web/assets/brand/intellidhan-brand-board.png`.
-Production UI must use the SVG assets rather than extracting pixels from that
-board.
+The production SVGs are the approved reference. The earlier
+`web/assets/brand/intellidhan-brand-board.png` remains an archived exploration
+board only; production UI must not extract pixels or geometry from it.
 
 ## 2. Production asset stack
 
 | Asset | Purpose |
 |---|---|
-| `intellidhan-mark.svg` | Primary monogram on light/neutral surfaces |
-| `intellidhan-mark-inverse.svg` | Monogram on midnight/navy surfaces |
+| `intellidhan-mark.svg` | Primary owl-and-lotus mark on light/neutral surfaces |
+| `intellidhan-mark-inverse.svg` | Keyed owl-and-lotus mark on midnight/navy surfaces |
 | `intellidhan-lockup.svg` | Horizontal presentation and external collateral |
 | `favicon.svg` | Browser/app icon on a midnight rounded tile |
 | `social-card.svg` | Editable 1200×630 social/share card with outlined text |
 | `social-card.png` | Deterministic 1200×630 Open Graph/Twitter delivery asset |
 | `intellidhan-theme.css` | Platform palette, typography, and component layer |
-| `intellidhan-brand-board.png` | Approved visual reference only |
+| `intellidhan-brand-board.png` | Archived first-generation exploration board only |
 
 SVG is the source of truth. Raster exports should be generated from these files
 at delivery size so edges remain sharp. Do not trace the reference PNG back into
@@ -75,9 +77,11 @@ files in a later deployment-hardening pass if privacy policy or CSP requires it.
 ## 5. Logo usage
 
 - Clearspace around the mark: at least the diameter of the orange bindu.
-- Minimum monogram size: 24px in digital UI; use 32px or larger when possible.
+- Minimum mark size: 24px in digital UI; use 32px or larger when possible.
 - Minimum lockup width: 180px.
-- Never stretch, rotate, outline, bevel, shadow, or recolor individual petals.
+- Never stretch, rotate, bevel, shadow, or recolor the owl or individual petals.
+- Keep both eyes balanced and preserve the oval enclosure; do not detach the owl
+  from the lotus or use either motif as a standalone product mark.
 - Never turn the bindu green/teal or add a glow around it.
 - On dark backgrounds use the inverse mark; on light backgrounds use the navy
   mark. Marigold and orange remain unchanged in both.
@@ -99,6 +103,13 @@ The agent-readable implementation contract is maintained in
 `design-system/intellidhan/pages/terminal.md`.
 
 ## 7. Verification record
+
+The 2026-07-21 D4.2 pass supersedes the first-generation `ID` monogram. It
+verified shared owl, lotus, enclosure, eye, and bindu geometry across the mark,
+inverse mark, favicon, lockup, and social card; small-size legibility at 16, 24,
+34, and 256px; deterministic social export; gateway delivery; and the focused
+and full regression suites. Strategy, data, authentication, multi-brain, and
+broker execution behavior did not change.
 
 The 2026-07-19 implementation pass verified:
 
