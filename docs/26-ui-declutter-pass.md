@@ -54,7 +54,7 @@ permission to copy their execution behavior.
   historical-evidence status.
 - Data-quality and execution-state warnings remain visible.
 - Research posture remains distinct from validated forward edge.
-- `OFF` remains the default automation mode.
+- `SIMULATION` remains the default automation mode.
 
 ## Validation checklist
 

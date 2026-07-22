@@ -4,7 +4,7 @@
 
 | # | Guardrail |
 |---|---|
-| G1 | **Fail-closed, agent-mediated execution.** Execution is `OFF` by default; `SHADOW` never reaches the broker; and `SUPERVISED` requires per-intent approval. Separately authorized `ARMED` mode is time-limited and may place eligible orders without per-intent approval only through Codex and the official Robinhood MCP. It never bypasses strategy eligibility, data quality, allowlists, account verification, risk/price gates, pre-trade review, protection, idempotency, receipts, or the kill switch. |
+| G1 | **Fail-closed, agent-mediated execution.** `SIMULATION` is the default and can only observe real quotes plus journal hypothetical trades. Separately authorized `LIVE` is time-limited and may stage eligible long-option orders only through Codex and the official Robinhood MCP. It never bypasses strategy eligibility, data quality, allowlists, account verification, risk/price gates, pre-trade review and explicit broker confirmation, protection, idempotency, receipts, or the kill switch. |
 | G2 | **No naked short options.** The strategy schema cannot represent undefined-risk short positions (doc 08 §3). |
 | G3 | **Stops are mandatory.** Alert schema requires a stop; composer cannot publish without one (Discipline #2). |
 | G4 | **Daily kill switch.** Module halts new alerts at 100% daily-budget loss; platform-wide halt at configured account-level daily loss (default 3% of account). Reset requires next session + explicit re-arm. |

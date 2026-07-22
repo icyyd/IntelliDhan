@@ -27,7 +27,7 @@ from intellidhan_learning.paper import PaperExecutor, PaperTrade, performance_re
 from intellidhan_schemas import DataQuality, SessionState, Timeframe
 from intellidhan_schemas.signals import Alert, stable_plan_key
 
-from intellidhan_gateway.autotrade import AutotradeManager
+from intellidhan_gateway.autotrade import AutomationMode, AutotradeManager
 from intellidhan_gateway.terminal_store import TerminalStore
 from intellidhan_gateway.universe import load_live_symbols, security_records
 
@@ -588,8 +588,18 @@ class LiveLoop:
         ):
             await self._deliver(alert)
             return
-        # A SHADOW signal is visible in the terminal but never sent as a live
-        # trade alert and never enters the broker intent queue.
+        # Research alerts enter the read-only simulation queue so Codex can
+        # attach real option quotes and lifecycle events. They remain blocked
+        # from live execution by the explicit calibration/research gates.
+        if self.autotrade.effective_mode() == AutomationMode.SIMULATION:
+            try:
+                intent = self.autotrade.on_alert(alert)
+                self.publish_ws({
+                    "type": "autotrade_intent",
+                    "data": intent.model_dump(mode="json"),
+                })
+            except Exception as exc:
+                print(f"[autotrade] simulation intent creation failed: {exc}")
         self.publish_ws({"type": "shadow_signal", "data": alert.model_dump(mode="json")})
 
     def _claim_send(self, key: str) -> bool:

@@ -122,7 +122,7 @@ def test_invite_creates_trader_only_after_initial_admin(client, monkeypatch):
     )
     assert invited.status_code == 200
     assert invited.json()["user"]["role"] == "TRADER"
-    assert trader.put("/api/autotrade/policy", json={"mode": "OFF"}).status_code == 403
+    assert trader.put("/api/autotrade/policy", json={"mode": "SIMULATION"}).status_code == 403
 
     monkeypatch.setattr(
         gateway.loop.autotrade,
@@ -150,9 +150,9 @@ def test_durable_admin_can_update_shared_automation_policy(
         tmp_path / "autotrade-policy.yaml", tmp_path / "autotrade-state.json"
     )
     monkeypatch.setattr(gateway.loop, "autotrade", isolated)
-    response = client.put("/api/autotrade/policy", json={"mode": "OFF"})
+    response = client.put("/api/autotrade/policy", json={"mode": "SIMULATION"})
     assert response.status_code == 200
-    assert response.json()["mode"] == "OFF"
+    assert response.json()["mode"] == "SIMULATION"
 
 
 def test_registration_availability_uses_validated_invite(client, monkeypatch):
@@ -384,7 +384,7 @@ def test_accounts_are_isolated_and_admin_can_create_users(client, account_store)
     assert client.get("/api/budgets").json()["0DTE"]["daily_capital"] != 777
 
     assert viewer.post("/api/accounts", json={}).status_code == 403
-    assert viewer.put("/api/autotrade/policy", json={"mode": "OFF"}).status_code == 403
+    assert viewer.put("/api/autotrade/policy", json={"mode": "SIMULATION"}).status_code == 403
 
 
 def test_capital_limit_validation_does_not_mutate_shared_engine(client):

@@ -11,11 +11,11 @@ before changing research, data, authentication, execution, or deployment paths.
 
 The Codex bearer and operator control tokens are independent secrets:
 
-- `AUTOTRADE_CODEX_AGENT_TOKEN` authenticates only intent list, capital-review,
-  claim, and receipt endpoints. It must be new for the Codex cutover and must never be
-  shared with a retired runner.
-- `AUTOTRADE_CONTROL_TOKEN` authenticates operator policy, disarm, intent
-  creation, approval, and rejection endpoints when an ADMIN session is not used.
+- `AUTOTRADE_CODEX_AGENT_TOKEN` authenticates only intent list, option-selection,
+  Simulation receipt, capital-review, Live claim, and broker-receipt endpoints.
+  It must never be shared with a retired runner.
+- `AUTOTRADE_CONTROL_TOKEN` authenticates operator policy, switch-to-Simulation,
+  intent creation, and rejection endpoints when an ADMIN session is not used.
 - `ANTHROPIC_API_KEY` is an optional server-only research credential. It may
   call Claude only with the bounded multi-brain evidence packet in doc 15 and
   never authenticates an agent, broker action, intent, receipt, or MCP server.
@@ -65,8 +65,9 @@ bearer is the credential boundary and the literal claim body is defense in depth
   shared signals or constrain shared execution intents until a user-specific
   order-planning layer exists.
 - The shared execution policy separately requires a fresh official-MCP buying
-  power observation before claim and machine-blocks required capital above its
-  configured fraction. A passing check never upsizes an order.
+  power observation. The 9EMA selector sizes to the maximum whole-contract
+  position inside the configured fraction and every stricter per-order/daily
+  risk threshold; no individual threshold can be exceeded.
 - Broker execution events are global operational records and are returned only
   to ADMIN or legacy-owner sessions. TRADER and VIEWER trade-log responses omit
   them.
@@ -89,7 +90,7 @@ bearer is the credential boundary and the literal claim body is defense in depth
 - Missing provider data stays missing and visibly reduces coverage. Never fill a
   missing input with a favorable default or allow attention/sentiment to create
   a directional posture by itself.
-- A quarantined symbol blocks new intents, approvals, and claims. An already
+- A quarantined symbol blocks new Live intents and claims. An already
   claimed intent retains its broker-receipt path but placement authority is
   revoked.
 - Do not add or promote a strategy because it is popular or profitable on one

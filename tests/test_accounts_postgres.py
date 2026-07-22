@@ -53,12 +53,12 @@ def test_postgres_pre_codex_policy_is_disarmed_and_versioned():
             },
         )
         manager = AutotradeManager(state_store=store)
-        assert manager.policy.mode == AutomationMode.OFF
-        assert manager.policy.contract_version == "1.1"
+        assert manager.policy.mode == AutomationMode.SIMULATION
+        assert manager.policy.contract_version == "2.0"
         assert manager.policy.revision == 12
         persisted = store.get_setting("autotrade_policy")
-        assert persisted["mode"] == "OFF"
-        assert persisted["contract_version"] == "1.1"
+        assert persisted["mode"] == "SIMULATION"
+        assert persisted["contract_version"] == "2.0"
         now = datetime.now(timezone.utc).isoformat()
         first = {
             "event_id": "postgres-event-1", "seq": 1, "at": now,

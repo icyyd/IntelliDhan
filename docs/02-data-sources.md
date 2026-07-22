@@ -83,7 +83,7 @@ Two roles:
 | Account context | `get_accounts`, `get_portfolio`, `get_equity_positions`, `get_option_positions` | Capital-aware sizing; "you already hold X" conflict warnings on alerts |
 | Performance truth | `get_pnl_trade_history`, `get_realized_pnl` | Trade log reconciliation: realized results of taken alerts |
 | Discovery | `create_scan`, `run_scan`, watchlist tools | Server-side pre-screens for swing/HODL candidate universes |
-| Pre-trade review and placement | Runtime-advertised official MCP review and write tools; names and fields are never assumed | Codex follows doc 27. `OFF` and `SHADOW` cannot place; `SUPERVISED` requires per-intent approval; separately authorized, time-limited `ARMED` may place eligible intents without per-intent approval. |
+| Pre-trade review and placement | Runtime-advertised official MCP review and write tools; names and fields are never assumed | Codex follows doc 27. `SIMULATION` cannot place. Separately authorized, time-limited `LIVE` may stage eligible intents, but the broker preview must still be explicitly confirmed before placement. |
 
 ## 5. Telegram Integration
 

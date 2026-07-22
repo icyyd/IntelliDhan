@@ -444,7 +444,7 @@ def test_account_frontend_uses_accessible_forms_and_honest_capability_labels():
     assert '["ArrowLeft","ArrowRight","Home","End"]' in source
     assert "Alert sounds (coming soon)" in source
     assert "Initial password (12+ characters)" in source
-    assert "Shared automation policy" in source
+    assert "Two clear modes" in source
     assert "Changes affect every user and the connected Robinhood agent" in source
     assert "Play sound for new alerts" not in source
     assert "Temporary password" not in source

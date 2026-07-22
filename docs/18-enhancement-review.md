@@ -628,9 +628,9 @@ Guidelines:
 - card representations for wide evidence tables;
 - sticky plan summary;
 - track/pass gestures may be used;
-- manual order staging and `SUPERVISED` intents require explicit confirmation;
-  separately authorized, time-limited `ARMED` follows doc 27 and may execute an
-  eligible intent without per-intent approval;
+- Simulation never places orders; separately authorized, time-limited `LIVE`
+  follows doc 27 and requires explicit confirmation of the broker review before
+  it may execute an eligible intent;
 - test at 375px, 390px, 768px, 1024px, and 1440px;
 - no unintended horizontal page scrolling.
 

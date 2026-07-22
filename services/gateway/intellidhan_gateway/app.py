@@ -41,7 +41,7 @@ from intellidhan_gateway.auth import (
     websocket_principal,
 )
 from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisService
-from intellidhan_gateway.autotrade import AUTOTRADE_CONTRACT_VERSION
+from intellidhan_gateway.autotrade import AUTOTRADE_CONTRACT_VERSION, OptionCandidate
 from intellidhan_gateway.claude_research import ClaudeResearchReviewer
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.daily_brief import DailyBriefService
@@ -96,6 +96,16 @@ class CodexCapitalReviewRequest(BaseModel):
     observed_at: datetime
     currency: Literal["USD"]
     account_scope: Literal["ROBINHOOD_AGENTIC_ONLY"]
+
+
+class CodexOptionSelectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent: Literal["codex"]
+    buying_power: float = Field(gt=0)
+    observed_at: datetime
+    account_scope: Literal["ROBINHOOD_AGENTIC_ONLY"]
+    candidates: list[OptionCandidate] = Field(min_length=1, max_length=500)
 
 
 @asynccontextmanager
@@ -985,9 +995,16 @@ async def get_trade_log(
         "execution_events": (
             loop.autotrade.audit_log(limit) if broker_history_visible else []
         ),
+        "automation_trades": (
+            [
+                {**event, "mode": intent.mode.value}
+                for intent in loop.autotrade.list_intents()
+                for event in intent.trade_events
+            ][-limit:][::-1]
+            if broker_history_visible else []
+        ),
         "broker_history_visible": broker_history_visible,
-        "live_execution_enabled": loop.autotrade.effective_mode().value
-        in {"SUPERVISED", "ARMED"},
+        "live_execution_enabled": loop.autotrade.effective_mode().value == "LIVE",
     }
 
 
@@ -1003,7 +1020,7 @@ async def put_autotrade_policy(request: Request, updates: dict = Body(...)):
 @app.post("/api/autotrade/disarm")
 async def disarm_autotrade(request: Request):
     _require_control(request)
-    return loop.autotrade.update_policy({"mode": "OFF"}).model_dump(mode="json")
+    return loop.autotrade.update_policy({"mode": "SIMULATION"}).model_dump(mode="json")
 
 
 @app.post("/api/autotrade/intents/from-alert/{alert_id}")
@@ -1014,8 +1031,6 @@ async def create_intent_from_alert(alert_id: str, request: Request):
     if alert is None:
         raise HTTPException(status_code=404, detail="unknown alert")
     intent = loop.autotrade.on_alert(alert)
-    if intent is None:
-        raise HTTPException(status_code=409, detail="automation mode is OFF")
     return intent.model_dump(mode="json")
 
 
@@ -1084,6 +1099,39 @@ async def review_autotrade_capital(
             currency=payload.currency,
             account_scope=payload.account_scope,
         ).model_dump(mode="json")
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.post("/api/autotrade/intents/{intent_id}/option-selection")
+async def review_autotrade_option_selection(
+    intent_id: str,
+    payload: CodexOptionSelectionRequest,
+    _agent_auth: None = Depends(_require_codex_agent),
+):
+    """Validate a full official-MCP candidate set and select exact contract/size."""
+    try:
+        return loop.autotrade.attest_option_selection(
+            intent_id,
+            agent=payload.agent,
+            buying_power=payload.buying_power,
+            observed_at=payload.observed_at,
+            account_scope=payload.account_scope,
+            candidates=payload.candidates,
+        ).model_dump(mode="json")
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.post("/api/autotrade/intents/{intent_id}/simulation-receipt")
+async def record_autotrade_simulation(
+    intent_id: str, request: Request, payload: dict = Body(...)
+):
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
+    try:
+        return loop.autotrade.record_simulation(intent_id, payload).model_dump(
+            mode="json"
+        )
     except (ValueError, KeyError) as exc:
         raise _autotrade_error(exc) from exc
 

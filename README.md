@@ -2,12 +2,14 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-07-21 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** SPY/QQQ multi-timeframe 9EMA 0DTE SHADOW monitor with
-separate research-only delivery, underlying-level paper outcomes, an
-authenticated combined trade log, append-only intent events, and an enforced
-80% maximum share of fresh Robinhood buying power. Historical evidence failed
-the promotion bar, so the strategy is structurally non-executable and broker
-automation remains `OFF` by default.
+**Last system pass:** two-mode SPY/QQQ 9EMA auto-trader contract. `SIMULATION`
+uses real official-MCP option quotes and logs hypothetical entries/exits;
+time-limited `LIVE` stages long 0/1DTE orders only after evidence, health,
+capital, broker-review, and explicit confirmation gates. Selection prefers the
+highest feasible absolute delta, then uses the maximum whole-contract size
+inside the 80% buying-power, per-order, and daily-risk thresholds. Historical
+evidence still fails promotion, so the strategy remains Simulation-only and no
+real order was placed.
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -59,23 +61,23 @@ must not be presented as implemented.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
   forward evidence and fixed-rule backtests; signed-in configured-universe
   dossiers also expose the current SEC/news/social research snapshot.
-- Codex execution-intent bridge for Robinhood's official Trading MCP. The
-  project MCP declaration contains no credentials; contract v1.1 uses a new
-  Codex-only application bearer plus exact `codex` claims. Execution remains
-  `OFF` by default, broker authentication stays in the local Codex host, and
-  the former Claude execution contract is archived for possible reviewed reuse.
+- Codex execution-intent bridge for Robinhood's official Trading MCP. Contract
+  v2.0 exposes only `SIMULATION` and time-limited `LIVE`; the project declaration
+  contains no credentials and claims require the exact `codex` identity.
+  Simulation is the default, broker authentication stays in the local Codex
+  host, and the former Claude execution contract remains archived.
 - Research-only `EMA9_MTF_0DTE` monitor for completed-bar SPY/QQQ 9EMA reclaims
   with 5m/15m/1h/daily alignment, VWAP, RSI, relative-volume, time-window, and
   risk-geometry gates. Qualified observations are stored as `SHADOW` signals
   and underlying paper trades; they cannot reach Telegram or Robinhood. The
   chronological 55-day study failed its sample/stability bar, so no profitability
   or probability claim is made.
-- Authenticated `/api/trade-log` combines signal plans, paper outcomes, and
-  immutable, self-identifying per-event intent history; global broker events are
-  ADMIN/owner-only and remain visible even if replica snapshots race. Future
-  executable intents—including expired-lease reclaims—require a fresh
-  machine-checked buying-power review and carry an 80% ceiling, never an
-  instruction to risk or spend 80%.
+- Authenticated `/api/trade-log` combines signal plans, underlying paper
+  outcomes, real-quote option Simulation entries/exits with reasoning, and
+  immutable intent history. Global broker events remain ADMIN/owner-only.
+  Dynamic 9EMA option plans accept only fresh liquid 0/1DTE candidates, prefer
+  the highest affordable delta, and maximize whole contracts inside all active
+  capital and risk caps; long-option premium is treated as maximum order risk.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
@@ -134,10 +136,10 @@ requires the same-commit README update.
 | 24 | [Daily Brief Landing Integration](docs/24-daily-brief-landing-integration.md) | Private artifact adapter, freshness/fallback contract, setup-card UX, and deployment configuration |
 | 25 | [Signal Terminal Redesign](docs/25-signal-terminal-redesign.md) | Agent-readable Today hierarchy, multi-feed rank contract, rich alerts, strategy evidence boundaries, and rollout plan |
 | 26 | [UI Decluttering Pass](docs/26-ui-declutter-pass.md) | Reduced Today hierarchy, removed duplicate panels, and progressive-disclosure contract |
-| 27 | [Codex + Robinhood Execution](docs/27-codex-robinhood-execution.md) | Codex-only claim contract, official MCP setup, decommission migration, and fail-closed execution loop |
+| 27 | [Codex + Robinhood Execution](docs/27-codex-robinhood-execution.md) | Two-mode contract, highest-feasible-delta selection, maximum-threshold sizing, official MCP loop, and fail-closed execution |
 | 28 | [Platform Safety &amp; Data Integrity](docs/28-platform-safety-and-data-integrity.md) | Active token, research-isolation, persistence, no-lookahead, GitOps, and deployment controls |
 | 29 | [Brand System](docs/29-brand-system.md) | Approved D4.2 owl-and-lotus identity, SVG asset stack, palette, typography, usage rules, and product application |
-| 30 | [SPY/QQQ 9EMA 0DTE SHADOW Auto-Trader](docs/30-ema9-0dte-shadow-autotrader.md) | Exact multi-timeframe rules, historical evidence, research-only monitoring, 80% exposure ceiling, audit log, and live-promotion gates |
+| 30 | [SPY/QQQ 9EMA 0DTE Auto-Trader](docs/30-ema9-0dte-shadow-autotrader.md) | Exact rules, historical evidence, real-quote Simulation journal, 0/1DTE selection/sizing, trend-break exits, and Live-promotion gates |
 
 ## Core Product Tenets
 
@@ -155,4 +157,4 @@ label. Unvalidated evidence is capped below the live threshold, and no strategy
 is currently assumed qualified. The platform is not financial advice. It can
 create supervised, credential-free execution intents for OpenAI Codex using the
 official Robinhood Trading MCP; real execution remains fail-closed behind explicit evidence,
-allowlist, risk, owner, agent-review, protection, and reconciliation controls.
+allowlist, risk, owner, broker-review/confirmation, protection, and reconciliation controls.

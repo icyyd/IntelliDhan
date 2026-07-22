@@ -77,7 +77,7 @@ def calibrated(monkeypatch):
     monkeypatch.setattr(CalibrationMap, "load", classmethod(load))
 
 
-def live_policy(mode="ARMED"):
+def live_policy(mode="LIVE"):
     payload = {
         "mode": mode,
         "allowed_symbols": ["SPY"],
@@ -87,8 +87,8 @@ def live_policy(mode="ARMED"):
         "max_dollar_risk_per_order": 150,
         "max_daily_dollar_risk": 300,
     }
-    if mode == "ARMED":
-        payload["arm_for_minutes"] = 30
+    if mode == "LIVE":
+        payload["live_for_minutes"] = 30
     return payload
 
 
@@ -103,13 +103,45 @@ def pass_capital_review(manager, intent, *, buying_power=10_000.0):
     )
 
 
-def test_off_mode_creates_no_intent(tmp_path, calibrated):
+def option_candidate(
+    option_id: str,
+    *,
+    delta: float,
+    ask: float,
+    bid: float | None = None,
+    expiry_days: int = 0,
+    option_type: str = "call",
+    volume: int = 1_000,
+    open_interest: int = 5_000,
+) -> dict:
+    now = datetime.now(timezone.utc)
+    bid = ask - 0.05 if bid is None else bid
+    return {
+        "option_id": option_id,
+        "chain_symbol": "SPY",
+        "expiration_date": (now.date() + timedelta(days=expiry_days)).isoformat(),
+        "option_type": option_type,
+        "strike_price": 500.0,
+        "delta": delta,
+        "bid_price": bid,
+        "ask_price": ask,
+        "mark_price": (bid + ask) / 2,
+        "volume": volume,
+        "open_interest": open_interest,
+        "quote_at": now.isoformat(),
+        "tradable": True,
+    }
+
+
+def test_simulation_mode_creates_non_executable_intent(tmp_path, calibrated):
     manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
-    assert manager.on_alert(make_alert()) is None
-    assert manager.status()["effective_mode"] == "OFF"
+    manager.update_policy(live_policy("SIMULATION"))
+    intent = manager.on_alert(make_alert())
+    assert intent.status == IntentStatus.SHADOW
+    assert manager.status()["effective_mode"] == "SIMULATION"
 
 
-def test_armed_mode_is_allowlisted_risk_capped_and_idempotent(tmp_path, calibrated):
+def test_live_mode_is_allowlisted_risk_capped_and_idempotent(tmp_path, calibrated):
     manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
     manager.update_policy(live_policy())
     alert = make_alert()
@@ -121,11 +153,101 @@ def test_armed_mode_is_allowlisted_risk_capped_and_idempotent(tmp_path, calibrat
         "max_available_capital_fraction": 0.8,
         "capital_required": 5000.0,
         "fresh_buying_power_required": True,
-        "upsize_to_ceiling": False,
+        "use_maximum_within_all_caps": False,
+        "premium_at_risk_counts_as_dollar_risk": False,
     }
     assert "80%" in intent.order_plan["abort_if"][-1]
     assert manager.on_alert(alert).intent_id == intent.intent_id
     assert len(manager.intents) == 1
+
+
+def test_dynamic_option_selection_prefers_highest_feasible_delta_and_max_size(
+    tmp_path, calibrated
+):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy({
+        "mode": "SIMULATION",
+        "allowed_symbols": ["SPY", "QQQ"],
+        "allowed_strategies": ["EMA9_MTF_0DTE"],
+        "allowed_modules": ["0DTE"],
+        "allow_options": True,
+    })
+    alert = make_alert(
+        module=Module.ZDTE,
+        strategy="EMA9_MTF_0DTE",
+        status="SHADOW",
+        research_only=True,
+        capital_required=0,
+    )
+    intent = manager.on_alert(alert)
+    assert intent.status == IntentStatus.SHADOW
+    assert intent.order_plan["instrument"]["type"] == "OPTION_SELECTION_REQUIRED"
+
+    selected = manager.attest_option_selection(
+        intent.intent_id,
+        agent="codex",
+        buying_power=300,
+        observed_at=datetime.now(timezone.utc),
+        account_scope="ROBINHOOD_AGENTIC_ONLY",
+        candidates=[
+            option_candidate("too-expensive", delta=0.90, ask=2.50),
+            option_candidate("highest-feasible", delta=0.70, ask=2.20),
+            option_candidate("more-contracts-lower-delta", delta=0.50, ask=1.10),
+            option_candidate("wide-market", delta=0.80, ask=2.00, bid=1.50),
+        ],
+    )
+
+    assert selected.option_selection["option_id"] == "highest-feasible"
+    assert selected.option_selection["quantity"] == 1
+    assert selected.option_selection["capital_ceiling"] == 240.0
+    assert selected.option_selection["planned_debit"] == 220.0
+    assert selected.order_plan["capital_policy"]["capital_required"] == 220.0
+    assert selected.order_plan["protection"]["exit_style"] == "TREND_BREAK_FULL_EXIT"
+
+
+def test_simulation_records_real_quote_entry_exit_and_reasoning(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy({
+        "mode": "SIMULATION",
+        "allowed_symbols": ["SPY"],
+        "allowed_strategies": ["EMA9_MTF_0DTE"],
+        "allowed_modules": ["0DTE"],
+        "allow_options": True,
+    })
+    intent = manager.on_alert(make_alert(
+        module=Module.ZDTE,
+        strategy="EMA9_MTF_0DTE",
+        status="SHADOW",
+        research_only=True,
+        capital_required=0,
+    ))
+    manager.attest_option_selection(
+        intent.intent_id,
+        agent="codex",
+        buying_power=300,
+        observed_at=datetime.now(timezone.utc),
+        account_scope="ROBINHOOD_AGENTIC_ONLY",
+        candidates=[option_candidate("sim-contract", delta=0.65, ask=2.00)],
+    )
+    entered = manager.record_simulation(intent.intent_id, {
+        "event": "ENTRY",
+        "reason": "5-minute 9EMA reclaim with 15-minute trend aligned",
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+        "option_price": 2.00,
+        "underlying_price": 500.10,
+    })
+    assert entered.status == IntentStatus.EXECUTED
+    exited = manager.record_simulation(intent.intent_id, {
+        "event": "EXIT",
+        "reason": "closed 5-minute candle broke the 9EMA trend",
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+        "option_price": 2.40,
+        "underlying_price": 501.25,
+    })
+    assert exited.status == IntentStatus.CLOSED
+    assert [row["event"] for row in exited.trade_events] == ["ENTRY", "EXIT"]
+    assert exited.trade_events[-1]["realized_pnl"] == 40.0
+    assert "9EMA" in exited.trade_events[-1]["reason"]
 
 
 def test_claim_requires_fresh_machine_enforced_capital_review(tmp_path, calibrated):
@@ -188,20 +310,19 @@ def test_expired_claim_lease_requires_a_new_capital_review(tmp_path, calibrated)
 
 def test_intent_audit_log_preserves_lifecycle_events(tmp_path, calibrated):
     manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
-    manager.update_policy(live_policy("SUPERVISED"))
+    manager.update_policy(live_policy())
     intent = manager.on_alert(make_alert())
-    manager.approve(intent.intent_id)
     pass_capital_review(manager, intent)
     manager.claim(intent.intent_id, "codex")
     manager.record_receipt(
         intent.intent_id,
-        {"status": "EXECUTED", "broker_order_id": "rh-audit-1"},
+        {"status": "EXECUTED", "broker_order_id": "rh-audit-1", "reason": "entry filled"},
     )
 
     restored = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
     events = list(reversed(restored.audit_log()))
     assert [row["event"] for row in events] == [
-        "INTENT_CREATED", "OPERATOR_APPROVED", "CAPITAL_PREFLIGHT",
+        "INTENT_CREATED", "CAPITAL_PREFLIGHT",
         "CLAIM_ACQUIRED", "BROKER_RECEIPT"
     ]
     assert events[-1]["detail"] == "broker order rh-audit-1"
@@ -214,7 +335,7 @@ def test_durable_event_rows_survive_replica_last_writer_wins(tmp_path, calibrate
     first = AutotradeManager(
         tmp_path / "policy.yaml", tmp_path / "state.json", state_store=store
     )
-    first.update_policy(live_policy("SUPERVISED"))
+    first.update_policy(live_policy())
     intent = first.on_alert(make_alert())
     second = AutotradeManager(
         tmp_path / "policy.yaml", tmp_path / "state.json", state_store=store
@@ -259,15 +380,21 @@ def test_orphaned_replica_event_remains_visible_with_immutable_metadata(
     assert orphan["alert_id"] == "alr_replica_one"
     assert orphan["symbol"] == "SPY"
     assert orphan["strategy"] == "TEST_STRATEGY"
-    assert orphan["mode"] == "ARMED"
+    assert orphan["mode"] == "LIVE"
 
 
 def test_live_mode_requires_explicit_allowlists_and_time_limit(tmp_path, calibrated):
     manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
-    with pytest.raises(ValueError, match="arm_for_minutes"):
-        manager.update_policy({"mode": "ARMED"})
+    with pytest.raises(ValueError, match="live_for_minutes"):
+        manager.update_policy({"mode": "LIVE"})
     with pytest.raises(ValueError, match="symbol allowlist"):
-        manager.update_policy({"mode": "SUPERVISED"})
+        manager.update_policy({
+            "mode": "LIVE",
+            "live_for_minutes": 30,
+            "allowed_symbols": [],
+            "allowed_strategies": [],
+            "allowed_modules": [],
+        })
 
 
 def test_ineligible_alert_is_recorded_blocked_not_ready(tmp_path, monkeypatch):
@@ -308,14 +435,13 @@ def test_cancelled_alert_cannot_become_ready_after_data_recovers(
     assert "alert status is cancelled" in retired.reasons
 
 
-def test_supervised_approval_claim_receipt_and_persistence(tmp_path, calibrated):
+def test_live_claim_receipt_and_persistence(tmp_path, calibrated):
     policy = tmp_path / "policy.yaml"
     state = tmp_path / "state.json"
     manager = AutotradeManager(policy, state)
-    manager.update_policy(live_policy("SUPERVISED"))
+    manager.update_policy(live_policy())
     intent = manager.on_alert(make_alert())
-    assert intent.status == IntentStatus.AWAITING_APPROVAL
-    assert manager.approve(intent.intent_id).status == IntentStatus.READY
+    assert intent.status == IntentStatus.READY
     pass_capital_review(manager, intent)
     assert manager.claim(intent.intent_id, "codex").status == IntentStatus.CLAIMED
     executed = manager.record_receipt(
@@ -326,6 +452,7 @@ def test_supervised_approval_claim_receipt_and_persistence(tmp_path, calibrated)
             "average_price": 500.1,
             "filled_quantity": 10,
             "pretrade_alerts": [],
+            "reason": "reviewed trend entry filled",
         },
     )
     assert executed.status == IntentStatus.EXECUTED
@@ -333,12 +460,14 @@ def test_supervised_approval_claim_receipt_and_persistence(tmp_path, calibrated)
 
     restored = AutotradeManager(policy, state)
     assert restored.intents[intent.intent_id].status == IntentStatus.EXECUTED
-    assert restored.record_receipt(intent.intent_id, {"status": "CLOSED"}).status == (
+    assert restored.record_receipt(intent.intent_id, {
+        "status": "CLOSED", "reason": "trend broke below the 9EMA",
+    }).status == (
         IntentStatus.CLOSED
     )
 
 
-def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
+def test_symbol_data_gate_blocks_create_claim_and_claimed_intents(
     tmp_path, calibrated
 ):
     health = {"reason": None}
@@ -347,21 +476,20 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
         tmp_path / "state.json",
         symbol_gate=lambda _symbol: health["reason"],
     )
-    manager.update_policy(live_policy("SUPERVISED"))
+    manager.update_policy(live_policy())
     awaiting = manager.on_alert(make_alert())
     health["reason"] = "SPY market data is quarantined"
-    assert manager.approve(awaiting.intent_id).status == IntentStatus.BLOCKED
+    assert manager.claim(awaiting.intent_id, "codex").status == IntentStatus.BLOCKED
     assert health["reason"] in awaiting.reasons
 
     health["reason"] = None
     second = manager.on_alert(make_alert(alert_id="alr_test_spy_2"))
-    assert manager.approve(second.intent_id).status == IntentStatus.READY
+    assert second.status == IntentStatus.READY
     health["reason"] = "SPY market data is stale"
     assert manager.claim(second.intent_id, "codex").status == IntentStatus.BLOCKED
 
     health["reason"] = None
     third = manager.on_alert(make_alert(alert_id="alr_test_spy_3"))
-    manager.approve(third.intent_id)
     pass_capital_review(manager, third)
     manager.claim(third.intent_id, "codex")
     changed = manager.block_symbol("SPY", "SPY feed failed after claim")
@@ -371,7 +499,7 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
     assert third.claim["revoked_reason"] == "SPY feed failed after claim"
     executed = manager.record_receipt(
         third.intent_id,
-        {"status": "EXECUTED", "broker_order_id": "late-fill"},
+        {"status": "EXECUTED", "broker_order_id": "late-fill", "reason": "late entry fill"},
     )
     assert executed.status == IntentStatus.EXECUTED
     executed.valid_until = datetime.now(timezone.utc) - timedelta(seconds=1)
@@ -385,7 +513,9 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
         make_alert(alert_id="alr_test_spy_3", status="CANCELLED")
     )
     assert replayed.status == IntentStatus.EXECUTED
-    closed = manager.record_receipt(third.intent_id, {"status": "CLOSED"})
+    closed = manager.record_receipt(
+        third.intent_id, {"status": "CLOSED", "reason": "risk exit reconciled"}
+    )
     manager.block_symbol("SPY", "SPY feed remains unavailable")
     assert manager.on_alert(
         make_alert(alert_id="alr_test_spy_3", status="CANCELLED")
@@ -393,13 +523,15 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
     assert closed.status == IntentStatus.CLOSED
 
     late = manager.on_alert(make_alert(alert_id="alr_test_spy_late_cancel"))
-    manager.approve(late.intent_id)
     pass_capital_review(manager, late)
     manager.claim(late.intent_id, "codex")
     manager.record_receipt(late.intent_id, {"status": "CANCELLED"})
     late_fill = manager.record_receipt(
         late.intent_id,
-        {"status": "EXECUTED", "broker_order_id": "post-cancel-fill"},
+        {
+            "status": "EXECUTED", "broker_order_id": "post-cancel-fill",
+            "reason": "fill raced cancellation",
+        },
     )
     assert late_fill.status == IntentStatus.EXECUTED
 
@@ -409,7 +541,7 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
     assert "symbol market data is stale" in created_blocked.order_plan["abort_if"][4]
 
 
-def test_real_repo_policy_file_loads_and_defaults_to_off(tmp_path):
+def test_real_repo_policy_file_loads_and_defaults_to_simulation(tmp_path):
     """Regression test for a YAML 1.1 boolean-coercion bug: PyYAML's
     safe_load parses a bare (unquoted) `mode: OFF` as the Python boolean
     False, not the string "OFF". Because AutotradeManager() is constructed
@@ -420,10 +552,10 @@ def test_real_repo_policy_file_loads_and_defaults_to_off(tmp_path):
     policy_path = REPO_ROOT / "config" / "autotrade.yaml"
     assert policy_path.exists()
     manager = AutotradeManager(policy_path, tmp_path / "state.json")
-    assert manager.policy.mode == AutomationMode.OFF
-    assert manager.status()["effective_mode"] == "OFF"
+    assert manager.policy.mode == AutomationMode.SIMULATION
+    assert manager.status()["effective_mode"] == "SIMULATION"
     assert manager.status()["agent"] == "codex"
-    assert manager.status()["contract_version"] == "1.1"
+    assert manager.status()["contract_version"] == "2.0"
 
 
 def test_only_codex_can_claim_ready_intents(tmp_path, calibrated):
@@ -441,6 +573,35 @@ def test_only_codex_can_claim_ready_intents(tmp_path, calibrated):
     assert claimed.claim["agent"] == "codex"
 
 
+def test_switch_to_simulation_blocks_unclaimed_live_intent(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert())
+    manager.update_policy({"mode": "SIMULATION"})
+
+    blocked = manager.claim(intent.intent_id, "codex")
+
+    assert blocked.status == IntentStatus.BLOCKED
+    assert "switched to Simulation" in blocked.reasons[-1]
+
+
+def test_broker_receipt_rejects_account_and_credential_fields(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert())
+    pass_capital_review(manager, intent)
+    manager.claim(intent.intent_id, "codex")
+
+    with pytest.raises(ValueError, match="forbidden account or credential"):
+        manager.record_receipt(intent.intent_id, {
+            "status": "EXECUTED",
+            "reason": "entry filled",
+            "account_number": "must-not-be-persisted",
+        })
+
+    assert intent.status == IntentStatus.CLAIMED
+
+
 def test_pre_codex_policy_is_disarmed_and_normalized(tmp_path):
     policy = tmp_path / "policy.yaml"
     policy.write_text(
@@ -455,14 +616,14 @@ def test_pre_codex_policy_is_disarmed_and_normalized(tmp_path):
     manager = AutotradeManager(policy, tmp_path / "state.json")
 
     assert manager.policy.agent == "codex"
-    assert manager.policy.contract_version == "1.1"
-    assert manager.policy.mode == AutomationMode.OFF
-    assert manager.policy.armed_until is None
+    assert manager.policy.contract_version == "2.0"
+    assert manager.policy.mode == AutomationMode.SIMULATION
+    assert manager.policy.live_until is None
     assert manager.policy.revision == 10
     persisted = yaml.safe_load(policy.read_text())["autotrade"]
     assert persisted["agent"] == "codex"
-    assert persisted["contract_version"] == "1.1"
-    assert persisted["mode"] == "OFF"
+    assert persisted["contract_version"] == "2.0"
+    assert persisted["mode"] == "SIMULATION"
 
 
 def test_pre_codex_policy_in_settings_store_is_disarmed(tmp_path):
@@ -484,12 +645,12 @@ def test_pre_codex_policy_in_settings_store_is_disarmed(tmp_path):
         state_store=store,
     )
 
-    assert manager.policy.mode == AutomationMode.OFF
-    assert manager.policy.contract_version == "1.1"
+    assert manager.policy.mode == AutomationMode.SIMULATION
+    assert manager.policy.contract_version == "2.0"
     assert manager.policy.revision == 5
     persisted = store.get_setting("autotrade_policy")
-    assert persisted["mode"] == "OFF"
-    assert persisted["contract_version"] == "1.1"
+    assert persisted["mode"] == "SIMULATION"
+    assert persisted["contract_version"] == "2.0"
 
 
 def test_retired_agent_claim_is_revoked_but_keeps_receipt_path(
@@ -514,6 +675,9 @@ def test_retired_agent_claim_is_revoked_but_keeps_receipt_path(
 
     late_fill = restored.record_receipt(
         intent.intent_id,
-        {"status": "EXECUTED", "broker_order_id": "late-broker-truth"},
+        {
+            "status": "EXECUTED", "broker_order_id": "late-broker-truth",
+            "reason": "broker confirmed late fill",
+        },
     )
     assert late_fill.status == IntentStatus.EXECUTED

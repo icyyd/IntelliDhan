@@ -636,9 +636,8 @@ footer.disclaimer{margin:0 18px 16px; padding:0 8px; border:0; text-align:center
 .bd-save{background:var(--cyan); color:#11162A; border-radius:12px}
 .autotrade-panel .panel-head{align-items:center}
 .auto-mode{margin-left:auto; padding:4px 9px; border-radius:99px; font:750 10px var(--mono); letter-spacing:.04em; background:rgba(114,125,153,.12); color:var(--text-dim)}
-.auto-mode.shadow{background:rgba(246,200,107,.12); color:var(--gold)}
-.auto-mode.supervised{background:rgba(145,164,255,.14); color:var(--cyan)}
-.auto-mode.armed{background:rgba(94,234,212,.13); color:var(--teal); box-shadow:0 0 0 3px rgba(94,234,212,.06)}
+.auto-mode.simulation{background:rgba(145,164,255,.14); color:var(--cyan)}
+.auto-mode.live{background:rgba(94,234,212,.13); color:var(--teal); box-shadow:0 0 0 3px rgba(94,234,212,.06)}
 .auto-agent{display:flex; align-items:center; gap:11px; padding:12px; border:1px solid var(--border); border-radius:17px; background:rgba(255,255,255,.03)}
 .auto-agent b{display:block; font-size:12px}
 .auto-agent small{display:block; color:var(--text-faint); font-size:10px; line-height:1.45; margin-top:2px}
@@ -662,6 +661,13 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
 .auto-check input{accent-color:var(--cyan)}
 .auto-warning{display:flex; align-items:flex-start; gap:9px; padding:12px; border:1px solid rgba(251,113,133,.22); border-radius:15px; background:rgba(251,113,133,.07); color:#FCA5B3; font-size:10.5px; line-height:1.5}
 .auto-warning svg{width:15px; height:15px; flex:none; margin-top:1px}
+.auto-journal{padding:12px; border:1px solid var(--border); border-radius:17px; background:rgba(255,255,255,.025)}
+.auto-journal>strong{display:block; font-size:12px; margin-bottom:8px}
+.auto-journal-row{display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:start; padding:8px 0; border-top:1px solid var(--border)}
+.auto-journal-row:first-of-type{border-top:0}
+.auto-journal-row b{font:750 10px var(--mono); color:var(--cyan)}
+.auto-journal-row span{font-size:10.5px; line-height:1.4; color:var(--text-dim)}
+.auto-journal-row small{font:10px var(--mono); color:var(--text-faint)}
 .auto-disarm{padding:8px 13px; background:rgba(251,113,133,.08); color:var(--red)}
 
 @media (max-width:1180px){
@@ -1676,11 +1682,11 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
     </section>
 
     <section class="panel autotrade-panel" aria-labelledby="autotradeTitle">
-      <div class="panel-head"><h2 id="autotradeTitle">Automation</h2><span class="auto-mode off" id="autotradeMode">OFF</span></div>
+      <div class="panel-head"><h2 id="autotradeTitle">Auto-trader</h2><span class="auto-mode simulation" id="autotradeMode">SIMULATION</span></div>
       <div class="auto-stats">
         <span><b id="autotradeReady">0</b><small>Ready</small></span>
-        <span><b id="autotradeApproval">0</b><small>Needs approval</small></span>
-        <span><b id="autotradeExpiry">—</b><small>Armed until</small></span>
+        <span><b id="autotradeApproval">0</b><small>Open trades</small></span>
+        <span><b id="autotradeExpiry">Always</b><small>Live until</small></span>
       </div>
       <button class="auto-configure" id="autotradeConfigure" type="button" onclick="openAutotrade()"><svg class="icon"><use href="#i-gear"/></svg> Review settings</button>
     </section>
@@ -1800,26 +1806,24 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 <!-- Agent-mediated auto-trade policy; Robinhood credentials never enter this form. -->
 <dialog id="autotrade-dialog">
   <div class="bd-head2">
-    <div><h2>Auto-trade policy</h2><div class="dialog-subtitle">IntelliDhan governs intents; OpenAI Codex executes through Robinhood MCP.</div></div>
+    <div><h2>9EMA scalp trader</h2><div class="dialog-subtitle">SPY and QQQ · 0/1DTE · live option quotes · complete entry and exit journal.</div></div>
     <button class="bd-close" onclick="document.getElementById('autotrade-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
   <div class="auto-form">
-    <div class="auto-agent auto-wide"><span class="stat-bubble"><svg class="icon"><use href="#i-user"/></svg></span><span><b>Shared automation policy</b><small>Changes affect every user and the connected Robinhood agent. The browser never retains the automation control token.</small></span></div>
-    <label class="auto-field"><span>Mode</span><select id="autoMode"><option>OFF</option><option>SHADOW</option><option>SUPERVISED</option><option>ARMED</option></select></label>
-    <label class="auto-field"><span>Arm for minutes</span><input type="number" id="autoMinutes" min="1" max="480" value="30"></label>
+    <div class="auto-agent auto-wide"><span class="stat-bubble"><svg class="icon"><use href="#i-user"/></svg></span><span><b>Two clear modes</b><small>Simulation watches real quotes without orders. Live stages real long-option orders through the official Robinhood connection. Changes affect every user and the connected Robinhood agent.</small></span></div>
+    <label class="auto-field"><span>Mode</span><select id="autoMode"><option>SIMULATION</option><option>LIVE</option></select></label>
+    <label class="auto-field"><span>Live for minutes</span><input type="number" id="autoMinutes" min="1" max="480" value="30"></label>
     <label class="auto-field"><span>Minimum confidence (%)</span><input type="number" id="autoConfidence" min="50" max="95" value="75"></label>
     <label class="auto-field"><span>Max risk / order ($)</span><input type="number" id="autoOrderRisk" min="1" value="250"></label>
     <label class="auto-field"><span>Max daily risk ($)</span><input type="number" id="autoDailyRisk" min="1" value="500"></label>
     <label class="auto-field"><span>Max open intents</span><input type="number" id="autoOpenIntents" min="1" max="20" value="1"></label>
-    <label class="auto-field auto-wide"><span>Allowed symbols</span><input type="text" id="autoSymbols" placeholder="SPY, QQQ"></label>
-    <label class="auto-field auto-wide"><span>Allowed strategies</span><input type="text" id="autoStrategies" placeholder="ORB_BREAKOUT"></label>
-    <label class="auto-field auto-wide"><span>Allowed modules</span><input type="text" id="autoModules" placeholder="0DTE, SWING"></label>
-    <label class="auto-check auto-wide"><input type="checkbox" id="autoOptions"><span>Allow long option purchases</span></label>
-    <div class="auto-warning auto-wide"><svg class="icon"><use href="#i-alert"/></svg><span><b>This policy is shared across the deployment. ARMED mode can place real orders without per-order approval.</b> It is time-limited and still requires historical reliability, allowed-symbol, risk, price-zone, agent-review, and protection checks to pass.</span></div>
+    <div class="auto-agent auto-wide"><span class="stat-bubble"><svg class="icon"><use href="#i-bolt"/></svg></span><span><b>Contract selection</b><small>Chooses the highest feasible delta from liquid 0/1DTE contracts, then uses the maximum whole-contract size inside the 80% buying-power, order-risk, and daily-risk limits.</small></span></div>
+    <div class="auto-journal auto-wide"><strong>Recent trade journal</strong><div id="autoTradeJournal"><span class="empty">No option entries or exits recorded yet.</span></div></div>
+    <div class="auto-warning auto-wide"><svg class="icon"><use href="#i-alert"/></svg><span><b>Live uses real funds and remains time-limited.</b> Every order still needs a fresh broker review and confirmation. The current 9EMA model remains Simulation-only until its forward results pass the live promotion gates.</span></div>
   </div>
   <div class="bd-foot2">
     <button class="bd-save" onclick="saveAutotrade()">Save policy</button>
-    <button class="auto-disarm" onclick="disarmAutotrade()">Disarm now</button>
+    <button class="auto-disarm" onclick="disarmAutotrade()">Switch to Simulation</button>
     <span class="bd-status" id="autotrade-status" role="status"></span>
   </div>
 </dialog>
@@ -2149,16 +2153,15 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   document.getElementById("focusGrid").innerHTML=`<div class="empty">Sign in to build the current focus list.</div>`;
   document.getElementById("curatedFocusList").innerHTML=`<div class="empty">Sign in to load candidates.</div>`;
   document.getElementById("focusFeedStatus").replaceChildren();
-  document.getElementById("autotradeMode").textContent="OFF";
-  document.getElementById("autotradeMode").className="auto-mode off";
+  document.getElementById("autotradeMode").textContent="SIMULATION";
+  document.getElementById("autotradeMode").className="auto-mode simulation";
   document.getElementById("autotradeReady").textContent="0";
   document.getElementById("autotradeApproval").textContent="0";
-  document.getElementById("autotradeExpiry").textContent="—";
+  document.getElementById("autotradeExpiry").textContent="Always";
   document.getElementById("budgets-body").textContent="Sign in to load your capital limits.";
   document.getElementById("budgets-status").textContent="";
-  document.getElementById("autoMode").value="OFF";
-  ["autoConfidence","autoOrderRisk","autoDailyRisk","autoOpenIntents","autoSymbols","autoStrategies","autoModules"].forEach(id=>{ document.getElementById(id).value=""; });
-  document.getElementById("autoOptions").checked=false;
+  document.getElementById("autoMode").value="SIMULATION";
+  ["autoConfidence","autoOrderRisk","autoDailyRisk","autoOpenIntents"].forEach(id=>{ document.getElementById(id).value=""; });
   document.getElementById("autotrade-status").textContent="";
   document.getElementById("analysisResults").hidden=true;
   const ownerButton=document.getElementById("ownerButton");
@@ -3695,19 +3698,32 @@ document.addEventListener("keydown", e=>{
 let autotradeCache=null;
 function renderAutotrade(data){
   autotradeCache=data;
-  const mode=data.effective_mode||"OFF";
+  const mode=data.effective_mode||"SIMULATION";
   const badge=document.getElementById("autotradeMode");
   badge.textContent=mode;
   badge.className="auto-mode "+mode.toLowerCase();
   document.getElementById("autotradeReady").textContent=data.ready||0;
-  document.getElementById("autotradeApproval").textContent=data.awaiting_approval||0;
-  const until=data.policy?.armed_until;
+  document.getElementById("autotradeApproval").textContent=data.open_trades||0;
+  const until=data.policy?.live_until;
   document.getElementById("autotradeExpiry").textContent=until
-    ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "—";
+    ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "Always";
 }
 async function refreshAutotrade(){
   if(!ownerAuthenticated){ autotradeCache=null; return; }
-  try{ renderAutotrade(await fetchJSON("/api/autotrade")); }catch(e){}
+  try{
+    const [state,log]=await Promise.all([fetchJSON("/api/autotrade"),fetchJSON("/api/trade-log?limit=8")]);
+    renderAutotrade(state); renderAutotradeJournal(log.automation_trades||[]);
+  }catch(e){}
+}
+function renderAutotradeJournal(rows){
+  const el=document.getElementById("autoTradeJournal");
+  if(!el) return;
+  if(!rows.length){ el.innerHTML=`<span class="empty">No option entries or exits recorded yet.</span>`; return; }
+  el.innerHTML=rows.slice(0,6).map(row=>{
+    const pnl=Number.isFinite(Number(row.realized_pnl))?` · ${money(Number(row.realized_pnl))}`:"";
+    const price=Number(row.option_price)>0?`$${Number(row.option_price).toFixed(2)}`:"—";
+    return `<div class="auto-journal-row"><b>${esc(row.event||"UPDATE")}</b><span>${esc(row.reason||"Reason unavailable")}</span><small>${price}${esc(pnl)}</small></div>`;
+  }).join("");
 }
 function listValue(values){ return (values||[]).join(", "); }
 function parseList(value){ return [...new Set(value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean))]; }
@@ -3720,15 +3736,11 @@ async function openAutotrade(){
   dlg.showModal();
   await refreshAutotrade();
   const p=autotradeCache?.policy||{};
-  document.getElementById("autoMode").value=p.mode||"OFF";
+  document.getElementById("autoMode").value=p.mode||"SIMULATION";
   document.getElementById("autoConfidence").value=Math.round((p.min_confidence||.75)*100);
   document.getElementById("autoOrderRisk").value=p.max_dollar_risk_per_order||250;
   document.getElementById("autoDailyRisk").value=p.max_daily_dollar_risk||500;
   document.getElementById("autoOpenIntents").value=p.max_open_intents||1;
-  document.getElementById("autoSymbols").value=listValue(p.allowed_symbols);
-  document.getElementById("autoStrategies").value=listValue(p.allowed_strategies);
-  document.getElementById("autoModules").value=listValue(p.allowed_modules);
-  document.getElementById("autoOptions").checked=Boolean(p.allow_options);
 }
 async function autotradeRequest(path,method,payload){
   return fetchJSON(path,{method,headers:{"Content-Type":"application/json"},body:payload?JSON.stringify(payload):undefined});
@@ -3742,17 +3754,17 @@ async function saveAutotrade(){
     max_dollar_risk_per_order:Number(document.getElementById("autoOrderRisk").value),
     max_daily_dollar_risk:Number(document.getElementById("autoDailyRisk").value),
     max_open_intents:Number(document.getElementById("autoOpenIntents").value),
-    allowed_symbols:parseList(document.getElementById("autoSymbols").value),
-    allowed_strategies:parseList(document.getElementById("autoStrategies").value),
-    allowed_modules:parseList(document.getElementById("autoModules").value),
-    allow_options:document.getElementById("autoOptions").checked,
+    allowed_symbols:["SPY","QQQ"],
+    allowed_strategies:["EMA9_MTF_0DTE"],
+    allowed_modules:["0DTE"],
+    allow_options:true,
   };
-  if(mode==="ARMED") payload.arm_for_minutes=Number(document.getElementById("autoMinutes").value);
+  if(mode==="LIVE") payload.live_for_minutes=Number(document.getElementById("autoMinutes").value);
   status.textContent="Saving…"; status.className="bd-status";
   try{
     await autotradeRequest("/api/autotrade/policy","PUT",payload);
     await refreshAutotrade();
-    status.textContent=mode==="ARMED"?"Armed for the requested window.":"Policy saved.";
+    status.textContent=mode==="LIVE"?"Live window staged. Eligible orders still require broker review and confirmation.":"Simulation is watching real prices.";
     status.className="bd-status ok";
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; if(e.status===401) openOwnerDialog(); }
 }
@@ -3761,9 +3773,9 @@ async function disarmAutotrade(){
   status.textContent="Disarming…"; status.className="bd-status";
   try{
     await autotradeRequest("/api/autotrade/disarm","POST");
-    document.getElementById("autoMode").value="OFF";
+    document.getElementById("autoMode").value="SIMULATION";
     await refreshAutotrade();
-    status.textContent="Disarmed. New alerts will not create execution intents.";
+    status.textContent="Simulation active. No real orders can be claimed.";
     status.className="bd-status ok";
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; if(e.status===401) openOwnerDialog(); }
 }

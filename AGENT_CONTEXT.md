@@ -1,5 +1,38 @@
 # IntelliDhan Agent Context
 
+# 2026-07-21 — Two-mode 9EMA option lifecycle
+
+- Continued draft PR #17 on `codex/9ema-0dte-autotrader`; no merge, deploy,
+  execution-mode change, or broker order was performed.
+- Auto-trade contract v2.0 now exposes only `SIMULATION` and time-limited
+  `LIVE`. All pre-v2 policies migrate fail-closed to Simulation. Legacy
+  in-flight broker states retain only their receipt-reconciliation path.
+- Default policy is Simulation, SPY/QQQ, `EMA9_MTF_0DTE`, 0DTE module, and
+  long options. Live requires `live_for_minutes` and still enforces explicit
+  calibration, allowlist, health, risk, fresh-capital, claim, broker-review,
+  confirmation, protection, and reconciliation gates.
+- Added official-MCP option-candidate attestation. The app validates 0/1DTE,
+  direction, tradability, quote age, two-sided market, ≤10% spread, volume ≥100,
+  open interest ≥500, and one-contract affordability. It selects the highest
+  absolute delta among eligible contracts, with spread/OI tie-breakers.
+- Position size is the maximum whole-contract quantity inside the minimum of
+  80% of fresh buying power, per-order dollar risk, and remaining daily dollar
+  risk. Long-option debit is treated as maximum order risk. No equity fallback,
+  short opening, averaging down, or market-order substitution is allowed.
+- Simulation receipts log real observed option and underlying prices, selected
+  contract, size, timestamps, entry/exit reason, return, and realized P&L. The
+  authenticated trade log and compact Automation journal expose these events.
+- The automated management plan holds the full scalp until a completed
+  5-minute 9EMA break, opposing 15-minute trend, hard stop/data-quality failure,
+  or broker sellout deadline; after +1R its risk reference moves to breakeven.
+- Runtime Robinhood schemas were inspected. Current tools expose chain dates,
+  contract IDs/tradability/sellout time, real-time option delta/spread/volume/OI,
+  and single-leg review. The review tool requires the preview to be shown and
+  explicitly confirmed before any placement, even when broker alerts are empty.
+- `EMA9_MTF_0DTE` remains `live_eligible=false` because the existing historical
+  evidence is sparse and unstable. Simulation may collect forward option-price
+  evidence; Live cannot override this gate.
+
 ## 2026-07-21 — SPY/QQQ 9EMA 0DTE SHADOW monitor
 
 - Active isolated branch/worktree: `codex/9ema-0dte-autotrader` at

@@ -1,6 +1,6 @@
-# SPY/QQQ 9EMA 0DTE SHADOW Auto-Trader
+# SPY/QQQ 9EMA 0DTE Auto-Trader
 
-**Status:** implemented for monitored research and underlying-level paper tracking; **not live eligible**
+**Status:** real-quote Simulation lifecycle implemented; **not live eligible**
 
 **Strategy key:** `EMA9_MTF_0DTE`
 
@@ -15,9 +15,10 @@ records qualified signals and their paper outcomes, but it cannot create a live
 alert or executable broker intent. Historical results were too sparse and
 regime-dependent to justify real-money promotion.
 
-This is deliberate. “Auto-trader” currently means automated monitoring,
-deterministic paper execution, and durable audit collection. Live orders remain
-behind the evidence and operator gates in docs 27 and 28.
+The operator surface has only `SIMULATION` and `LIVE`. Simulation is the safe
+default and records real option-quote entries/exits without orders. Live is
+time-limited, but the strategy's explicit evidence gate still blocks it from
+creating an executable order.
 
 ## Exact setup
 
@@ -41,9 +42,10 @@ ET. A setup must meet every condition below:
 
 The strategy is marked `live_eligible=false` and `shadow_monitor=true` in code.
 The normal engine therefore places a qualifying setup into a separate research
-queue. The live loop persists a `SHADOW` alert and paper trade, updates separate
-research concurrency controls, and publishes a `shadow_signal` event. It does
-not send Telegram trade instructions or call the broker-intent path.
+queue. The live loop persists a `SHADOW` alert and underlying paper trade,
+updates separate research controls, publishes a `shadow_signal` event, and
+creates a non-executable Simulation intent for Codex to enrich with official
+Robinhood option quotes. It does not send Telegram trade instructions.
 
 ## Historical result
 
@@ -74,32 +76,45 @@ dedicated Robinhood Agentic account and submit it to the authenticated
 and blocks required capital above that ceiling.
 An expired two-minute claim lease cannot be reclaimed with the old observation;
 Codex must submit another fresh capital review first.
-Eighty percent is a maximum exposure, not a sizing target: per-order dollar
-risk, daily loss, open-intent, liquidity, and protective-exit limits may reduce
-the order substantially. The system never upsizes a small risk-defined plan to
-consume the ceiling.
+The selector uses the largest whole-contract position inside every active
+threshold. It caps capital at the lesser of 80% of fresh buying power,
+per-order dollar risk, and remaining daily dollar risk. It filters 0/1DTE
+contracts for direction, fresh two-sided quotes, ≤10% spread, minimum volume and
+open interest, and affordability; among survivors it chooses the highest
+absolute delta, then sizes the maximum whole-contract count at the current ask.
+For long options, premium paid is treated as maximum order risk.
 
-The application does not store Robinhood credentials, account identifiers, or
-buying power. Contract selection and every pre-trade review must use the official
-runtime MCP schema. Until exact same-day option selection, spread/liquidity
-validation, protective exits, and receipt reconciliation pass in SHADOW and
-SUPERVISED modes, the paper ledger measures the underlying plan only and must
-not be presented as option-premium performance.
+The application does not store Robinhood credentials or account identifiers.
+It stores the timestamped buying-power amount used for each sizing decision so
+the threshold calculation is auditable. Contract selection and every pre-trade
+review must use the official runtime MCP schema. Option-premium performance is reported only when a
+Simulation intent has a validated contract plus real-quote entry and exit
+receipts; the older underlying paper ledger remains separately labeled.
+
+## Winner management
+
+The auto-trade plan uses `TREND_BREAK_FULL_EXIT`: it holds the full position
+while completed 5-minute candles stay on the trend side of the 9EMA. After
++1R, the risk reference moves to breakeven. It exits every contract on a closed
+5-minute 9EMA break, opposing 15-minute trend, hard stop, data-quality failure,
+or the broker contract's sellout deadline. It never averages down and does not
+use fixed profit targets that prematurely cap a runner.
 
 ## Audit surface
 
 Authenticated users can request `GET /api/trade-log` to retrieve, newest first:
 
 - persisted signal plans, including `research_only` and `SHADOW` status;
-- underlying-level paper trades and outcomes; and
+- underlying-level paper trades and outcomes;
+- real-option Simulation entry/exit events with their reasoning; and
 - append-only execution-intent lifecycle events, including claims and broker
   receipts for other eligible strategies. These global broker records are
   visible only to ADMIN and legacy-owner sessions; other accounts receive an
   empty execution-event list.
 
-Every future broker intent includes the 80% buying-power ceiling, required fresh
-buying-power check, `upsize_to_ceiling=false`, dedicated Agentic-account scope,
-protective-exit requirement, and the existing abort conditions.
+Every future broker intent includes the multi-cap maximum sizing rule, required
+fresh buying-power check, dedicated Agentic-account scope, protective-exit
+requirement, broker review plus confirmation, and the existing abort conditions.
 
 ## Promotion checklist
 
@@ -113,10 +128,10 @@ rule set:
    after option spread, slippage, and fees.
 3. Same-day Robinhood contract discovery with minimum volume/open interest,
    maximum spread, appropriate delta, and no silent equity fallback.
-4. SHADOW reconciliation of signal, selected contract, hypothetical fill,
+4. Simulation reconciliation of signal, selected contract, hypothetical fill,
    protection, outcome, and expiry.
 5. An independently reviewed calibration artifact with
-   `live_eligible: true`, followed by explicit operator authorization for
-   `SUPERVISED`. `ARMED` remains a separate, time-limited decision.
+   `live_eligible: true`, followed by explicit, time-limited operator selection
+   of `LIVE` and broker-required confirmation of each reviewed order.
 
 No step may be bypassed because a recent validation slice looks favorable.

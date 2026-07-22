@@ -65,7 +65,7 @@ Three-zone cockpit:
 
 ### 2.4 Settings
 Account, per-user capital and risk limits, confidence threshold (raise-only),
-Telegram pairing (QR), auto-trade policy (`OFF` by default), read-only Codex MCP
+Telegram pairing (QR), auto-trade policy (`SIMULATION` by default), read-only Codex MCP
 connection status, universe editor, alert sounds, and theme. MCP authentication
 and Robinhood credentials remain on the trusted Codex host and never enter the
 web app. Use the plain-language UI vocabulary in
@@ -77,9 +77,9 @@ details only.
 - **5-second rule:** any alert comprehensible collapsed in ≤ 5 s (tested in usability pass).
 - **No dead modals:** progressive disclosure via expansion, drawers, and
   popovers. Manual staged-order actions show the full ticket, risk sentence, and
-  explicit confirmation. The separate policy dialog must make the different
-  `OFF` / `SHADOW` / `SUPERVISED` / `ARMED` consequences unmistakable; doc 27
-  remains authoritative.
+  explicit confirmation. The separate policy dialog must make the difference
+  between `SIMULATION` and time-limited `LIVE` unmistakable; doc 27 remains
+  authoritative.
 - **Keyboard-first power use:** `g 0` (0DTE), `g s` (swings), `j/k` alert nav, `t` track, `c` chart, `/` command palette (jump to symbol, action search).
 - **Latency honesty:** every live number carries a staleness indicator when > 5 s old; degraded data grays out affected cards with reason.
 - **Mobile PWA:** responsive down to 390 px — alert feed + briefing + log first; chart rack collapses to single chart; cards optimized for one-thumb triage (swipe: track/pass).
