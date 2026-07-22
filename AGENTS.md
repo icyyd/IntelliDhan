@@ -25,16 +25,20 @@ codex mcp login robinhood-trading
   Never guess tool names or fields or use an unofficial Robinhood client.
 - Robinhood credentials, cookies, tokens, account numbers, passwords, and MFA
   secrets never enter IntelliDhan, its prompts, logs, or version control.
-- The claim contract is v1.1 and requires the exact body
-  `{"agent":"codex"}`. Other identities are rejected.
+- The claim contract is v2.0 and accepts only the `codex` agent identity plus a
+  positive fresh underlying price and timezone-aware observation timestamp.
+  The identity fragment remains exactly `{"agent":"codex"}`; the complete
+  allowlisted body adds only `underlying_price` and `observed_at`. Other fields
+  and identities are rejected.
 - Real orders are allowed only in the dedicated Robinhood Agentic account.
   Other connected accounts are read-only for this workflow.
-- `OFF` is the default. `SHADOW` is the safe validation path. `SUPERVISED`
-  requires explicit approval for every intent. Do not enable unattended
-  `ARMED` execution without a new, explicit user instruction after reviewing
-  the current account, MCP tools, policy, limits, and shadow results.
+- There are only two operator modes: `SIMULATION` is the default and can only
+  observe real quotes plus record hypothetical entries/exits; `LIVE` is
+  time-limited and may stage real long-option orders only after reviewing the
+  current account, MCP tools, policy, limits, and simulation results.
 - Before each real order, use the connected MCP's pre-trade review tool and
-  follow the fail-closed execution loop in doc 27 without omission.
+  present the preview for explicit confirmation before placement. Follow the
+  fail-closed execution loop in doc 27 without omission.
 
 ## Decommission boundary
 

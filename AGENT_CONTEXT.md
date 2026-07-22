@@ -1,5 +1,109 @@
 # IntelliDhan Agent Context
 
+# 2026-07-21 — Two-mode 9EMA option lifecycle
+
+- Independent review of checkpoint `bcbd8fd` found bearish-plan, kill-switch,
+  migration, claim-time risk, entry-zone/sellout, receipt-schema, Simulation
+  evidence, durable-journal, and ordering defects. The corrective pass supports
+  bearish signals only as long puts; preserves the underlying entry zone;
+  requires authoritative sellout time; rechecks fresh option and underlying
+  quotes plus current capital/risk caps at claim; bounds claim leases; and
+  revokes placement authority on Live expiry or a switch to Simulation.
+- Simulation entries now require a fresh healthy two-sided official-MCP quote
+  that still passes spread, volume, open-interest, sellout, selection-age, and
+  underlying entry-zone gates. Broker receipts use an allowlisted schema,
+  bind fill identity/quantity to the selected option, normalize prices, and
+  compute exit P&L server-side. Full receipt and trade details are copied into
+  immutable event rows and the UI sorts the combined journal globally newest
+  first.
+- Re-review then closed a stale-selection refresh dead end, kept failed exit or
+  protection attempts in `EXECUTED` exposure until a `CLOSED` broker receipt,
+  bound Simulation quotes to the selected option ID, reran current allowlists,
+  option permissions, calibration, and concurrency policy at claim, allowed a
+  data-quality-triggered Simulation exit to be recorded, and sourced the trade
+  journal from immutable events so orphaned replica events remain visible.
+- Final re-review found that a static option plan could bypass a later
+  `allow_options=false` policy. Live v2 now rejects static option plans at
+  creation and claim, detects option use from the order-plan instrument rather
+  than only dynamic-selection metadata, and requires dynamic attestation for
+  every option order.
+- Continued draft PR #17 on `codex/9ema-0dte-autotrader`; no merge, deploy,
+  execution-mode change, or broker order was performed.
+- Auto-trade contract v2.0 now exposes only `SIMULATION` and time-limited
+  `LIVE`. All pre-v2 policies migrate fail-closed to Simulation. Legacy
+  in-flight broker states retain only their receipt-reconciliation path.
+- Default policy is Simulation, SPY/QQQ, `EMA9_MTF_0DTE`, 0DTE module, and
+  long options. Live requires `live_for_minutes` and still enforces explicit
+  calibration, allowlist, health, risk, fresh-capital, claim, broker-review,
+  confirmation, protection, and reconciliation gates.
+- Added official-MCP option-candidate attestation. The app validates 0/1DTE,
+  direction, tradability, quote age, two-sided market, ≤10% spread, volume ≥100,
+  open interest ≥500, and one-contract affordability. It selects the highest
+  absolute delta among eligible contracts, with spread/OI tie-breakers.
+- Position size is the maximum whole-contract quantity inside the minimum of
+  80% of fresh buying power, per-order dollar risk, and remaining daily dollar
+  risk. Long-option debit is treated as maximum order risk. No equity fallback,
+  short opening, averaging down, or market-order substitution is allowed.
+- Simulation receipts log real observed option and underlying prices, selected
+  contract, size, timestamps, entry/exit reason, return, and realized P&L. The
+  authenticated trade log and compact Automation journal expose these events.
+- The automated management plan holds the full scalp until a completed
+  5-minute 9EMA break, opposing 15-minute trend, hard stop/data-quality failure,
+  or broker sellout deadline; after +1R its risk reference moves to breakeven.
+- Runtime Robinhood schemas were inspected. Current tools expose chain dates,
+  contract IDs/tradability/sellout time, real-time option delta/spread/volume/OI,
+  and single-leg review. The review tool requires the preview to be shown and
+  explicitly confirmed before any placement, even when broker alerts are empty.
+- `EMA9_MTF_0DTE` remains `live_eligible=false` because the existing historical
+  evidence is sparse and unstable. Simulation may collect forward option-price
+  evidence; Live cannot override this gate.
+
+## 2026-07-21 — SPY/QQQ 9EMA 0DTE SHADOW monitor
+
+- Active isolated branch/worktree: `codex/9ema-0dte-autotrader` at
+  `/Users/dhanvin/Documents/IntelliDhan-9ema`, based on `origin/main` commit
+  `2ce39a5`. The shared checkout has unrelated collaborator edits and was not
+  modified.
+- New strategy `EMA9_MTF_0DTE` watches completed 5-minute SPY/QQQ 9EMA reclaims
+  only when 15-minute, 1-hour, and daily context agree; VWAP, RSI, relative
+  volume, candle quality, time-of-day, profile, extension, concurrency,
+  duplicate, and correlation gates remain active.
+- The strategy is structurally `live_eligible=false` and
+  `shadow_monitor=true`. Qualified setups persist as `SHADOW` alerts and
+  underlying-level paper trades through separate research controls. They never
+  reach Telegram or the Robinhood intent queue.
+- The 55-day / 37-session chronological research pass tested 12 parameter
+  variants on SPY/QQQ. The production candidate recorded train n=14, TP1 win
+  rate 7.1%, average −0.768R; validation n=11, TP1 win rate 63.6%, average
+  +0.498R. No variant met n≥30, 75% win rate, positive expectancy, and
+  train/validation stability. Test remained sealed. Calibration has no buckets
+  and explicitly denies live eligibility.
+- Auto-trade policy adds an 80% maximum fraction of fresh Robinhood buying
+  power. It is a ceiling only: risk controls may size lower and the system never
+  upsizes to consume it. The app stores no broker balance or credentials.
+- Execution intents now retain append-only lifecycle events. Authenticated
+  `GET /api/trade-log` returns signals and paper trades; global broker events
+  are ADMIN/legacy-owner-only and stored as immutable individual database rows.
+  Claim now requires a fresh, machine-checked official-MCP buying-power review;
+  stale, wrong-account, or over-80% reviews fail closed. Exact rules are in
+  `docs/30-ema9-0dte-shadow-autotrader.md`.
+- Independent review of checkpoint `6b45943` found four blockers: global broker
+  event disclosure, a global-SHADOW research marker bypass, a descriptive-only
+  capital ceiling, and replica-unsafe embedded audit history. The corrective
+  pass redacts non-admin broker events, preserves `research_only` through every
+  runner mode plus a delivery-side guard, adds the capital-review claim gate,
+  and moves events to immutable unique database rows.
+- Re-review found two additional edge cases: expired-lease reclaim reused an old
+  capital observation, and an event from a replica-lost intent snapshot could
+  be hidden by the API join. Reclaims now require another fresh review; every
+  immutable event embeds bounded intent identity so orphan history remains
+  visible to administrators without relying on the mutable snapshot.
+- Corrective local verification: 305 tests passed (6 integration tests
+  deselected), Ruff passed, and `git diff --check` is clean. PostgreSQL CI also
+  exercises immutable event-row insertion and idempotency.
+- Broker execution remains `OFF`. No live order, policy arming, merge,
+  deployment, or branch removal is authorized by this checkpoint.
+
 ## 2026-07-18 — Codex becomes the sole Robinhood execution agent
 
 - Claude is retained as an optional, server-side multi-brain research reviewer,

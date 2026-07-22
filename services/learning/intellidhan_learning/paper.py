@@ -53,6 +53,7 @@ class PaperTrade(BaseModel):
     mae_r: float = 0.0            # max adverse excursion in R
     mfe_r: float = 0.0            # max favorable excursion in R
     valid_until: datetime
+    research_only: bool = False
 
     @classmethod
     def from_alert(cls, alert: Alert, setup: Setup) -> "PaperTrade":
@@ -67,6 +68,7 @@ class PaperTrade(BaseModel):
             entry=setup.entry_underlying,
             initial_stop=setup.stop_underlying, targets=setup.targets_underlying,
             valid_until=alert.valid_until,
+            research_only=alert.research_only,
         )
 
 

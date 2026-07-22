@@ -67,21 +67,21 @@ def client(tmp_path, monkeypatch):
     return TestClient(app)
 
 
-def live_policy(mode="ARMED"):
+def live_policy(mode="LIVE"):
     payload = {
         "mode": mode, "allowed_symbols": ["SPY"], "allowed_strategies": ["TEST_STRATEGY"],
         "allowed_modules": ["SWING"], "min_confidence": 0.75,
         "max_dollar_risk_per_order": 150, "max_daily_dollar_risk": 300,
     }
-    if mode == "ARMED":
-        payload["arm_for_minutes"] = 30
+    if mode == "LIVE":
+        payload["live_for_minutes"] = 30
     return payload
 
 
 # ---------- fail-closed when unconfigured ----------
 
 def test_control_endpoints_503_when_token_unset(client):
-    assert client.put("/api/autotrade/policy", json=live_policy("OFF")).status_code == 503
+    assert client.put("/api/autotrade/policy", json=live_policy("SIMULATION")).status_code == 503
     assert client.post("/api/autotrade/disarm").status_code == 503
     assert client.post("/api/autotrade/intents/from-alert/x").status_code == 503
     assert client.post("/api/autotrade/intents/x/approve").status_code == 503
@@ -91,6 +91,9 @@ def test_control_endpoints_503_when_token_unset(client):
 def test_agent_endpoints_503_when_token_unset(client):
     assert client.get("/api/autotrade/intents").status_code == 503
     assert client.post("/api/autotrade/intents/x/claim").status_code == 503
+    assert client.post("/api/autotrade/intents/x/capital-review").status_code == 503
+    assert client.post("/api/autotrade/intents/x/option-selection").status_code == 503
+    assert client.post("/api/autotrade/intents/x/simulation-receipt", json={}).status_code == 503
     assert client.post("/api/autotrade/intents/x/receipt", json={"status": "EXECUTED"}).status_code == 503
 
 
@@ -111,19 +114,61 @@ def test_status_endpoint_requires_owner_and_hides_secrets(client, monkeypatch):
     assert "policy" in body and "counts" in body
 
 
+def test_trade_log_requires_account_and_returns_signal_paper_and_execution_history(
+    client, monkeypatch, calibrated
+):
+    monkeypatch.setenv("INTELLIDHAN_OWNER_TOKEN", "owner-token-that-is-long-enough")
+    assert client.get("/api/trade-log").status_code == 401
+
+    alert = make_alert(alert_id="alr_trade_log")
+    loop.alerts.append(alert)
+    loop.autotrade.update_policy(live_policy("SIMULATION"))
+    intent = loop.autotrade.on_alert(alert)
+    audit_log = loop.autotrade.audit_log
+    orphan_trade = {
+        "intent_id": "ati_orphaned_replica",
+        "mode": "SIMULATION",
+        "trade_event": {
+            "event": "ENTRY",
+            "option_id": "orphan-option",
+            "option_price": 1.25,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "reason": "immutable orphan event",
+            "simulated": True,
+        },
+    }
+    monkeypatch.setattr(
+        loop.autotrade,
+        "audit_log",
+        lambda limit: [orphan_trade, *audit_log(limit)],
+    )
+    response = client.get(
+        "/api/trade-log?limit=20",
+        headers={"Authorization": "Bearer owner-token-that-is-long-enough"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert any(item["alert_id"] == alert.alert_id for item in body["signals"])
+    assert any(item["intent_id"] == intent.intent_id for item in body["execution_events"])
+    assert body["automation_trades"][0]["option_id"] == "orphan-option"
+    assert body["broker_history_visible"] is True
+    assert body["live_execution_enabled"] is False
+
+
 # ---------- token correctness ----------
 
 def test_control_endpoint_rejects_wrong_or_missing_token(client, monkeypatch):
     monkeypatch.setenv("AUTOTRADE_CONTROL_TOKEN", "correct-control-token")
-    r = client.put("/api/autotrade/policy", json=live_policy("OFF"))
+    r = client.put("/api/autotrade/policy", json=live_policy("SIMULATION"))
     assert r.status_code == 401  # missing header
-    r = client.put("/api/autotrade/policy", json=live_policy("OFF"),
+    r = client.put("/api/autotrade/policy", json=live_policy("SIMULATION"),
                    headers={CONTROL_HEADER: "wrong-token"})
     assert r.status_code == 401
-    r = client.put("/api/autotrade/policy", json=live_policy("OFF"),
+    r = client.put("/api/autotrade/policy", json=live_policy("SIMULATION"),
                    headers={CONTROL_HEADER: "correct-control-token"})
     assert r.status_code == 200
-    assert r.json()["mode"] == "OFF"
+    assert r.json()["mode"] == "SIMULATION"
 
 
 def test_agent_endpoint_requires_bearer_scheme(client, monkeypatch):
@@ -136,7 +181,7 @@ def test_agent_endpoint_requires_bearer_scheme(client, monkeypatch):
     r = client.get("/api/autotrade/intents",
                    headers={"Authorization": "Bearer correct-agent-token"})
     assert r.status_code == 200
-    assert r.json()["contract_version"] == "1.1"
+    assert r.json()["contract_version"] == "2.0"
 
 
 def test_retired_agent_token_variable_cannot_authenticate(client, monkeypatch):
@@ -166,29 +211,26 @@ def test_control_token_does_not_grant_agent_access(client, monkeypatch):
     monkeypatch.setenv("AUTOTRADE_CODEX_AGENT_TOKEN", "different-value")
     r = client.get("/api/autotrade/intents", headers={"Authorization": "Bearer shared-value"})
     assert r.status_code == 401
-    r = client.put("/api/autotrade/policy", json=live_policy("OFF"),
+    r = client.put("/api/autotrade/policy", json=live_policy("SIMULATION"),
                    headers={CONTROL_HEADER: "different-value"})
     assert r.status_code == 401
 
 
 # ---------- lifecycle through the real routes ----------
 
-def test_supervised_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated):
+def test_live_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated):
     monkeypatch.setenv("AUTOTRADE_CONTROL_TOKEN", "ctrl")
     monkeypatch.setenv("AUTOTRADE_CODEX_AGENT_TOKEN", "agent")
     ctrl = {CONTROL_HEADER: "ctrl"}
     agent = {"Authorization": "Bearer agent"}
 
-    r = client.put("/api/autotrade/policy", json=live_policy("SUPERVISED"), headers=ctrl)
-    assert r.status_code == 200 and r.json()["mode"] == "SUPERVISED"
+    r = client.put("/api/autotrade/policy", json=live_policy(), headers=ctrl)
+    assert r.status_code == 200 and r.json()["mode"] == "LIVE"
 
     alert = make_alert()
     loop.alerts.append(alert)
     intent = loop.autotrade.on_alert(alert)
-    assert intent.status.value == "AWAITING_APPROVAL"
-
-    r = client.post(f"/api/autotrade/intents/{intent.intent_id}/approve", headers=ctrl)
-    assert r.status_code == 200 and r.json()["status"] == "READY"
+    assert intent.status.value == "READY"
 
     r = client.get("/api/autotrade/intents?status=READY", headers=agent)
     assert len(r.json()["intents"]) == 1
@@ -199,22 +241,61 @@ def test_supervised_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated
     assert r.json()["detail"][0]["type"] == "missing"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
-                    json={"agent": "retired-agent"}, headers=agent)
+                    json={
+                        "agent": "retired-agent",
+                        "underlying_price": 500.0,
+                        "observed_at": datetime.now(timezone.utc).isoformat(),
+                    }, headers=agent)
     assert r.status_code == 422
     assert r.json()["detail"][0]["type"] == "literal_error"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
-                    json={"agent": "codex", "unexpected": True}, headers=agent)
+                    json={
+                        "agent": "codex",
+                        "underlying_price": 500.0,
+                        "observed_at": datetime.now(timezone.utc).isoformat(),
+                        "unexpected": True,
+                    }, headers=agent)
     assert r.status_code == 422
     assert r.json()["detail"][0]["type"] == "extra_forbidden"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
-                    json={"agent": "codex"}, headers=agent)
+                    json={
+                        "agent": "codex",
+                        "underlying_price": 500.0,
+                        "observed_at": datetime.now(timezone.utc).isoformat(),
+                    }, headers=agent)
+    assert r.status_code == 422
+    assert "buying-power review is required" in r.json()["detail"]
+
+    r = client.post(
+        f"/api/autotrade/intents/{intent.intent_id}/capital-review",
+        json={
+            "agent": "codex",
+            "buying_power": 10_000,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "currency": "USD",
+            "account_scope": "ROBINHOOD_AGENTIC_ONLY",
+        },
+        headers=agent,
+    )
+    assert r.status_code == 200
+    assert r.json()["capital_check"]["passed"] is True
+
+    r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
+                    json={
+                        "agent": "codex",
+                        "underlying_price": 500.0,
+                        "observed_at": datetime.now(timezone.utc).isoformat(),
+                    }, headers=agent)
     assert r.status_code == 200 and r.json()["status"] == "CLAIMED"
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/receipt",
                     json={"status": "EXECUTED", "broker_order_id": "rh-1",
-                          "average_price": 500.1, "filled_quantity": 10},
+                          "average_price": 500.1, "filled_quantity": 10,
+                          "observed_at": datetime.now(timezone.utc).isoformat(),
+                          "pretrade_alerts": [],
+                          "reason": "reviewed trend entry filled"},
                     headers=agent)
     assert r.status_code == 200 and r.json()["status"] == "EXECUTED"
 
@@ -227,7 +308,7 @@ def test_claim_openapi_requires_exact_codex_body(client):
     body_schema = request_body["content"]["application/json"]["schema"]
     component_name = body_schema["$ref"].rsplit("/", 1)[-1]
     component = schema["components"]["schemas"][component_name]
-    assert component["required"] == ["agent"]
+    assert set(component["required"]) == {"agent", "underlying_price", "observed_at"}
     assert component["additionalProperties"] is False
     agent_schema = component["properties"]["agent"]
     assert agent_schema.get("const") == "codex" or agent_schema.get("enum") == [
@@ -246,23 +327,23 @@ def test_reject_and_disarm_via_api(client, monkeypatch, calibrated):
     monkeypatch.setenv("AUTOTRADE_CONTROL_TOKEN", "ctrl")
     monkeypatch.setenv("INTELLIDHAN_OWNER_TOKEN", "owner-token-that-is-long-enough")
     ctrl = {CONTROL_HEADER: "ctrl"}
-    client.put("/api/autotrade/policy", json=live_policy("SUPERVISED"), headers=ctrl)
+    client.put("/api/autotrade/policy", json=live_policy(), headers=ctrl)
     intent = loop.autotrade.on_alert(make_alert())
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/reject",
                     json={"reason": "operator declined"}, headers=ctrl)
     assert r.status_code == 200 and r.json()["status"] == "REJECTED"
 
     r = client.post("/api/autotrade/disarm", headers=ctrl)
-    assert r.status_code == 200 and r.json()["mode"] == "OFF"
+    assert r.status_code == 200 and r.json()["mode"] == "SIMULATION"
     status = client.get(
         "/api/autotrade",
         headers={"Authorization": "Bearer owner-token-that-is-long-enough"},
     )
-    assert status.json()["effective_mode"] == "OFF"
+    assert status.json()["effective_mode"] == "SIMULATION"
 
 
 def test_bad_policy_returns_422_not_500(client, monkeypatch):
     monkeypatch.setenv("AUTOTRADE_CONTROL_TOKEN", "ctrl")
-    r = client.put("/api/autotrade/policy", json={"mode": "ARMED"},  # missing arm_for_minutes
+    r = client.put("/api/autotrade/policy", json={"mode": "LIVE"},
                    headers={CONTROL_HEADER: "ctrl"})
     assert r.status_code == 422

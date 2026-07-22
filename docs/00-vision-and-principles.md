@@ -87,11 +87,11 @@ The Personal Discipline Layer (§4 above) is superseded in detail by doc 17's in
 
 ## 6. What IntelliDhan Is Not
 
-- Not an ungoverned auto-trader: execution is `OFF` by default and `SHADOW` is
-  non-executing. `SUPERVISED` requires explicit approval for each intent.
-  Separately authorized, time-limited `ARMED` mode may execute eligible intents
-  through Codex and the official Robinhood MCP without per-intent approval, but
+- Not an ungoverned auto-trader: `SIMULATION` is the default and cannot place
+  orders. Separately authorized, time-limited `LIVE` may stage eligible intents
+  through Codex and the official Robinhood MCP only after broker review and
+  explicit confirmation, and
   it cannot bypass data-quality, strategy, account, price, protection, or risk
-  gates and can be disarmed at any time.
+  gates and can be switched back to Simulation at any time.
 - Not a get-rich-quick machine: expected edge is modest and compounding-driven.
 - Not financial advice: all outputs carry the standing disclaimer (doc 13).

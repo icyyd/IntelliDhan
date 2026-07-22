@@ -55,8 +55,8 @@ def test_retired_contract_is_archived_not_active():
 def test_agent_entrypoint_requires_codex_claim_and_safe_modes():
     text = (ROOT / "AGENTS.md").read_text()
     assert '{"agent":"codex"}' in text
-    assert "`OFF` is the default" in text
-    assert "`SHADOW` is the safe validation path" in text
+    assert "`SIMULATION` is the default" in text
+    assert "`LIVE` is" in text
     assert "dedicated Robinhood Agentic account" in text
     assert "Never guess tool names or fields" in text
     assert "Claude API is permitted only for server-side, research-only" in text

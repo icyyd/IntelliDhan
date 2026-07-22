@@ -8,6 +8,7 @@ F2 (setup quality 0-100) is strategy-owned per doc 03 §3.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import time
 
 from intellidhan_engine.state import SymbolState
 from intellidhan_schemas import Timeframe
@@ -33,6 +34,8 @@ class RawSignal:
                                   # tracked for research, but structurally cannot
                                   # produce a gated/live alert (doc 08 §4 governance;
                                   # see docs/18-enhancement-review.md for why)
+    shadow_monitor: bool = False  # Persist qualifying research setups and paper
+                                  # outcomes without making them executable.
 
 
 def _two_closes_beyond(state: SymbolState, level: float, above: bool) -> bool:
@@ -198,6 +201,149 @@ class Ema9TrendPullback:
                      f"{'up' if uptrend else 'down'}trend (score {t5.score:+.0f}), RSI "
                      f"{snap.rsi14:.0f} holding the regime, close reclaimed the 9EMA."),
             invalidation=f"5m close through the 21EMA ({snap.ema21:.2f}) — trend structure broken.",
+        )
+
+
+class Ema9MtfZeroDte:
+    """Conservative SPY/QQQ 9EMA reclaim monitored across four timeframes.
+
+    This is intentionally research-only.  It addresses the largest defects in
+    the original EMA strategy: partial higher-timeframe context, loose "touch"
+    entries, no liquid-underlying allowlist, and repeated late-day triggers.
+    Promotion requires held-out evidence plus forward SHADOW results.
+    """
+
+    key = "EMA9_MTF_0DTE"
+    module = Module.ZDTE
+    trigger_tf = Timeframe.M5
+
+    def __init__(
+        self,
+        *,
+        key: str = "EMA9_MTF_0DTE",
+        symbols: tuple[str, ...] = ("SPY", "QQQ"),
+        min_relvol: float = 0.8,
+        m5_trend: float = 40.0,
+        higher_trend: float = 20.0,
+        stop_atr_pad: float = 0.15,
+        target_rs: tuple[float, ...] = (1.0, 2.0, 3.0),
+    ) -> None:
+        self.key = key
+        self.symbols = frozenset(symbols)
+        self.min_relvol = min_relvol
+        self.m5_trend = m5_trend
+        self.higher_trend = higher_trend
+        self.stop_atr_pad = stop_atr_pad
+        self.target_rs = target_rs
+
+    def evaluate(self, state: SymbolState) -> RawSignal | None:
+        if state.symbol.upper() not in self.symbols or len(state.recent_5m) < 2:
+            return None
+        local_time = state.et_time()
+        # Avoid the opening-price discovery window and late-session 0DTE decay.
+        if local_time is None or not (time(10, 0) <= local_time <= time(15, 15)):
+            return None
+
+        required = (Timeframe.M5, Timeframe.M15, Timeframe.H1, Timeframe.D1)
+        trends = {tf: state.trend_snap(tf) for tf in required}
+        snaps = {tf: state.indicators(tf) for tf in required}
+        if any(trends[tf] is None or snaps[tf] is None for tf in required):
+            return None
+        m5 = snaps[Timeframe.M5]
+        if any(
+            snap.ema9 is None or snap.ema21 is None
+            for snap in snaps.values()
+        ):
+            return None
+        if m5.atr14 is None or m5.rsi14 is None or m5.vwap is None:
+            return None
+        relvol = m5.rel_volume or 0.0
+        if relvol < self.min_relvol:
+            return None
+
+        t5 = trends[Timeframe.M5].score
+        t15 = trends[Timeframe.M15].score
+        h1 = trends[Timeframe.H1].score
+        d1 = trends[Timeframe.D1].score
+        long_aligned = (
+            t5 >= self.m5_trend
+            and t15 >= self.higher_trend
+            and h1 >= self.higher_trend
+            and d1 >= 0
+            and all(snaps[tf].ema9 > snaps[tf].ema21 for tf in required[:3])
+        )
+        short_aligned = (
+            t5 <= -self.m5_trend
+            and t15 <= -self.higher_trend
+            and h1 <= -self.higher_trend
+            and d1 <= 0
+            and all(snaps[tf].ema9 < snaps[tf].ema21 for tf in required[:3])
+        )
+        if not (long_aligned or short_aligned):
+            return None
+
+        bar = state.recent_5m[-1]
+        candle_range = bar.high - bar.low
+        if candle_range <= 0:
+            return None
+        close_location = (bar.close - bar.low) / candle_range
+        long_reclaim = (
+            long_aligned
+            and bar.low <= m5.ema9 < bar.close
+            and bar.close > bar.open
+            and bar.close > m5.vwap
+            and 52 <= m5.rsi14 <= 76
+            and close_location >= 0.60
+        )
+        short_reclaim = (
+            short_aligned
+            and bar.high >= m5.ema9 > bar.close
+            and bar.close < bar.open
+            and bar.close < m5.vwap
+            and 24 <= m5.rsi14 <= 48
+            and close_location <= 0.40
+        )
+        if not (long_reclaim or short_reclaim):
+            return None
+
+        direction = Direction.LONG if long_reclaim else Direction.SHORT
+        entry = bar.close
+        if direction == Direction.LONG:
+            stop = min(bar.low, m5.ema21) - self.stop_atr_pad * m5.atr14
+            risk = entry - stop
+            targets = [entry + risk * multiple for multiple in self.target_rs]
+        else:
+            stop = max(bar.high, m5.ema21) + self.stop_atr_pad * m5.atr14
+            risk = stop - entry
+            targets = [entry - risk * multiple for multiple in self.target_rs]
+        if risk <= 0:
+            return None
+
+        alignment_strength = min(
+            100.0,
+            (abs(t5) + abs(t15) + abs(h1) + abs(d1)) / 4,
+        )
+        quality = min(100.0, 55 + 0.25 * alignment_strength + 10 * min(relvol, 2.0))
+        side = "bullish" if direction == Direction.LONG else "bearish"
+        return RawSignal(
+            strategy=self.key,
+            module=self.module,
+            direction=direction,
+            trigger_tf=self.trigger_tf,
+            entry=entry,
+            stop=stop,
+            targets=targets,
+            f2_quality=round(quality, 1),
+            explain=(
+                f"SPY/QQQ 5m 9EMA {side} reclaim with 15m, 1h, and daily "
+                f"trend confirmation; {relvol:.1f}x relative volume and RSI "
+                f"{m5.rsi14:.0f}."
+            ),
+            invalidation=(
+                f"5m trend structure fails beyond the 21EMA/ATR stop at {stop:.2f}."
+            ),
+            live_eligible=False,
+            shadow_monitor=True,
         )
 
 
@@ -379,5 +525,5 @@ class DailyBreakout:
         )
 
 
-REGISTRY = [OrbBreakout(), Ema9TrendPullback(), VwapReclaim(), PullbackContinuation(),
-            DailyBreakout()]
+REGISTRY = [OrbBreakout(), Ema9TrendPullback(), Ema9MtfZeroDte(), VwapReclaim(),
+            PullbackContinuation(), DailyBreakout()]

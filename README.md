@@ -2,13 +2,20 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-07-21 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** D4.2 IntelliDhan owl-and-lotus identity with rounded
-brow/cheek contours, a responsive micro-mark, soft-flared editorial wordmark,
-orange bindu, portable outlined SVG artwork, hash-locked share imagery,
-AA light-mode brand/semantic/faint tokens across
-flat and tinted cards, and a restrained midnight-navy/orange terminal theme;
-the production mark stays readable from favicon to presentation scale and is
-covered by focused brand checks plus the full non-integration regression suite
+**Last system pass:** two-mode SPY/QQQ 9EMA auto-trader contract. `SIMULATION`
+uses real official-MCP option quotes and logs hypothetical entries/exits;
+time-limited `LIVE` stages long 0/1DTE orders only after evidence, health,
+capital, broker-review, and explicit confirmation gates. Selection prefers the
+highest feasible absolute delta, then uses the maximum whole-contract size
+inside the 80% buying-power, per-order, and daily-risk thresholds. Historical
+evidence still fails promotion, so the strategy remains Simulation-only and no
+real order was placed. A safety re-review added bearish long-put support,
+claim-time quote/price/risk revalidation, sellout deadlines, mode-switch claim
+revocation, strict receipt schemas, and immutable full trade-journal events.
+Selections can be refreshed until entry, failed exits remain open exposure until
+broker-confirmed closure, and simulated quotes are bound to the selected option.
+Live v2 rejects static option plans; every option order must pass the dynamic
+quote, expiry, liquidity, sellout, sizing, and claim-time policy checks.
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -60,11 +67,25 @@ must not be presented as implemented.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
   forward evidence and fixed-rule backtests; signed-in configured-universe
   dossiers also expose the current SEC/news/social research snapshot.
-- Codex execution-intent bridge for Robinhood's official Trading MCP. The
-  project MCP declaration contains no credentials; contract v1.1 uses a new
-  Codex-only application bearer plus exact `codex` claims. Execution remains
-  `OFF` by default, broker authentication stays in the local Codex host, and
-  the former Claude execution contract is archived for possible reviewed reuse.
+- Codex execution-intent bridge for Robinhood's official Trading MCP. Contract
+  v2.0 exposes only `SIMULATION` and time-limited `LIVE`; the project declaration
+  contains no credentials and claims require the exact `codex` identity.
+  Simulation is the default, broker authentication stays in the local Codex
+  host, and the former Claude execution contract remains archived.
+- Research-only `EMA9_MTF_0DTE` monitor for completed-bar SPY/QQQ 9EMA reclaims
+  with 5m/15m/1h/daily alignment, VWAP, RSI, relative-volume, time-window, and
+  risk-geometry gates. Qualified observations are stored as `SHADOW` signals
+  and underlying paper trades; they cannot reach Telegram or Robinhood. The
+  chronological 55-day study failed its sample/stability bar, so no profitability
+  or probability claim is made.
+- Authenticated `/api/trade-log` combines signal plans, underlying paper
+  outcomes, real-quote option Simulation entries/exits with reasoning, and
+  immutable intent history. Global broker events remain ADMIN/owner-only.
+  Dynamic 9EMA option plans accept only fresh liquid 0/1DTE candidates, prefer
+  the highest affordable delta, and maximize whole contracts inside all active
+  capital and risk caps; long-option premium is treated as maximum order risk.
+  Pending Simulation intents expire with signal validity and block when their
+  source signal is canceled.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
@@ -123,9 +144,10 @@ requires the same-commit README update.
 | 24 | [Daily Brief Landing Integration](docs/24-daily-brief-landing-integration.md) | Private artifact adapter, freshness/fallback contract, setup-card UX, and deployment configuration |
 | 25 | [Signal Terminal Redesign](docs/25-signal-terminal-redesign.md) | Agent-readable Today hierarchy, multi-feed rank contract, rich alerts, strategy evidence boundaries, and rollout plan |
 | 26 | [UI Decluttering Pass](docs/26-ui-declutter-pass.md) | Reduced Today hierarchy, removed duplicate panels, and progressive-disclosure contract |
-| 27 | [Codex + Robinhood Execution](docs/27-codex-robinhood-execution.md) | Codex-only claim contract, official MCP setup, decommission migration, and fail-closed execution loop |
+| 27 | [Codex + Robinhood Execution](docs/27-codex-robinhood-execution.md) | Two-mode contract, highest-feasible-delta selection, maximum-threshold sizing, official MCP loop, and fail-closed execution |
 | 28 | [Platform Safety &amp; Data Integrity](docs/28-platform-safety-and-data-integrity.md) | Active token, research-isolation, persistence, no-lookahead, GitOps, and deployment controls |
 | 29 | [Brand System](docs/29-brand-system.md) | Approved D4.2 owl-and-lotus identity, SVG asset stack, palette, typography, usage rules, and product application |
+| 30 | [SPY/QQQ 9EMA 0DTE Auto-Trader](docs/30-ema9-0dte-shadow-autotrader.md) | Exact rules, historical evidence, real-quote Simulation journal, 0/1DTE selection/sizing, trend-break exits, and Live-promotion gates |
 
 ## Core Product Tenets
 
@@ -143,4 +165,4 @@ label. Unvalidated evidence is capped below the live threshold, and no strategy
 is currently assumed qualified. The platform is not financial advice. It can
 create supervised, credential-free execution intents for OpenAI Codex using the
 official Robinhood Trading MCP; real execution remains fail-closed behind explicit evidence,
-allowlist, risk, owner, agent-review, protection, and reconciliation controls.
+allowlist, risk, owner, broker-review/confirmation, protection, and reconciliation controls.

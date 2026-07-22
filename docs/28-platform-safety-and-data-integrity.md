@@ -11,11 +11,11 @@ before changing research, data, authentication, execution, or deployment paths.
 
 The Codex bearer and operator control tokens are independent secrets:
 
-- `AUTOTRADE_CODEX_AGENT_TOKEN` authenticates only intent list, claim, and
-  receipt endpoints. It must be new for the Codex cutover and must never be
-  shared with a retired runner.
-- `AUTOTRADE_CONTROL_TOKEN` authenticates operator policy, disarm, intent
-  creation, approval, and rejection endpoints when an ADMIN session is not used.
+- `AUTOTRADE_CODEX_AGENT_TOKEN` authenticates only intent list, option-selection,
+  Simulation receipt, capital-review, Live claim, and broker-receipt endpoints.
+  It must never be shared with a retired runner.
+- `AUTOTRADE_CONTROL_TOKEN` authenticates operator policy, switch-to-Simulation,
+  intent creation, and rejection endpoints when an ADMIN session is not used.
 - `ANTHROPIC_API_KEY` is an optional server-only research credential. It may
   call Claude only with the bounded multi-brain evidence packet in doc 15 and
   never authenticates an agent, broker action, intent, receipt, or MCP server.
@@ -24,8 +24,10 @@ The Codex bearer and operator control tokens are independent secrets:
 
 Never expose setup, invite, control, Codex-agent, broker, or account tokens in
 browser state, URLs, prompts, tool output, logs, analytics, or version control.
-Do not treat a request-body agent label as authentication; the new Codex-only
-bearer is the credential boundary and the literal claim body is defense in depth.
+Do not treat a request-body agent label as authentication; the Codex-only bearer
+is the credential boundary. The allowlisted claim body adds defense in depth and
+also carries the fresh underlying price and timestamp used for the entry-zone
+recheck.
 
 ## Research cannot authorize execution
 
@@ -64,6 +66,16 @@ bearer is the credential boundary and the literal claim body is defense in depth
 - Per-user capital limits are review ceilings only. Do not claim they resize
   shared signals or constrain shared execution intents until a user-specific
   order-planning layer exists.
+- The shared execution policy separately requires a fresh official-MCP buying
+  power observation. The 9EMA selector sizes to the maximum whole-contract
+  position inside the configured fraction and every stricter per-order/daily
+  risk threshold; no individual threshold can be exceeded.
+- Broker execution events are global operational records and are returned only
+  to ADMIN or legacy-owner sessions. TRADER and VIEWER trade-log responses omit
+  them.
+- Production intent events are immutable individual database rows keyed by a
+  unique event ID. The current intent snapshot may be overwritten, but replica
+  overlap cannot erase already-appended audit events.
 - PostgreSQL via `DATABASE_URL` is the production operational store. SQLite is
   for local use unless it is on a verified mounted persistent path.
 - `/api/liveness` proves only that the process responds; it never authorizes a
@@ -80,7 +92,7 @@ bearer is the credential boundary and the literal claim body is defense in depth
 - Missing provider data stays missing and visibly reduces coverage. Never fill a
   missing input with a favorable default or allow attention/sentiment to create
   a directional posture by itself.
-- A quarantined symbol blocks new intents, approvals, and claims. An already
+- A quarantined symbol blocks new Live intents and claims. An already
   claimed intent retains its broker-receipt path but placement authority is
   revoked.
 - Do not add or promote a strategy because it is popular or profitable on one

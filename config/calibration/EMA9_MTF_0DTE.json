@@ -1,0 +1,23 @@
+{
+  "strategy": "EMA9_MTF_0DTE",
+  "buckets": {},
+  "meta": {
+    "evidence_status": "HISTORICAL_RESEARCH",
+    "live_eligible": false,
+    "as_of": "2026-07-21",
+    "method": "55-calendar-day, 37-session chronological train/validation/test harness; selection on validation only",
+    "production_parameters": {
+      "symbols": ["SPY", "QQQ"],
+      "min_relvol": 0.8,
+      "m5_trend": 40.0,
+      "higher_trend": 20.0,
+      "stop_atr_pad": 0.15,
+      "target_rs": [1.0, 2.0, 3.0]
+    },
+    "train": {"n": 14, "tp1_win_rate": 0.071, "avg_r": -0.768},
+    "validation": {"n": 11, "tp1_win_rate": 0.636, "avg_r": 0.498},
+    "test": {"scored": false, "reason": "no validation-qualified winner"},
+    "promotion_bar": {"min_validation_n": 30, "min_win_rate": 0.75, "positive_avg_r": true},
+    "evidence_note": "Research-only SPY/QQQ 9EMA monitor. The historical sample is small and unstable across chronological splits; no probability or profitability claim is permitted."
+  }
+}
