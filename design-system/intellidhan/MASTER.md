@@ -7,9 +7,10 @@ semantic-market colors.
 ## Brand direction
 
 - Personality: modern heritage fintech; confident, calm, warm, and analytical.
-- Identity: 4A soft-flared editorial wordmark with the ID/lotus/signal monogram.
-- Symbolism: the lotus is implicit resilience and clarity; the rising signal
-  curve ends in a burnt-orange bindu. Never recolor that dot green or teal.
+- Identity: D4.2 owl-and-lotus mark with the 4A soft-flared editorial wordmark.
+- Symbolism: the owl is attentive research and measured judgment; the lotus is
+  implicit resilience and clarity; a burnt-orange bindu anchors the mark. Never
+  recolor that dot green or teal.
 - Visual restraint: navy is structural, parchment carries readable content,
   marigold identifies the name, and orange marks a primary action or selection.
 
@@ -82,18 +83,20 @@ zone, invalidation, and risk without opening a chart.
 
 Production assets live in `web/assets/brand/`:
 
-- `intellidhan-mark.svg` — light-surface monogram;
-- `intellidhan-mark-inverse.svg` — dark-surface monogram;
+- `intellidhan-mark.svg` — light-surface owl-and-lotus mark;
+- `intellidhan-mark-inverse.svg` — dark-surface keyed owl-and-lotus mark;
 - `intellidhan-lockup.svg` — horizontal brand lockup;
-- `favicon.svg` — app/browser tile;
+- `favicon.svg` — enlarged responsive micro-mark on an app/browser tile;
 - `social-card.svg` — editable 1200×630 share-card source with outlined text;
 - `social-card.png` — deterministic 1200×630 delivery export for previews;
 - `intellidhan-theme.css` — web implementation tokens and overrides;
-- `intellidhan-brand-board.png` — approved visual reference, not a source asset.
+- `intellidhan-brand-board.png` — archived first-generation exploration board,
+  not a production source asset.
 
 ## Forbidden patterns
 
 - green or teal signal/bindu dot;
+- detached owl, lotus, or bindu used as a replacement product mark;
 - orange used as bullish and red as bearish without labels;
 - gradients that span more than two close navy tones;
 - decorative emojis as core icons;

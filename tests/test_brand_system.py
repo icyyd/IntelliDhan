@@ -1,3 +1,4 @@
+import hashlib
 import re
 import struct
 from pathlib import Path
@@ -78,7 +79,7 @@ def test_brand_theme_keeps_semantic_market_colors_distinct():
     ).read_text(encoding="utf-8")
 
 
-def test_mark_geometry_is_shared_and_has_a_closed_lotus_base():
+def test_d42_owl_lotus_geometry_is_shared_across_brand_assets():
     assets = (
         "intellidhan-mark.svg",
         "intellidhan-mark-inverse.svg",
@@ -87,16 +88,22 @@ def test_mark_geometry_is_shared_and_has_a_closed_lotus_base():
         "social-card.svg",
     )
     required_geometry = (
-        'd="M86 47h48c49 0 81 32 81 80 0 36-18 60-50 73"',
-        'd="M112 208h32l-8 13h-16Z"',
-        'd="M128 220c-24-17-27-43 0-68 27 25 24 51 0 68Z"',
-        'd="M125 221c-32 2-51-14-53-43 28-1 49 15 53 43Z"',
-        'd="M131 221c32 2 51-14 53-43-28-1-49 15-53 43Z"',
+        'd="M128 17C72 17 33 56 33 109v40c0 54 39 90 95 90s95-36 95-90v-40c0-53-39-92-95-92Z"',
+        'd="M68 63c14 15 39 10 60 51"',
+        'd="M188 63c-14 15-39 10-60 51"',
+        'd="M77 69c-24 20-22 53 17 70"',
+        'd="M179 69c24 20 22 53-17 70"',
+        'd="M128 155c-18 19-23 43 0 67 23-24 18-48 0-67Z"',
+        'd="M118 222c-35 1-55-20-58-54 29 0 51 19 58 54Z"',
+        'd="M138 222c35 1 55-20 58-54-29 0-51 19-58 54Z"',
     )
     for name in assets:
         source = (BRAND / name).read_text(encoding="utf-8")
         assert all(path in source for path in required_geometry)
-        assert "0 49-32 82-79 82" not in source
+        assert 'd="M86 47h48c49 0 81 32 81 80' not in source
+        assert 'cx="91" cy="101"' in source
+        assert 'cx="165" cy="101"' in source
+        assert 'cx="128" cy="218"' in source
 
 
 def test_external_brand_artwork_uses_outlined_text_and_exact_share_dimensions():
@@ -109,6 +116,9 @@ def test_external_brand_artwork_uses_outlined_text_and_exact_share_dimensions():
     png = (BRAND / "social-card.png").read_bytes()
     assert png[:8] == b"\x89PNG\r\n\x1a\n"
     assert struct.unpack(">II", png[16:24]) == (1200, 630)
+    assert hashlib.sha256(png).hexdigest() == (
+        "62a51ab4cafca3913d8c8c7d959a45fca5b8cb7c70a5d502966511089c7447be"
+    )
 
 
 def _relative_luminance(hex_color: str) -> float:

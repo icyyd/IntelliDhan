@@ -461,3 +461,32 @@ For each coherent work unit:
   follow-up darkens `text-faint` and tests it over tint-a through tint-e.
   Remaining: commit/push, wait for CI, and obtain final independent re-review.
   No merge or deployment is authorized by this pass.
+
+## 2026-07-21 — D4.2 owl-and-lotus identity pass
+
+- Branch: `codex/owl-lotus-logo` in isolated worktree
+  `/Users/dhanvin/Documents/IntelliDhan-logo-d42`, based on `origin/main` at
+  `dcb49fd`.
+- The primary worktree's unrelated in-progress changes remain untouched.
+- User-selected identity: D4.2 from the second owl/lotus concept board—a calm,
+  slightly wider midnight oval containing a balanced parchment owl and
+  three-petal lotus, anchored by the existing burnt-orange bindu.
+- The 4A outlined editorial wordmark and the navy, parchment, marigold, and
+  orange palette remain unchanged. The legacy `ID`/signal monogram is retired
+  from production assets; its old concept board is archived reference only.
+- Updated production mark, inverse mark, favicon, horizontal lockup, social SVG,
+  deterministic social PNG, brand documentation, README, and regression tests.
+- Independent review rejected the first vector translation for sharp owl
+  wedges, a narrow enclosure, excess favicon padding, and weak raster parity
+  coverage. The corrected master uses the selected D4.2 rounded brow/cheek
+  contours and wider oval; the responsive favicon fills the tile at 16px; and
+  the social PNG has an approved SHA-256 regression assertion.
+- Strategy, data, authentication, multi-brain analysis, and Robinhood execution
+  behavior remain out of scope and unchanged.
+- Verification: focused brand/terminal checks passed (`43`); the full
+  non-integration suite passed (`293 passed, 6 deselected`); SVG XML parsing,
+  deterministic 1200×630 social export, dark/light browser rendering, and
+  diff checks passed. The mark was visually inspected at 16, 24, 34, 256,
+  lockup, and social sizes.
+- PR status is recorded at handoff. No merge or deployment is authorized by
+  this pass.

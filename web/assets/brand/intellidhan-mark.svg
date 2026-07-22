@@ -1,15 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
-  <title id="title">IntelliDhan monogram</title>
-  <desc id="desc">An ID monogram with a lotus and an upward market signal ending in an orange dot.</desc>
-  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M86 47h48c49 0 81 32 81 80 0 36-18 60-50 73" stroke="#F6A800" stroke-width="24"/>
-    <path d="M53 65v98c0 31 19 48 52 48" stroke="#071B36" stroke-width="24"/>
-    <path d="M127 158c4-35 23-61 57-69" stroke="#071B36" stroke-width="10"/>
+  <title id="title">IntelliDhan owl and lotus mark</title>
+  <desc id="desc">A calm owl and three-petal lotus drawn in parchment within a midnight oval, with an orange bindu.</desc>
+  <path d="M128 17C72 17 33 56 33 109v40c0 54 39 90 95 90s95-36 95-90v-40c0-53-39-92-95-92Z" fill="#071B36"/>
+  <g fill="none" stroke="#F8F4EC" stroke-linecap="round" stroke-linejoin="round" stroke-width="15">
+    <path d="M68 63c14 15 39 10 60 51"/>
+    <path d="M188 63c-14 15-39 10-60 51"/>
+    <path d="M77 69c-24 20-22 53 17 70"/>
+    <path d="M179 69c24 20 22 53-17 70"/>
   </g>
-    <circle cx="53" cy="35" r="14" fill="#071B36"/>
-    <circle cx="187" cy="88" r="14" fill="#E56F2D"/>
-    <path d="M112 208h32l-8 13h-16Z" fill="#071B36"/>
-    <path d="M128 220c-24-17-27-43 0-68 27 25 24 51 0 68Z" fill="#071B36"/>
-    <path d="M125 221c-32 2-51-14-53-43 28-1 49 15 53 43Z" fill="#071B36"/>
-    <path d="M131 221c32 2 51-14 53-43-28-1-49 15-53 43Z" fill="#071B36"/>
+  <g fill="none" stroke="#F8F4EC" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M128 155c-18 19-23 43 0 67 23-24 18-48 0-67Z" stroke-width="13"/>
+    <path d="M118 222c-35 1-55-20-58-54 29 0 51 19 58 54Z" stroke-width="13"/>
+    <path d="M138 222c35 1 55-20 58-54-29 0-51 19-58 54Z" stroke-width="13"/>
+  </g>
+  <circle cx="91" cy="101" r="15" fill="#F8F4EC"/>
+  <circle cx="165" cy="101" r="15" fill="#F8F4EC"/>
+  <circle cx="128" cy="218" r="14" fill="#E56F2D" stroke="#F8F4EC" stroke-width="4"/>
 </svg>
