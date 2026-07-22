@@ -97,11 +97,16 @@ broker receipts and always carry `simulated: true`.
    authoritative sellout timestamp.
 5. POST that candidate set to
    `/api/autotrade/intents/{intent_id}/option-selection`.
+   Repeat selection whenever the quote expires; reselection replaces the exact
+   contract and size and invalidates the earlier capital review.
 6. Watch current underlying and selected-option quotes. POST an `ENTRY` then one
    `EXIT` to `/simulation-receipt`, each with bid, ask, volume, open interest,
    underlying price, timestamp, and reasoning. Entry is modeled at ask and exit
    at bid; stale, illiquid, unhealthy, out-of-zone, or stale-selection entries
    fail closed.
+   Every receipt includes the selected option ID. A data-health failure blocks
+   entry but does not suppress the required exit observation; that exit records
+   the health reason alongside the quote.
 7. Never call review, place, replace, or cancel tools in Simulation.
 
 ## Required Live loop
@@ -133,6 +138,8 @@ broker receipts and always carry `simulated: true`.
    and broker order ID; option identity and quantity are checked against the
    selected plan and exit P&L is calculated server-side. Late broker truth
    overrides an earlier local cancellation.
+   A failed protection or exit attempt never marks exposure terminal: the intent
+   remains `EXECUTED` until a broker-confirmed `CLOSED` receipt is reconciled.
 
 ## Current promotion state
 
@@ -149,6 +156,8 @@ contract-v2 implementation pass.
 - Never expose account numbers; display only masked last-four identifiers.
 - Never use unofficial Robinhood clients or broker credentials in the app.
 - Never increase size after selection or chase outside the reviewed limit.
+- Re-run current allowlists, option permission, calibration eligibility,
+  concurrency, liquidity, expiry, and risk policy at claim time.
 - Switching to Simulation or reaching `live_until` revokes all outstanding
   placement authority; claimed intents retain only broker reconciliation.
 - Never continue when MCP, account, quote, health, policy, protection, or

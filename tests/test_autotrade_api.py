@@ -124,6 +124,24 @@ def test_trade_log_requires_account_and_returns_signal_paper_and_execution_histo
     loop.alerts.append(alert)
     loop.autotrade.update_policy(live_policy("SIMULATION"))
     intent = loop.autotrade.on_alert(alert)
+    audit_log = loop.autotrade.audit_log
+    orphan_trade = {
+        "intent_id": "ati_orphaned_replica",
+        "mode": "SIMULATION",
+        "trade_event": {
+            "event": "ENTRY",
+            "option_id": "orphan-option",
+            "option_price": 1.25,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "reason": "immutable orphan event",
+            "simulated": True,
+        },
+    }
+    monkeypatch.setattr(
+        loop.autotrade,
+        "audit_log",
+        lambda limit: [orphan_trade, *audit_log(limit)],
+    )
     response = client.get(
         "/api/trade-log?limit=20",
         headers={"Authorization": "Bearer owner-token-that-is-long-enough"},
@@ -133,6 +151,7 @@ def test_trade_log_requires_account_and_returns_signal_paper_and_execution_histo
     body = response.json()
     assert any(item["alert_id"] == alert.alert_id for item in body["signals"])
     assert any(item["intent_id"] == intent.intent_id for item in body["execution_events"])
+    assert body["automation_trades"][0]["option_id"] == "orphan-option"
     assert body["broker_history_visible"] is True
     assert body["live_execution_enabled"] is False
 

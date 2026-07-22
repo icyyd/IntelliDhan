@@ -245,6 +245,17 @@ def test_dynamic_option_selection_prefers_highest_feasible_delta_and_max_size(
     assert selected.order_plan["capital_policy"]["capital_required"] == 220.0
     assert selected.order_plan["protection"]["exit_style"] == "TREND_BREAK_FULL_EXIT"
 
+    refreshed = manager.attest_option_selection(
+        intent.intent_id,
+        agent="codex",
+        buying_power=300,
+        observed_at=datetime.now(timezone.utc),
+        account_scope="ROBINHOOD_AGENTIC_ONLY",
+        candidates=[option_candidate("fresh-selection", delta=0.75, ask=2.00)],
+    )
+    assert refreshed.option_selection["option_id"] == "fresh-selection"
+    assert refreshed.order_plan["instrument"]["option_id"] == "fresh-selection"
+
 
 def test_bearish_ema9_signal_selects_a_long_put_and_can_be_claimed(
     tmp_path, calibrated
@@ -300,7 +311,12 @@ def test_bearish_ema9_signal_selects_a_long_put_and_can_be_claimed(
 
 
 def test_simulation_records_real_quote_entry_exit_and_reasoning(tmp_path, calibrated):
-    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    health = {"reason": None}
+    manager = AutotradeManager(
+        tmp_path / "policy.yaml",
+        tmp_path / "state.json",
+        symbol_gate=lambda _symbol: health["reason"],
+    )
     manager.update_policy({
         "mode": "SIMULATION",
         "allowed_symbols": ["SPY"],
@@ -325,6 +341,7 @@ def test_simulation_records_real_quote_entry_exit_and_reasoning(tmp_path, calibr
     )
     entered = manager.record_simulation(intent.intent_id, {
         "event": "ENTRY",
+        "option_id": "sim-contract",
         "reason": "5-minute 9EMA reclaim with 15-minute trend aligned",
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "bid_price": 1.95,
@@ -334,8 +351,10 @@ def test_simulation_records_real_quote_entry_exit_and_reasoning(tmp_path, calibr
         "open_interest": 5_000,
     })
     assert entered.status == IntentStatus.EXECUTED
+    health["reason"] = "SPY underlying feed is quarantined"
     exited = manager.record_simulation(intent.intent_id, {
         "event": "EXIT",
+        "option_id": "sim-contract",
         "reason": "closed 5-minute candle broke the 9EMA trend",
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "bid_price": 2.40,
@@ -348,6 +367,7 @@ def test_simulation_records_real_quote_entry_exit_and_reasoning(tmp_path, calibr
     assert [row["event"] for row in exited.trade_events] == ["ENTRY", "EXIT"]
     assert exited.trade_events[-1]["realized_pnl"] == 40.0
     assert "9EMA" in exited.trade_events[-1]["reason"]
+    assert "quarantined" in exited.trade_events[-1]["data_quality_reason"]
 
 
 def test_simulation_rejects_stale_or_illiquid_entry_observations(tmp_path, calibrated):
@@ -375,6 +395,7 @@ def test_simulation_rejects_stale_or_illiquid_entry_observations(tmp_path, calib
     )
     base = {
         "event": "ENTRY",
+        "option_id": "sim-stale",
         "reason": "test quote",
         "bid_price": 1.95,
         "ask_price": 2.00,
@@ -382,6 +403,12 @@ def test_simulation_rejects_stale_or_illiquid_entry_observations(tmp_path, calib
         "volume": 1_000,
         "open_interest": 5_000,
     }
+    with pytest.raises(ValueError, match="does not match selection"):
+        manager.record_simulation(intent.intent_id, {
+            **base,
+            "option_id": "different-contract",
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+        })
     with pytest.raises(ValueError, match="simulation quote is stale"):
         manager.record_simulation(intent.intent_id, {
             **base,
@@ -591,6 +618,7 @@ def test_trade_details_restore_from_immutable_event_rows(tmp_path, calibrated):
     )
     manager.record_simulation(intent.intent_id, {
         "event": "ENTRY",
+        "option_id": "durable-option",
         "reason": "durable simulated entry",
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "bid_price": 1.95,
@@ -721,6 +749,45 @@ def test_live_claim_receipt_and_persistence(tmp_path, calibrated):
     ).status == (
         IntentStatus.CLOSED
     )
+
+
+def test_failed_exit_keeps_exposure_open_until_closed_receipt(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert())
+    pass_capital_review(manager, intent)
+    claim_intent(manager, intent)
+    manager.record_receipt(intent.intent_id, broker_receipt("EXECUTED"))
+
+    failed_exit = manager.record_receipt(
+        intent.intent_id,
+        broker_receipt("FAILED", reason="protective exit was rejected"),
+    )
+
+    assert failed_exit.status == IntentStatus.EXECUTED
+    assert failed_exit.events[-1].event == "BROKER_EXIT_FAILED"
+    assert manager.status()["open_trades"] == 1
+    assert manager.record_receipt(
+        intent.intent_id,
+        broker_receipt("CLOSED", price=495.0, reason="replacement exit filled"),
+    ).status == IntentStatus.CLOSED
+
+
+def test_claim_revalidates_current_allowlist_after_policy_change(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert())
+    pass_capital_review(manager, intent)
+    manager.update_policy({
+        "mode": "LIVE",
+        "live_for_minutes": 30,
+        "allowed_symbols": ["QQQ"],
+    })
+
+    blocked = claim_intent(manager, intent)
+
+    assert blocked.status == IntentStatus.BLOCKED
+    assert "no longer allowlisted" in blocked.reasons[-1]
 
 
 def test_symbol_data_gate_blocks_create_claim_and_claimed_intents(

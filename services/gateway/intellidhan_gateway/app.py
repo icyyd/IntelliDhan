@@ -987,6 +987,9 @@ async def get_trade_log(
     """One chronological audit surface for signals, paper trades, and intents."""
     principal = _require_personal(request)
     broker_history_visible = principal.legacy or principal.role == "ADMIN"
+    execution_events = (
+        loop.autotrade.audit_log(5000) if broker_history_visible else []
+    )
     return {
         "signals": [
             item.model_dump(mode="json") for item in loop.alerts[-limit:]
@@ -994,15 +997,13 @@ async def get_trade_log(
         "paper_trades": [
             item.model_dump(mode="json") for item in loop.executor.trades[-limit:]
         ][::-1],
-        "execution_events": (
-            loop.autotrade.audit_log(limit) if broker_history_visible else []
-        ),
+        "execution_events": execution_events[:limit],
         "automation_trades": (
             sorted(
                 [
-                    {**event, "mode": intent.mode.value}
-                    for intent in loop.autotrade.list_intents()
-                    for event in intent.trade_events
+                    {**row["trade_event"], "mode": row.get("mode")}
+                    for row in execution_events
+                    if row.get("trade_event")
                 ],
                 key=lambda event: (
                     event.get("observed_at") or event.get("recorded_at") or ""

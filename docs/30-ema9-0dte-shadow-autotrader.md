@@ -81,6 +81,9 @@ and enforces the original underlying entry zone, revalidates selected-option
 quote age and all current caps, and bounds the lease by both intent validity and
 the time-limited Live window. Completed trades continue to consume the daily
 risk budget for that trading day.
+An expired selected quote is refreshable before claim; every reselection clears
+the old capital review. Claim re-runs the current allowlists, option permission,
+calibration eligibility, open-intent limit, expiry/liquidity rules, and risk caps.
 The selector uses the largest whole-contract position inside every active
 threshold. It caps capital at the lesser of 80% of fresh buying power,
 per-order dollar risk, and remaining daily dollar risk. It filters 0/1DTE
@@ -123,6 +126,9 @@ Authenticated users can request `GET /api/trade-log` to retrieve, newest first:
 Full normalized receipts and trade events are embedded in immutable event rows,
 not only the mutable intent snapshot, so replica races cannot silently erase the
 advertised journal. The combined journal is globally sorted newest first.
+It is built from immutable rows, including trade events whose mutable intent
+snapshot was lost by a replica race. Failed exit/protection receipts remain open
+exposure and in risk accounting until broker truth confirms closure.
 
 Every future broker intent includes the multi-cap maximum sizing rule, required
 fresh buying-power check, dedicated Agentic-account scope, protective-exit

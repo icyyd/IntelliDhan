@@ -12,6 +12,8 @@ evidence still fails promotion, so the strategy remains Simulation-only and no
 real order was placed. A safety re-review added bearish long-put support,
 claim-time quote/price/risk revalidation, sellout deadlines, mode-switch claim
 revocation, strict receipt schemas, and immutable full trade-journal events.
+Selections can be refreshed until entry, failed exits remain open exposure until
+broker-confirmed closure, and simulated quotes are bound to the selected option.
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal

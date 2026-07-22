@@ -16,6 +16,12 @@
   compute exit P&L server-side. Full receipt and trade details are copied into
   immutable event rows and the UI sorts the combined journal globally newest
   first.
+- Re-review then closed a stale-selection refresh dead end, kept failed exit or
+  protection attempts in `EXECUTED` exposure until a `CLOSED` broker receipt,
+  bound Simulation quotes to the selected option ID, reran current allowlists,
+  option permissions, calibration, and concurrency policy at claim, allowed a
+  data-quality-triggered Simulation exit to be recorded, and sourced the trade
+  journal from immutable events so orphaned replica events remain visible.
 - Continued draft PR #17 on `codex/9ema-0dte-autotrader`; no merge, deploy,
   execution-mode change, or broker order was performed.
 - Auto-trade contract v2.0 now exposes only `SIMULATION` and time-limited

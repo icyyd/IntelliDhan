@@ -211,6 +211,7 @@ class SimulationReceipt(BaseModel):
 
     event: Literal["ENTRY", "EXIT"]
     reason: str = Field(min_length=1, max_length=500)
+    option_id: str = Field(min_length=1, max_length=200)
     observed_at: datetime
     bid_price: float = Field(ge=0)
     ask_price: float = Field(gt=0)
@@ -686,6 +687,9 @@ class AutotradeManager:
                 "max_spread_fraction": self.policy.max_option_spread_fraction,
                 "max_quote_age_seconds": self.policy.max_option_quote_age_seconds,
             } if dynamic_scalp_option else None),
+            "option_selection_request": (
+                dict(instrument) if dynamic_scalp_option else None
+            ),
             "protection": {
                 "must_be_established": True,
                 "stop_underlying": alert.stop_underlying,
@@ -751,7 +755,11 @@ class AutotradeManager:
             and self.effective_mode(now) != AutomationMode.LIVE
         ):
             raise ValueError("LIVE window expired; switch to Live again before selection")
-        requested = intent.order_plan.get("instrument") or {}
+        requested = (
+            intent.order_plan.get("option_selection_request")
+            or intent.order_plan.get("instrument")
+            or {}
+        )
         if requested.get("type") != "OPTION_SELECTION_REQUIRED":
             raise ValueError("intent does not require dynamic option selection")
         if observed_at.tzinfo is None or observed_at.utcoffset() is None:
@@ -1052,6 +1060,9 @@ class AutotradeManager:
         reason = self._symbol_gate_reason(intent.symbol)
         if reason:
             return self._block_intent(intent, reason)
+        policy_reason = self._current_claim_policy_reason(intent, now)
+        if policy_reason:
+            return self._block_intent(intent, policy_reason)
         if underlying_price <= 0:
             raise ValueError("positive underlying price is required before claim")
         if observed_at.tzinfo is None or observed_at.utcoffset() is None:
@@ -1091,6 +1102,38 @@ class AutotradeManager:
             intent, IntentStatus.CLAIMED, event="CLAIM_ACQUIRED",
             detail=f"claimed by {agent} with a two-minute lease",
         )
+
+    def _current_claim_policy_reason(
+        self, intent: ExecutionIntent, now: datetime
+    ) -> str | None:
+        policy = self.policy
+        if intent.symbol.upper() not in policy.allowed_symbols:
+            return "symbol is no longer allowlisted"
+        if intent.strategy.upper() not in policy.allowed_strategies:
+            return "strategy is no longer allowlisted"
+        if intent.module.upper() not in policy.allowed_modules:
+            return "module is no longer allowlisted"
+        if intent.confidence < policy.min_confidence:
+            return "confidence is below the current automation minimum"
+        if intent.option_selection and not policy.allow_options:
+            return "options automation is currently disabled"
+        if policy.require_explicit_calibration:
+            calibration = CalibrationMap.load(intent.strategy)
+            if not calibration.buckets:
+                return "no current calibration evidence is on file"
+            if calibration.meta.get("live_eligible") is not True:
+                return "strategy is no longer explicitly live eligible"
+        open_others = [
+            item
+            for item in self.intents.values()
+            if item.intent_id != intent.intent_id
+            and item.mode == AutomationMode.LIVE
+            and item.status not in TERMINAL_STATUSES
+            and item.valid_until > now
+        ]
+        if len(open_others) >= policy.max_open_intents:
+            return "current open-intent cap is reached"
+        return None
 
     def _capital_check_reason(
         self, intent: ExecutionIntent, now: datetime
@@ -1134,6 +1177,22 @@ class AutotradeManager:
                 return "option is inside the broker sellout window"
             if abs(planned_debit - required) > 1e-9:
                 return "option selection debit does not match the order plan"
+            try:
+                expiration_date = date.fromisoformat(str(selection["expiration_date"]))
+                spread_fraction = float(selection["spread_fraction"])
+                volume = int(selection["volume"])
+                open_interest = int(selection["open_interest"])
+            except (KeyError, TypeError, ValueError):
+                return "option selection policy evidence is invalid"
+            dte = (expiration_date - now.astimezone(ET).date()).days
+            if dte not in self.policy.option_expiry_days:
+                return "selected option expiry is no longer allowed"
+            if spread_fraction > self.policy.max_option_spread_fraction:
+                return "selected option spread exceeds the current cap"
+            if volume < self.policy.min_option_volume:
+                return "selected option volume is below the current floor"
+            if open_interest < self.policy.min_option_open_interest:
+                return "selected option open interest is below the current floor"
 
         check = intent.capital_check
         if not check:
@@ -1258,10 +1317,17 @@ class AutotradeManager:
         intent.trade_events.append(trade_event)
         broker_id = receipt.get("broker_order_id")
         detail = f"broker order {broker_id}" if broker_id else "broker receipt recorded"
+        target_status = status
+        event_name = "BROKER_RECEIPT"
+        if intent.status == IntentStatus.EXECUTED and status == IntentStatus.FAILED:
+            # A failed exit/protection action is not proof that exposure closed.
+            # Keep the position open and auditable until broker truth says CLOSED.
+            target_status = IntentStatus.EXECUTED
+            event_name = "BROKER_EXIT_FAILED"
         return self._transition(
             intent,
-            status,
-            event="BROKER_RECEIPT",
+            target_status,
+            event=event_name,
             detail=detail,
             receipt=receipt,
             trade_event=trade_event,
@@ -1288,8 +1354,11 @@ class AutotradeManager:
         if event == "ENTRY" and intent.valid_until <= now:
             raise ValueError("simulation entry cannot use an expired intent")
         symbol_reason = self._symbol_gate_reason(intent.symbol)
-        if symbol_reason:
+        if event == "ENTRY" and symbol_reason:
             raise ValueError(symbol_reason)
+        selected_option_id = str(intent.option_selection["option_id"])
+        if parsed.option_id != selected_option_id:
+            raise ValueError("simulation quote option does not match selection")
         observed = parsed.observed_at
         if observed.tzinfo is None or observed.utcoffset() is None:
             raise ValueError("observed_at must include a timezone")
@@ -1342,10 +1411,12 @@ class AutotradeManager:
             "volume": parsed.volume,
             "open_interest": parsed.open_interest,
             "underlying_price": parsed.underlying_price,
-            "option_id": intent.option_selection["option_id"],
+            "option_id": selected_option_id,
             "quantity": intent.option_selection["quantity"],
             "simulated": True,
         }
+        if symbol_reason:
+            clean["data_quality_reason"] = symbol_reason
         if event == "EXIT":
             entry = next(
                 (row for row in intent.trade_events if row.get("event") == "ENTRY"),
