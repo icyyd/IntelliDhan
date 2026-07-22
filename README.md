@@ -14,6 +14,8 @@ claim-time quote/price/risk revalidation, sellout deadlines, mode-switch claim
 revocation, strict receipt schemas, and immutable full trade-journal events.
 Selections can be refreshed until entry, failed exits remain open exposure until
 broker-confirmed closure, and simulated quotes are bound to the selected option.
+Live v2 rejects static option plans; every option order must pass the dynamic
+quote, expiry, liquidity, sellout, sizing, and claim-time policy checks.
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal

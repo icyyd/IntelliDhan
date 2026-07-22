@@ -600,6 +600,10 @@ class AutotradeManager:
         )
         if not supported_long_open:
             reasons.append("only long-opening orders are supported")
+        if live and alert.vehicle == Vehicle.OPTION and not dynamic_scalp_option:
+            reasons.append(
+                "static option plans are not eligible for Live; dynamic attestation is required"
+            )
         symbol_reason = self._symbol_gate_reason(alert.symbol)
         if symbol_reason:
             reasons.append(symbol_reason)
@@ -1115,8 +1119,17 @@ class AutotradeManager:
             return "module is no longer allowlisted"
         if intent.confidence < policy.min_confidence:
             return "confidence is below the current automation minimum"
-        if intent.option_selection and not policy.allow_options:
+        instrument_type = str(
+            (intent.order_plan.get("instrument") or {}).get("type") or ""
+        )
+        uses_options = instrument_type in {
+            "OPTION",
+            "OPTION_SELECTION_REQUIRED",
+        } or intent.option_selection is not None
+        if uses_options and not policy.allow_options:
             return "options automation is currently disabled"
+        if instrument_type == "OPTION" and intent.option_selection is None:
+            return "static option plans cannot be claimed without dynamic attestation"
         if policy.require_explicit_calibration:
             calibration = CalibrationMap.load(intent.strategy)
             if not calibration.buckets:

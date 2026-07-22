@@ -790,6 +790,30 @@ def test_claim_revalidates_current_allowlist_after_policy_change(tmp_path, calib
     assert "no longer allowlisted" in blocked.reasons[-1]
 
 
+def test_claim_rejects_static_option_plan_after_options_are_disabled(
+    tmp_path, calibrated
+):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert(alert_id="alr_legacy_static_option"))
+    intent.order_plan["instrument"] = {
+        "type": "OPTION",
+        "contracts": 1,
+        "legs": [{"occ_symbol": "SPY_TEST_CALL"}],
+    }
+    pass_capital_review(manager, intent)
+    manager.update_policy({
+        "mode": "LIVE",
+        "live_for_minutes": 30,
+        "allow_options": False,
+    })
+
+    blocked = claim_intent(manager, intent)
+
+    assert blocked.status == IntentStatus.BLOCKED
+    assert "options automation is currently disabled" in blocked.reasons[-1]
+
+
 def test_symbol_data_gate_blocks_create_claim_and_claimed_intents(
     tmp_path, calibrated
 ):

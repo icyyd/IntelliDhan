@@ -22,6 +22,11 @@
   option permissions, calibration, and concurrency policy at claim, allowed a
   data-quality-triggered Simulation exit to be recorded, and sourced the trade
   journal from immutable events so orphaned replica events remain visible.
+- Final re-review found that a static option plan could bypass a later
+  `allow_options=false` policy. Live v2 now rejects static option plans at
+  creation and claim, detects option use from the order-plan instrument rather
+  than only dynamic-selection metadata, and requires dynamic attestation for
+  every option order.
 - Continued draft PR #17 on `codex/9ema-0dte-autotrader`; no merge, deploy,
   execution-mode change, or broker order was performed.
 - Auto-trade contract v2.0 now exposes only `SIMULATION` and time-limited

@@ -158,6 +158,8 @@ contract-v2 implementation pass.
 - Never increase size after selection or chase outside the reviewed limit.
 - Re-run current allowlists, option permission, calibration eligibility,
   concurrency, liquidity, expiry, and risk policy at claim time.
+- Never claim a static option plan. Live v2 requires dynamic candidate
+  attestation for every option order, including legacy/imported intents.
 - Switching to Simulation or reaching `live_until` revokes all outstanding
   placement authority; claimed intents retain only broker reconciliation.
 - Never continue when MCP, account, quote, health, policy, protection, or
