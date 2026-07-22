@@ -957,6 +957,26 @@ async def get_autotrade(request: Request):
     return loop.autotrade.status()
 
 
+@app.get("/api/trade-log")
+async def get_trade_log(
+    request: Request,
+    limit: int = Query(200, ge=1, le=1000),
+):
+    """One chronological audit surface for signals, paper trades, and intents."""
+    _require_personal(request)
+    return {
+        "signals": [
+            item.model_dump(mode="json") for item in loop.alerts[-limit:]
+        ][::-1],
+        "paper_trades": [
+            item.model_dump(mode="json") for item in loop.executor.trades[-limit:]
+        ][::-1],
+        "execution_events": loop.autotrade.audit_log(limit),
+        "live_execution_enabled": loop.autotrade.effective_mode().value
+        in {"SUPERVISED", "ARMED"},
+    }
+
+
 @app.put("/api/autotrade/policy")
 async def put_autotrade_policy(request: Request, updates: dict = Body(...)):
     _require_control(request)

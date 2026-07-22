@@ -106,8 +106,35 @@ def test_armed_mode_is_allowlisted_risk_capped_and_idempotent(tmp_path, calibrat
     assert intent.status == IntentStatus.READY
     assert intent.order_plan["account_scope"] == "ROBINHOOD_AGENTIC_ONLY"
     assert intent.order_plan["protection"]["must_be_established"] is True
+    assert intent.order_plan["capital_policy"] == {
+        "max_available_capital_fraction": 0.8,
+        "capital_required": 5000.0,
+        "fresh_buying_power_required": True,
+        "upsize_to_ceiling": False,
+    }
+    assert "80%" in intent.order_plan["abort_if"][-1]
     assert manager.on_alert(alert).intent_id == intent.intent_id
     assert len(manager.intents) == 1
+
+
+def test_intent_audit_log_preserves_lifecycle_events(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy("SUPERVISED"))
+    intent = manager.on_alert(make_alert())
+    manager.approve(intent.intent_id)
+    manager.claim(intent.intent_id, "codex")
+    manager.record_receipt(
+        intent.intent_id,
+        {"status": "EXECUTED", "broker_order_id": "rh-audit-1"},
+    )
+
+    restored = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    events = list(reversed(restored.audit_log()))
+    assert [row["event"] for row in events] == [
+        "INTENT_CREATED", "STATUS_CHANGED", "CLAIM_ACQUIRED", "BROKER_RECEIPT"
+    ]
+    assert events[-1]["detail"] == "broker order rh-audit-1"
+    assert events[-1]["to_status"] == "EXECUTED"
 
 
 def test_live_mode_requires_explicit_allowlists_and_time_limit(tmp_path, calibrated):

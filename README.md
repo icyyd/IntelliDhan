@@ -2,13 +2,12 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-07-21 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** D4.2 IntelliDhan owl-and-lotus identity with rounded
-brow/cheek contours, a responsive micro-mark, soft-flared editorial wordmark,
-orange bindu, portable outlined SVG artwork, hash-locked share imagery,
-AA light-mode brand/semantic/faint tokens across
-flat and tinted cards, and a restrained midnight-navy/orange terminal theme;
-the production mark stays readable from favicon to presentation scale and is
-covered by focused brand checks plus the full non-integration regression suite
+**Last system pass:** SPY/QQQ multi-timeframe 9EMA 0DTE SHADOW monitor with
+separate research-only delivery, underlying-level paper outcomes, an
+authenticated combined trade log, append-only intent events, and an enforced
+80% maximum share of fresh Robinhood buying power. Historical evidence failed
+the promotion bar, so the strategy is structurally non-executable and broker
+automation remains `OFF` by default.
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -65,6 +64,15 @@ must not be presented as implemented.
   Codex-only application bearer plus exact `codex` claims. Execution remains
   `OFF` by default, broker authentication stays in the local Codex host, and
   the former Claude execution contract is archived for possible reviewed reuse.
+- Research-only `EMA9_MTF_0DTE` monitor for completed-bar SPY/QQQ 9EMA reclaims
+  with 5m/15m/1h/daily alignment, VWAP, RSI, relative-volume, time-window, and
+  risk-geometry gates. Qualified observations are stored as `SHADOW` signals
+  and underlying paper trades; they cannot reach Telegram or Robinhood. The
+  chronological 55-day study failed its sample/stability bar, so no profitability
+  or probability claim is made.
+- Authenticated `/api/trade-log` combines signal plans, paper outcomes, and
+  append-only intent lifecycle events. Future executable intents carry an 80%
+  fresh-buying-power ceiling, never an instruction to risk or spend 80%.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
@@ -126,6 +134,7 @@ requires the same-commit README update.
 | 27 | [Codex + Robinhood Execution](docs/27-codex-robinhood-execution.md) | Codex-only claim contract, official MCP setup, decommission migration, and fail-closed execution loop |
 | 28 | [Platform Safety &amp; Data Integrity](docs/28-platform-safety-and-data-integrity.md) | Active token, research-isolation, persistence, no-lookahead, GitOps, and deployment controls |
 | 29 | [Brand System](docs/29-brand-system.md) | Approved D4.2 owl-and-lotus identity, SVG asset stack, palette, typography, usage rules, and product application |
+| 30 | [SPY/QQQ 9EMA 0DTE SHADOW Auto-Trader](docs/30-ema9-0dte-shadow-autotrader.md) | Exact multi-timeframe rules, historical evidence, research-only monitoring, 80% exposure ceiling, audit log, and live-promotion gates |
 
 ## Core Product Tenets
 

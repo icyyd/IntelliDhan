@@ -111,6 +111,28 @@ def test_status_endpoint_requires_owner_and_hides_secrets(client, monkeypatch):
     assert "policy" in body and "counts" in body
 
 
+def test_trade_log_requires_account_and_returns_signal_paper_and_execution_history(
+    client, monkeypatch, calibrated
+):
+    monkeypatch.setenv("INTELLIDHAN_OWNER_TOKEN", "owner-token-that-is-long-enough")
+    assert client.get("/api/trade-log").status_code == 401
+
+    alert = make_alert(alert_id="alr_trade_log")
+    loop.alerts.append(alert)
+    loop.autotrade.update_policy(live_policy("SHADOW"))
+    intent = loop.autotrade.on_alert(alert)
+    response = client.get(
+        "/api/trade-log?limit=20",
+        headers={"Authorization": "Bearer owner-token-that-is-long-enough"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert any(item["alert_id"] == alert.alert_id for item in body["signals"])
+    assert any(item["intent_id"] == intent.intent_id for item in body["execution_events"])
+    assert body["live_execution_enabled"] is False
+
+
 # ---------- token correctness ----------
 
 def test_control_endpoint_rejects_wrong_or_missing_token(client, monkeypatch):

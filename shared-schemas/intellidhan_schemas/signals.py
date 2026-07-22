@@ -74,6 +74,9 @@ class Setup(BaseModel):
     reward_risk: float
     explain: str
     invalidation: str
+    # Research strategies can be monitored and paper-tracked in production,
+    # but can never be promoted into the live delivery/execution path.
+    research_only: bool = False
 
 
 class SuppressedSetup(BaseModel):
@@ -150,3 +153,4 @@ class Alert(BaseModel):
     risks: list[str]
     valid_until: datetime
     status: str = "ACTIVE"
+    research_only: bool = False

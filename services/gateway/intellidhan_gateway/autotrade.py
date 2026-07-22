@@ -79,6 +79,9 @@ class AutotradePolicy(BaseModel):
     max_dollar_risk_per_order: float = Field(default=250.0, gt=0)
     max_daily_dollar_risk: float = Field(default=500.0, gt=0)
     max_open_intents: int = Field(default=1, ge=1, le=20)
+    # A fresh broker buying-power read is required before placement.  This is
+    # an exposure ceiling, never a target that overrides per-trade risk sizing.
+    max_available_capital_fraction: float = Field(default=0.80, gt=0, le=0.80)
     allowed_symbols: list[str] = []
     allowed_strategies: list[str] = []
     allowed_modules: list[str] = []
@@ -116,6 +119,17 @@ class AutotradePolicy(BaseModel):
         return self
 
 
+class IntentEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    seq: int
+    at: datetime
+    event: str
+    from_status: IntentStatus | None = None
+    to_status: IntentStatus
+    detail: str | None = None
+
+
 class ExecutionIntent(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -135,6 +149,7 @@ class ExecutionIntent(BaseModel):
     order_plan: dict[str, Any]
     claim: dict[str, Any] | None = None
     receipt: dict[str, Any] | None = None
+    events: list[IntentEvent] = Field(default_factory=list)
     revision: int = 1
 
 
@@ -335,6 +350,13 @@ class AutotradeManager:
             confidence=alert.confidence,
             dollar_risk=alert.dollar_risk,
             order_plan=self._order_plan(alert),
+            events=[IntentEvent(
+                seq=1,
+                at=now,
+                event="INTENT_CREATED",
+                to_status=status,
+                detail="; ".join(reasons) if reasons else None,
+            )],
         )
         self.intents[intent_id] = intent
         self._persist_state()
@@ -391,8 +413,7 @@ class AutotradeManager:
             reasons.append("daily automation risk cap exceeded")
         return reasons
 
-    @staticmethod
-    def _order_plan(alert: Alert) -> dict[str, Any]:
+    def _order_plan(self, alert: Alert) -> dict[str, Any]:
         instrument: dict[str, Any]
         if alert.vehicle == Vehicle.EQUITY:
             instrument = {
@@ -416,6 +437,14 @@ class AutotradeManager:
                 "entry_zone": list(alert.entry_zone),
                 "time_in_force": "DAY",
             },
+            "capital_policy": {
+                "max_available_capital_fraction": (
+                    self.policy.max_available_capital_fraction
+                ),
+                "capital_required": alert.capital_required,
+                "fresh_buying_power_required": True,
+                "upsize_to_ceiling": False,
+            },
             "protection": {
                 "must_be_established": True,
                 "stop_underlying": alert.stop_underlying,
@@ -430,6 +459,11 @@ class AutotradeManager:
                 "intent or alert has expired",
                 "symbol market data is stale, unavailable, or quarantined",
                 "Robinhood account is not the dedicated Agentic account",
+                (
+                    "required capital exceeds "
+                    f"{self.policy.max_available_capital_fraction:.0%} of fresh "
+                    "available buying power"
+                ),
             ],
         }
 
@@ -481,7 +515,10 @@ class AutotradeManager:
             "claimed_at": now.isoformat(),
             "lease_until": (now + timedelta(minutes=2)).isoformat(),
         }
-        return self._transition(intent, IntentStatus.CLAIMED)
+        return self._transition(
+            intent, IntentStatus.CLAIMED, event="CLAIM_ACQUIRED",
+            detail=f"claimed by {agent} with a two-minute lease",
+        )
 
     def block_symbol(self, symbol: str, reason: str) -> list[ExecutionIntent]:
         """Block unplaced work without overwriting in-flight broker truth."""
@@ -522,7 +559,9 @@ class AutotradeManager:
         receipt = dict(payload)
         receipt["recorded_at"] = datetime.now(timezone.utc).isoformat()
         intent.receipt = receipt
-        return self._transition(intent, status)
+        broker_id = receipt.get("broker_order_id")
+        detail = f"broker order {broker_id}" if broker_id else "broker receipt recorded"
+        return self._transition(intent, status, event="BROKER_RECEIPT", detail=detail)
 
     def list_intents(self, status: str | None = None) -> list[ExecutionIntent]:
         self._expire_stale()
@@ -531,6 +570,29 @@ class AutotradeManager:
             wanted = IntentStatus(status)
             items = [item for item in items if item.status == wanted]
         return items
+
+    def audit_log(self, limit: int = 500) -> list[dict[str, Any]]:
+        """Flatten the append-only intent history for operator review/export."""
+        rows: list[dict[str, Any]] = []
+        for intent in self.intents.values():
+            events = intent.events or [IntentEvent(
+                seq=1,
+                at=intent.created_at,
+                event="LEGACY_INTENT_IMPORTED",
+                to_status=intent.status,
+            )]
+            for event in events:
+                rows.append({
+                    **event.model_dump(mode="json"),
+                    "intent_id": intent.intent_id,
+                    "alert_id": intent.alert_id,
+                    "symbol": intent.symbol,
+                    "strategy": intent.strategy,
+                    "module": intent.module,
+                    "mode": intent.mode.value,
+                })
+        rows.sort(key=lambda item: (item["at"], item["intent_id"], item["seq"]), reverse=True)
+        return rows[:max(1, min(limit, 5000))]
 
     def status(self) -> dict[str, Any]:
         items = self.list_intents()
@@ -554,9 +616,14 @@ class AutotradeManager:
         changed = False
         for intent in self.intents.values():
             if intent.status in BLOCKABLE_STATUSES and intent.valid_until <= now:
+                previous = intent.status
                 intent.status = IntentStatus.EXPIRED
                 intent.updated_at = now
                 intent.revision += 1
+                self._append_event(
+                    intent, "INTENT_EXPIRED", previous, IntentStatus.EXPIRED,
+                    "validity window elapsed",
+                )
                 changed = True
             elif intent.status == IntentStatus.CLAIMED and intent.valid_until <= now:
                 if not (intent.claim or {}).get("revoked_at"):
@@ -594,9 +661,13 @@ class AutotradeManager:
     def _mutate_blocked(intent: ExecutionIntent, reason: str) -> None:
         if reason not in intent.reasons:
             intent.reasons.append(reason)
+        previous = intent.status
         intent.status = IntentStatus.BLOCKED
         intent.updated_at = datetime.now(timezone.utc)
         intent.revision += 1
+        AutotradeManager._append_event(
+            intent, "INTENT_BLOCKED", previous, IntentStatus.BLOCKED, reason
+        )
 
     @staticmethod
     def _mutate_revoked_claim(
@@ -618,6 +689,10 @@ class AutotradeManager:
         intent.claim = claim
         intent.updated_at = revoked_at
         intent.revision += 1
+        AutotradeManager._append_event(
+            intent, "CLAIM_REVOKED", intent.status, intent.status, reason,
+            at=revoked_at,
+        )
         return True
 
     def _revoke_claim(self, intent: ExecutionIntent, reason: str) -> ExecutionIntent:
@@ -625,9 +700,37 @@ class AutotradeManager:
             self._persist_state()
         return intent
 
-    def _transition(self, intent: ExecutionIntent, status: IntentStatus) -> ExecutionIntent:
+    @staticmethod
+    def _append_event(
+        intent: ExecutionIntent,
+        event: str,
+        previous: IntentStatus | None,
+        status: IntentStatus,
+        detail: str | None = None,
+        *,
+        at: datetime | None = None,
+    ) -> None:
+        intent.events.append(IntentEvent(
+            seq=len(intent.events) + 1,
+            at=at or datetime.now(timezone.utc),
+            event=event,
+            from_status=previous,
+            to_status=status,
+            detail=detail,
+        ))
+
+    def _transition(
+        self,
+        intent: ExecutionIntent,
+        status: IntentStatus,
+        *,
+        event: str = "STATUS_CHANGED",
+        detail: str | None = None,
+    ) -> ExecutionIntent:
+        previous = intent.status
         intent.status = status
         intent.updated_at = datetime.now(timezone.utc)
         intent.revision += 1
+        self._append_event(intent, event, previous, status, detail, at=intent.updated_at)
         self._persist_state()
         return intent

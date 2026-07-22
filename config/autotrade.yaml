@@ -9,6 +9,9 @@ autotrade:
   max_dollar_risk_per_order: 250.0
   max_daily_dollar_risk: 500.0
   max_open_intents: 1
+  # Exposure ceiling evaluated against a fresh Robinhood buying-power read.
+  # Per-order risk controls remain authoritative and may size far below this.
+  max_available_capital_fraction: 0.80
   allowed_symbols: []
   allowed_strategies: []
   allowed_modules: []

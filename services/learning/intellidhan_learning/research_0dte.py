@@ -36,7 +36,12 @@ from pathlib import Path
 from intellidhan_engine.composer import Budgets, Composer
 from intellidhan_engine.macro import build_macro_series
 from intellidhan_engine.runner import EngineRunner
-from intellidhan_engine.strategies import Ema9TrendPullback, OrbBreakout, VwapReclaim
+from intellidhan_engine.strategies import (
+    Ema9MtfZeroDte,
+    Ema9TrendPullback,
+    OrbBreakout,
+    VwapReclaim,
+)
 from intellidhan_ingestor.market_clock import MarketClock
 from intellidhan_ingestor.providers import YahooProvider
 from intellidhan_learning.paper import PaperExecutor, PaperTrade
@@ -69,6 +74,19 @@ def build_variants() -> tuple[list, dict[str, str]]:
     for i, (t, tr, rv, h1) in enumerate(ema_grid):
         add(Ema9TrendPullback(key=f"EMA9_V{i:02d}", t_mults=t, trend_min=tr,
                               min_relvol=rv, require_h1=h1), "EMA9_TREND_PULLBACK")
+
+    # SPY/QQQ-only multi-timeframe reclaim.  It stays SHADOW-only regardless
+    # of research outcome until a separate forward-paper promotion decision.
+    mtf_grid = itertools.product(
+        [0.6, 0.8, 1.0],
+        [20.0, 40.0],
+        [0.0, 20.0],
+    )
+    for i, (rv, m5, higher) in enumerate(mtf_grid):
+        add(Ema9MtfZeroDte(
+            key=f"EMA9_MTF_V{i:02d}", min_relvol=rv, m5_trend=m5,
+            higher_trend=higher,
+        ), "EMA9_MTF_0DTE")
 
     # ORB_BREAKOUT — V00 was the production default when this grid was frozen;
     # production has since moved to min_relvol=1.5 (the {0.0, 1.3} axis here
@@ -122,7 +140,8 @@ def stats(trades: list[PaperTrade]) -> dict:
 
 
 def params_of(v) -> dict:
-    keys = ("t_mults", "trend_min", "min_relvol", "require_h1", "stop_frac",
+    keys = ("t_mults", "trend_min", "min_relvol", "require_h1", "m5_trend",
+            "higher_trend", "target_rs", "stop_frac",
             "h1_min", "min_before", "stop_lookback", "stop_atr_pad", "t15_opp")
     return {k: getattr(v, k) for k in keys if hasattr(v, k)}
 
@@ -185,15 +204,19 @@ async def run(days: int) -> dict:
                     "split_train_lt": s1, "split_val_lt": s2,
                     "min_val_n": MIN_VAL_N, "target_wr": TARGET_WR,
                     "families": {}, "all": rows}
-    for fam in ("EMA9_TREND_PULLBACK", "ORB_BREAKOUT", "VWAP_RECLAIM"):
+    for fam in ("EMA9_TREND_PULLBACK", "EMA9_MTF_0DTE", "ORB_BREAKOUT",
+                "VWAP_RECLAIM"):
         fam_rows = [r for r in rows if r["family"] == fam]
         fam_rows.sort(key=lambda r: (r["val"].get("wr", 0), r["val"].get("n", 0)),
                       reverse=True)
         qualified = [r for r in fam_rows if qualifies(r)]
         winner = qualified[0] if qualified else None
         entry = {"qualified": qualified, "winner": None, "test": None,
-                 "baseline_key": f"{fam.split('_')[0]}_V00"
-                 if fam != "EMA9_TREND_PULLBACK" else "EMA9_V00"}
+                 "baseline_key": (
+                     "EMA9_V00" if fam == "EMA9_TREND_PULLBACK"
+                     else "EMA9_MTF_V00" if fam == "EMA9_MTF_0DTE"
+                     else f"{fam.split('_')[0]}_V00"
+                 )}
         if winner is not None:
             # TEST scored exactly once, for the selected winner only
             te = stats(by_variant[winner["key"]]["test"])

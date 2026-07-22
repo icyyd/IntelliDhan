@@ -1,5 +1,35 @@
 # IntelliDhan Agent Context
 
+## 2026-07-21 — SPY/QQQ 9EMA 0DTE SHADOW monitor
+
+- Active isolated branch/worktree: `codex/9ema-0dte-autotrader` at
+  `/Users/dhanvin/Documents/IntelliDhan-9ema`, based on `origin/main` commit
+  `2ce39a5`. The shared checkout has unrelated collaborator edits and was not
+  modified.
+- New strategy `EMA9_MTF_0DTE` watches completed 5-minute SPY/QQQ 9EMA reclaims
+  only when 15-minute, 1-hour, and daily context agree; VWAP, RSI, relative
+  volume, candle quality, time-of-day, profile, extension, concurrency,
+  duplicate, and correlation gates remain active.
+- The strategy is structurally `live_eligible=false` and
+  `shadow_monitor=true`. Qualified setups persist as `SHADOW` alerts and
+  underlying-level paper trades through separate research controls. They never
+  reach Telegram or the Robinhood intent queue.
+- The 55-day / 37-session chronological research pass tested 12 parameter
+  variants on SPY/QQQ. The production candidate recorded train n=14, TP1 win
+  rate 7.1%, average −0.768R; validation n=11, TP1 win rate 63.6%, average
+  +0.498R. No variant met n≥30, 75% win rate, positive expectancy, and
+  train/validation stability. Test remained sealed. Calibration has no buckets
+  and explicitly denies live eligibility.
+- Auto-trade policy adds an 80% maximum fraction of fresh Robinhood buying
+  power. It is a ceiling only: risk controls may size lower and the system never
+  upsizes to consume it. The app stores no broker balance or credentials.
+- Execution intents now retain append-only lifecycle events. Authenticated
+  `GET /api/trade-log` returns signals, paper trades, and flattened intent
+  events. Exact rules and promotion gates are in
+  `docs/30-ema9-0dte-shadow-autotrader.md`.
+- Broker execution remains `OFF`. No live order, policy arming, merge,
+  deployment, or branch removal is authorized by this checkpoint.
+
 ## 2026-07-18 — Codex becomes the sole Robinhood execution agent
 
 - Claude is retained as an optional, server-side multi-brain research reviewer,

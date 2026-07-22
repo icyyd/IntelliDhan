@@ -215,6 +215,8 @@ class Composer:
             thesis=thesis, invalidation=setup.invalidation, management=management,
             risks=risks,
             valid_until=setup.ts + VALIDITY[setup.module],
+            status="SHADOW" if setup.research_only else "ACTIVE",
+            research_only=setup.research_only,
         )
 
     @staticmethod
