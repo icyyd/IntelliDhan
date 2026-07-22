@@ -581,7 +581,11 @@ class LiveLoop:
         controls.register_open(setup.module, setup.symbol, setup.strategy)
         if replay:
             return
-        if deliver:
+        if (
+            deliver
+            and getattr(alert, "status", "ACTIVE") == "ACTIVE"
+            and not getattr(alert, "research_only", False)
+        ):
             await self._deliver(alert)
             return
         # A SHADOW signal is visible in the terminal but never sent as a live

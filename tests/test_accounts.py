@@ -108,7 +108,7 @@ def test_registration_requires_invite_and_validates_password(client):
     assert short_password.status_code == 422
 
 
-def test_invite_creates_trader_only_after_initial_admin(client):
+def test_invite_creates_trader_only_after_initial_admin(client, monkeypatch):
     assert register(client).status_code == 200
     trader = TestClient(gateway.app)
     invited = trader.post(
@@ -123,6 +123,23 @@ def test_invite_creates_trader_only_after_initial_admin(client):
     assert invited.status_code == 200
     assert invited.json()["user"]["role"] == "TRADER"
     assert trader.put("/api/autotrade/policy", json={"mode": "OFF"}).status_code == 403
+
+    monkeypatch.setattr(
+        gateway.loop.autotrade,
+        "audit_log",
+        lambda _limit: [{"broker_order_id": "sensitive-global-order"}],
+    )
+    trader_log = trader.get("/api/trade-log")
+    assert trader_log.status_code == 200
+    assert trader_log.json()["execution_events"] == []
+    assert trader_log.json()["broker_history_visible"] is False
+
+    admin_log = client.get("/api/trade-log")
+    assert admin_log.status_code == 200
+    assert admin_log.json()["execution_events"] == [
+        {"broker_order_id": "sensitive-global-order"}
+    ]
+    assert admin_log.json()["broker_history_visible"] is True
 
 
 def test_durable_admin_can_update_shared_automation_policy(

@@ -68,8 +68,10 @@ strategy through the live confidence gate.
 ## Capital and broker controls
 
 The auto-trade policy now carries `max_available_capital_fraction: 0.80`. Before
-any future live order, Codex must fetch fresh buying power from the dedicated
-Robinhood Agentic account and abort if required capital is above that ceiling.
+claiming any future live intent, Codex must fetch fresh buying power from the
+dedicated Robinhood Agentic account and submit it to the authenticated
+`capital-review` endpoint. The application rejects stale/wrong-account reviews
+and blocks required capital above that ceiling.
 Eighty percent is a maximum exposure, not a sizing target: per-order dollar
 risk, daily loss, open-intent, liquidity, and protective-exit limits may reduce
 the order substantially. The system never upsizes a small risk-defined plan to
@@ -89,7 +91,9 @@ Authenticated users can request `GET /api/trade-log` to retrieve, newest first:
 - persisted signal plans, including `research_only` and `SHADOW` status;
 - underlying-level paper trades and outcomes; and
 - append-only execution-intent lifecycle events, including claims and broker
-  receipts for other eligible strategies.
+  receipts for other eligible strategies. These global broker records are
+  visible only to ADMIN and legacy-owner sessions; other accounts receive an
+  empty execution-event list.
 
 Every future broker intent includes the 80% buying-power ceiling, required fresh
 buying-power check, `upsize_to_ceiling=false`, dedicated Agentic-account scope,

@@ -11,8 +11,8 @@ before changing research, data, authentication, execution, or deployment paths.
 
 The Codex bearer and operator control tokens are independent secrets:
 
-- `AUTOTRADE_CODEX_AGENT_TOKEN` authenticates only intent list, claim, and
-  receipt endpoints. It must be new for the Codex cutover and must never be
+- `AUTOTRADE_CODEX_AGENT_TOKEN` authenticates only intent list, capital-review,
+  claim, and receipt endpoints. It must be new for the Codex cutover and must never be
   shared with a retired runner.
 - `AUTOTRADE_CONTROL_TOKEN` authenticates operator policy, disarm, intent
   creation, approval, and rejection endpoints when an ADMIN session is not used.
@@ -64,6 +64,15 @@ bearer is the credential boundary and the literal claim body is defense in depth
 - Per-user capital limits are review ceilings only. Do not claim they resize
   shared signals or constrain shared execution intents until a user-specific
   order-planning layer exists.
+- The shared execution policy separately requires a fresh official-MCP buying
+  power observation before claim and machine-blocks required capital above its
+  configured fraction. A passing check never upsizes an order.
+- Broker execution events are global operational records and are returned only
+  to ADMIN or legacy-owner sessions. TRADER and VIEWER trade-log responses omit
+  them.
+- Production intent events are immutable individual database rows keyed by a
+  unique event ID. The current intent snapshot may be overwritten, but replica
+  overlap cannot erase already-appended audit events.
 - PostgreSQL via `DATABASE_URL` is the production operational store. SQLite is
   for local use unless it is on a verified mounted persistent path.
 - `/api/liveness` proves only that the process responds; it never authorizes a

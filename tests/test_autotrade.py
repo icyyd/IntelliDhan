@@ -92,6 +92,17 @@ def live_policy(mode="ARMED"):
     return payload
 
 
+def pass_capital_review(manager, intent, *, buying_power=10_000.0):
+    return manager.attest_capital(
+        intent.intent_id,
+        agent="codex",
+        buying_power=buying_power,
+        observed_at=datetime.now(timezone.utc),
+        currency="USD",
+        account_scope="ROBINHOOD_AGENTIC_ONLY",
+    )
+
+
 def test_off_mode_creates_no_intent(tmp_path, calibrated):
     manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
     assert manager.on_alert(make_alert()) is None
@@ -117,11 +128,51 @@ def test_armed_mode_is_allowlisted_risk_capped_and_idempotent(tmp_path, calibrat
     assert len(manager.intents) == 1
 
 
+def test_claim_requires_fresh_machine_enforced_capital_review(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert())
+
+    with pytest.raises(ValueError, match="buying-power review is required"):
+        manager.claim(intent.intent_id, "codex")
+
+    blocked = pass_capital_review(manager, intent, buying_power=6_000.0)
+    assert blocked.status == IntentStatus.BLOCKED
+    assert blocked.capital_check["max_capital"] == 4_800.0
+    assert blocked.capital_check["passed"] is False
+    assert "exceeds 80% buying-power ceiling" in blocked.reasons[-1]
+
+
+def test_capital_review_rejects_stale_or_wrong_account_observations(tmp_path, calibrated):
+    manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
+    manager.update_policy(live_policy())
+    intent = manager.on_alert(make_alert())
+    with pytest.raises(ValueError, match="fresh buying power"):
+        manager.attest_capital(
+            intent.intent_id,
+            agent="codex",
+            buying_power=10_000,
+            observed_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+            currency="USD",
+            account_scope="ROBINHOOD_AGENTIC_ONLY",
+        )
+    with pytest.raises(ValueError, match="dedicated Agentic account"):
+        manager.attest_capital(
+            intent.intent_id,
+            agent="codex",
+            buying_power=10_000,
+            observed_at=datetime.now(timezone.utc),
+            currency="USD",
+            account_scope="OTHER_ACCOUNT",
+        )
+
+
 def test_intent_audit_log_preserves_lifecycle_events(tmp_path, calibrated):
     manager = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
     manager.update_policy(live_policy("SUPERVISED"))
     intent = manager.on_alert(make_alert())
     manager.approve(intent.intent_id)
+    pass_capital_review(manager, intent)
     manager.claim(intent.intent_id, "codex")
     manager.record_receipt(
         intent.intent_id,
@@ -131,10 +182,34 @@ def test_intent_audit_log_preserves_lifecycle_events(tmp_path, calibrated):
     restored = AutotradeManager(tmp_path / "policy.yaml", tmp_path / "state.json")
     events = list(reversed(restored.audit_log()))
     assert [row["event"] for row in events] == [
-        "INTENT_CREATED", "STATUS_CHANGED", "CLAIM_ACQUIRED", "BROKER_RECEIPT"
+        "INTENT_CREATED", "OPERATOR_APPROVED", "CAPITAL_PREFLIGHT",
+        "CLAIM_ACQUIRED", "BROKER_RECEIPT"
     ]
     assert events[-1]["detail"] == "broker order rh-audit-1"
     assert events[-1]["to_status"] == "EXECUTED"
+
+
+def test_durable_event_rows_survive_replica_last_writer_wins(tmp_path, calibrated):
+    store = TerminalStore(tmp_path / "shared.sqlite3")
+    store.init_schema()
+    first = AutotradeManager(
+        tmp_path / "policy.yaml", tmp_path / "state.json", state_store=store
+    )
+    first.update_policy(live_policy("SUPERVISED"))
+    intent = first.on_alert(make_alert())
+    second = AutotradeManager(
+        tmp_path / "policy.yaml", tmp_path / "state.json", state_store=store
+    )
+
+    first.reject(intent.intent_id, "replica one")
+    second.reject(intent.intent_id, "replica two")
+
+    events = store.list_autotrade_events(intent.intent_id)
+    assert [item["event"] for item in events] == [
+        "INTENT_CREATED", "OPERATOR_REJECTED", "OPERATOR_REJECTED"
+    ]
+    assert {item["detail"] for item in events[-2:]} == {"replica one", "replica two"}
+    assert len({item["event_id"] for item in events}) == 3
 
 
 def test_live_mode_requires_explicit_allowlists_and_time_limit(tmp_path, calibrated):
@@ -191,6 +266,7 @@ def test_supervised_approval_claim_receipt_and_persistence(tmp_path, calibrated)
     intent = manager.on_alert(make_alert())
     assert intent.status == IntentStatus.AWAITING_APPROVAL
     assert manager.approve(intent.intent_id).status == IntentStatus.READY
+    pass_capital_review(manager, intent)
     assert manager.claim(intent.intent_id, "codex").status == IntentStatus.CLAIMED
     executed = manager.record_receipt(
         intent.intent_id,
@@ -236,6 +312,7 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
     health["reason"] = None
     third = manager.on_alert(make_alert(alert_id="alr_test_spy_3"))
     manager.approve(third.intent_id)
+    pass_capital_review(manager, third)
     manager.claim(third.intent_id, "codex")
     changed = manager.block_symbol("SPY", "SPY feed failed after claim")
     assert third in changed
@@ -267,6 +344,7 @@ def test_symbol_data_gate_blocks_create_approve_claim_and_claimed_intents(
 
     late = manager.on_alert(make_alert(alert_id="alr_test_spy_late_cancel"))
     manager.approve(late.intent_id)
+    pass_capital_review(manager, late)
     manager.claim(late.intent_id, "codex")
     manager.record_receipt(late.intent_id, {"status": "CANCELLED"})
     late_fill = manager.record_receipt(
@@ -307,6 +385,7 @@ def test_only_codex_can_claim_ready_intents(tmp_path, calibrated):
         manager.claim(intent.intent_id, "retired-agent")
 
     assert intent.status == IntentStatus.READY
+    pass_capital_review(manager, intent)
     claimed = manager.claim(intent.intent_id, "codex")
     assert claimed.status == IntentStatus.CLAIMED
     assert claimed.claim["agent"] == "codex"
@@ -371,6 +450,7 @@ def test_retired_agent_claim_is_revoked_but_keeps_receipt_path(
     manager = AutotradeManager(policy, state)
     manager.update_policy(live_policy())
     intent = manager.on_alert(make_alert())
+    pass_capital_review(manager, intent)
     manager.claim(intent.intent_id, "codex")
     intent.claim["agent"] = "retired-agent"
     manager._persist_state()

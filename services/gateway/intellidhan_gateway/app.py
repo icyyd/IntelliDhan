@@ -19,7 +19,7 @@ from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, WebSo
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from intellidhan_gateway.auth import (
     OWNER_COOKIE,
@@ -86,6 +86,16 @@ class CodexClaimRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     agent: Literal["codex"]
+
+
+class CodexCapitalReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent: Literal["codex"]
+    buying_power: float = Field(gt=0)
+    observed_at: datetime
+    currency: Literal["USD"]
+    account_scope: Literal["ROBINHOOD_AGENTIC_ONLY"]
 
 
 @asynccontextmanager
@@ -963,7 +973,8 @@ async def get_trade_log(
     limit: int = Query(200, ge=1, le=1000),
 ):
     """One chronological audit surface for signals, paper trades, and intents."""
-    _require_personal(request)
+    principal = _require_personal(request)
+    broker_history_visible = principal.legacy or principal.role == "ADMIN"
     return {
         "signals": [
             item.model_dump(mode="json") for item in loop.alerts[-limit:]
@@ -971,7 +982,10 @@ async def get_trade_log(
         "paper_trades": [
             item.model_dump(mode="json") for item in loop.executor.trades[-limit:]
         ][::-1],
-        "execution_events": loop.autotrade.audit_log(limit),
+        "execution_events": (
+            loop.autotrade.audit_log(limit) if broker_history_visible else []
+        ),
+        "broker_history_visible": broker_history_visible,
         "live_execution_enabled": loop.autotrade.effective_mode().value
         in {"SUPERVISED", "ARMED"},
     }
@@ -1050,6 +1064,26 @@ async def claim_autotrade_intent(
         return loop.autotrade.claim(intent_id, payload.agent).model_dump(
             mode="json"
         )
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.post("/api/autotrade/intents/{intent_id}/capital-review")
+async def review_autotrade_capital(
+    intent_id: str,
+    payload: CodexCapitalReviewRequest,
+    _agent_auth: None = Depends(_require_codex_agent),
+):
+    """Record and enforce a fresh official-MCP buying-power observation."""
+    try:
+        return loop.autotrade.attest_capital(
+            intent_id,
+            agent=payload.agent,
+            buying_power=payload.buying_power,
+            observed_at=payload.observed_at,
+            currency=payload.currency,
+            account_scope=payload.account_scope,
+        ).model_dump(mode="json")
     except (ValueError, KeyError) as exc:
         raise _autotrade_error(exc) from exc
 

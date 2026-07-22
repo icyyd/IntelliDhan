@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Literal, Protocol
+from uuid import uuid4
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -24,6 +25,7 @@ from intellidhan_schemas.signals import Action, Alert, Vehicle
 
 AUTOTRADE_CONTRACT_VERSION = "1.1"
 EXECUTION_AGENT = "codex"
+CAPITAL_REVIEW_MAX_AGE_SECONDS = 120
 
 
 class AutomationMode(str, Enum):
@@ -67,6 +69,10 @@ class SettingsStore(Protocol):
     def get_setting(self, key: str) -> Any | None: ...
 
     def put_setting(self, key: str, payload: Any) -> None: ...
+
+    def append_autotrade_event(self, intent_id: str, payload: dict[str, Any]) -> None: ...
+
+    def list_autotrade_events(self, intent_id: str | None = None) -> list[dict[str, Any]]: ...
 
 
 class AutotradePolicy(BaseModel):
@@ -122,6 +128,7 @@ class AutotradePolicy(BaseModel):
 class IntentEvent(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    event_id: str = Field(default_factory=lambda: uuid4().hex)
     seq: int
     at: datetime
     event: str
@@ -149,6 +156,7 @@ class ExecutionIntent(BaseModel):
     order_plan: dict[str, Any]
     claim: dict[str, Any] | None = None
     receipt: dict[str, Any] | None = None
+    capital_check: dict[str, Any] | None = None
     events: list[IntentEvent] = Field(default_factory=list)
     revision: int = 1
 
@@ -217,11 +225,32 @@ class AutotradeManager:
     def _load_state(self) -> dict[str, ExecutionIntent]:
         if self.state_store is not None:
             persisted = self.state_store.get_setting("autotrade_intents")
-            if persisted:
-                return {
+            intents = (
+                {
                     item["intent_id"]: ExecutionIntent.model_validate(item)
                     for item in persisted.get("intents", [])
                 }
+                if persisted else {}
+            )
+            durable_events = self.state_store.list_autotrade_events()
+            if durable_events:
+                by_intent: dict[str, list[IntentEvent]] = {}
+                for row in durable_events:
+                    intent_id = row.pop("intent_id")
+                    by_intent.setdefault(intent_id, []).append(
+                        IntentEvent.model_validate(row)
+                    )
+                for intent_id, events in by_intent.items():
+                    if intent_id in intents:
+                        intents[intent_id].events = events
+            else:
+                # One-time migration from the older embedded event list.
+                for intent in intents.values():
+                    for event in intent.events:
+                        self.state_store.append_autotrade_event(
+                            intent.intent_id, event.model_dump(mode="json")
+                        )
+            return intents
         if not self.state_path.exists():
             return {}
         raw = json.loads(self.state_path.read_text())
@@ -270,6 +299,12 @@ class AutotradeManager:
         tmp = self.state_path.with_suffix(".tmp")
         tmp.write_text(json.dumps(payload, indent=2))
         tmp.replace(self.state_path)
+
+    def _persist_event(self, intent: ExecutionIntent, event: IntentEvent) -> None:
+        if self.state_store is not None:
+            self.state_store.append_autotrade_event(
+                intent.intent_id, event.model_dump(mode="json")
+            )
 
     def effective_mode(self, now: datetime | None = None) -> AutomationMode:
         now = now or datetime.now(timezone.utc)
@@ -335,6 +370,13 @@ class AutotradeManager:
             status = IntentStatus.READY
         else:
             return None
+        created_event = IntentEvent(
+            seq=1,
+            at=now,
+            event="INTENT_CREATED",
+            to_status=status,
+            detail="; ".join(reasons) if reasons else None,
+        )
         intent = ExecutionIntent(
             intent_id=intent_id,
             alert_id=alert.alert_id,
@@ -350,15 +392,10 @@ class AutotradeManager:
             confidence=alert.confidence,
             dollar_risk=alert.dollar_risk,
             order_plan=self._order_plan(alert),
-            events=[IntentEvent(
-                seq=1,
-                at=now,
-                event="INTENT_CREATED",
-                to_status=status,
-                detail="; ".join(reasons) if reasons else None,
-            )],
+            events=[created_event],
         )
         self.intents[intent_id] = intent
+        self._persist_event(intent, created_event)
         self._persist_state()
         return intent
 
@@ -476,7 +513,9 @@ class AutotradeManager:
         reason = self._symbol_gate_reason(intent.symbol)
         if reason:
             return self._block_intent(intent, reason)
-        return self._transition(intent, IntentStatus.READY)
+        return self._transition(
+            intent, IntentStatus.READY, event="OPERATOR_APPROVED"
+        )
 
     def reject(self, intent_id: str, reason: str) -> ExecutionIntent:
         intent = self._get(intent_id)
@@ -486,7 +525,73 @@ class AutotradeManager:
         if intent.status not in BLOCKABLE_STATUSES:
             raise ValueError("only pre-execution intents can be rejected")
         intent.reasons.append(detail)
-        return self._transition(intent, IntentStatus.REJECTED)
+        return self._transition(
+            intent, IntentStatus.REJECTED, event="OPERATOR_REJECTED", detail=detail
+        )
+
+    def attest_capital(
+        self,
+        intent_id: str,
+        *,
+        agent: str,
+        buying_power: float,
+        observed_at: datetime,
+        currency: str,
+        account_scope: str,
+    ) -> ExecutionIntent:
+        """Machine-check a fresh MCP buying-power observation before claim."""
+        if agent != self.policy.agent:
+            raise ValueError(f"capital review agent must be {self.policy.agent}")
+        intent = self._get(intent_id)
+        if intent.status != IntentStatus.READY:
+            raise ValueError("capital review requires a READY intent")
+        if buying_power <= 0:
+            raise ValueError("buying power must be positive")
+        if currency != "USD":
+            raise ValueError("capital review currency must be USD")
+        if account_scope != "ROBINHOOD_AGENTIC_ONLY":
+            raise ValueError("capital review must target the dedicated Agentic account")
+        if observed_at.tzinfo is None or observed_at.utcoffset() is None:
+            raise ValueError("capital review timestamp must include a timezone")
+        now = datetime.now(timezone.utc)
+        observed = observed_at.astimezone(timezone.utc)
+        age = (now - observed).total_seconds()
+        if age < -5 or age > CAPITAL_REVIEW_MAX_AGE_SECONDS:
+            raise ValueError("capital review must use fresh buying power from the MCP")
+        required = float(intent.order_plan["capital_policy"]["capital_required"])
+        fraction = self.policy.max_available_capital_fraction
+        maximum = round(float(buying_power) * fraction, 2)
+        passed = required <= maximum + 1e-9
+        intent.capital_check = {
+            "agent": agent,
+            "account_scope": account_scope,
+            "currency": currency,
+            "buying_power": round(float(buying_power), 2),
+            "observed_at": observed.isoformat(),
+            "recorded_at": now.isoformat(),
+            "max_available_capital_fraction": fraction,
+            "max_capital": maximum,
+            "capital_required": required,
+            "passed": passed,
+        }
+        self._append_event(
+            intent,
+            "CAPITAL_PREFLIGHT",
+            intent.status,
+            intent.status,
+            f"required ${required:.2f}; ceiling ${maximum:.2f}; passed={passed}",
+            at=now,
+        )
+        intent.updated_at = now
+        intent.revision += 1
+        if not passed:
+            return self._block_intent(
+                intent,
+                f"required capital ${required:.2f} exceeds "
+                f"{fraction:.0%} buying-power ceiling ${maximum:.2f}",
+            )
+        self._persist_state()
+        return intent
 
     def claim(self, intent_id: str, agent: str) -> ExecutionIntent:
         if agent != self.policy.agent:
@@ -504,6 +609,10 @@ class AutotradeManager:
         reason = self._symbol_gate_reason(intent.symbol)
         if reason:
             return self._block_intent(intent, reason)
+        if intent.status == IntentStatus.READY:
+            capital_reason = self._capital_check_reason(intent, now)
+            if capital_reason:
+                raise ValueError(capital_reason)
         if intent.status == IntentStatus.CLAIMED:
             if (intent.claim or {}).get("revoked_at"):
                 raise ValueError("intent claim was revoked; a fresh alert is required")
@@ -519,6 +628,24 @@ class AutotradeManager:
             intent, IntentStatus.CLAIMED, event="CLAIM_ACQUIRED",
             detail=f"claimed by {agent} with a two-minute lease",
         )
+
+    @staticmethod
+    def _capital_check_reason(intent: ExecutionIntent, now: datetime) -> str | None:
+        check = intent.capital_check
+        if not check:
+            return "fresh Robinhood buying-power review is required before claim"
+        if check.get("passed") is not True:
+            return "Robinhood buying-power review did not pass"
+        try:
+            observed = datetime.fromisoformat(str(check["observed_at"]))
+        except (KeyError, TypeError, ValueError):
+            return "Robinhood buying-power review timestamp is invalid"
+        if observed.tzinfo is None or observed.utcoffset() is None:
+            return "Robinhood buying-power review timestamp is invalid"
+        age = (now - observed.astimezone(timezone.utc)).total_seconds()
+        if age < -5 or age > CAPITAL_REVIEW_MAX_AGE_SECONDS:
+            return "Robinhood buying-power review is stale"
+        return None
 
     def block_symbol(self, symbol: str, reason: str) -> list[ExecutionIntent]:
         """Block unplaced work without overwriting in-flight broker truth."""
@@ -574,14 +701,27 @@ class AutotradeManager:
     def audit_log(self, limit: int = 500) -> list[dict[str, Any]]:
         """Flatten the append-only intent history for operator review/export."""
         rows: list[dict[str, Any]] = []
-        for intent in self.intents.values():
-            events = intent.events or [IntentEvent(
-                seq=1,
-                at=intent.created_at,
-                event="LEGACY_INTENT_IMPORTED",
-                to_status=intent.status,
-            )]
-            for event in events:
+        if self.state_store is not None:
+            durable = self.state_store.list_autotrade_events()
+            event_pairs = [
+                (self.intents.get(row.pop("intent_id")), IntentEvent.model_validate(row))
+                for row in durable
+            ]
+        else:
+            event_pairs = [
+                (intent, event)
+                for intent in self.intents.values()
+                for event in (
+                    intent.events or [IntentEvent(
+                        seq=1,
+                        at=intent.created_at,
+                        event="LEGACY_INTENT_IMPORTED",
+                        to_status=intent.status,
+                    )]
+                )
+            ]
+        for intent, event in event_pairs:
+            if intent is not None:
                 rows.append({
                     **event.model_dump(mode="json"),
                     "intent_id": intent.intent_id,
@@ -657,20 +797,19 @@ class AutotradeManager:
                 self._persist_state()
         return intent
 
-    @staticmethod
-    def _mutate_blocked(intent: ExecutionIntent, reason: str) -> None:
+    def _mutate_blocked(self, intent: ExecutionIntent, reason: str) -> None:
         if reason not in intent.reasons:
             intent.reasons.append(reason)
         previous = intent.status
         intent.status = IntentStatus.BLOCKED
         intent.updated_at = datetime.now(timezone.utc)
         intent.revision += 1
-        AutotradeManager._append_event(
+        self._append_event(
             intent, "INTENT_BLOCKED", previous, IntentStatus.BLOCKED, reason
         )
 
-    @staticmethod
     def _mutate_revoked_claim(
+        self,
         intent: ExecutionIntent,
         reason: str,
         *,
@@ -689,7 +828,7 @@ class AutotradeManager:
         intent.claim = claim
         intent.updated_at = revoked_at
         intent.revision += 1
-        AutotradeManager._append_event(
+        self._append_event(
             intent, "CLAIM_REVOKED", intent.status, intent.status, reason,
             at=revoked_at,
         )
@@ -700,8 +839,8 @@ class AutotradeManager:
             self._persist_state()
         return intent
 
-    @staticmethod
     def _append_event(
+        self,
         intent: ExecutionIntent,
         event: str,
         previous: IntentStatus | None,
@@ -710,14 +849,16 @@ class AutotradeManager:
         *,
         at: datetime | None = None,
     ) -> None:
-        intent.events.append(IntentEvent(
+        item = IntentEvent(
             seq=len(intent.events) + 1,
             at=at or datetime.now(timezone.utc),
             event=event,
             from_status=previous,
             to_status=status,
             detail=detail,
-        ))
+        )
+        intent.events.append(item)
+        self._persist_event(intent, item)
 
     def _transition(
         self,

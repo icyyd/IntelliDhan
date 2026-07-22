@@ -24,9 +24,20 @@
   power. It is a ceiling only: risk controls may size lower and the system never
   upsizes to consume it. The app stores no broker balance or credentials.
 - Execution intents now retain append-only lifecycle events. Authenticated
-  `GET /api/trade-log` returns signals, paper trades, and flattened intent
-  events. Exact rules and promotion gates are in
+  `GET /api/trade-log` returns signals and paper trades; global broker events
+  are ADMIN/legacy-owner-only and stored as immutable individual database rows.
+  Claim now requires a fresh, machine-checked official-MCP buying-power review;
+  stale, wrong-account, or over-80% reviews fail closed. Exact rules are in
   `docs/30-ema9-0dte-shadow-autotrader.md`.
+- Independent review of checkpoint `6b45943` found four blockers: global broker
+  event disclosure, a global-SHADOW research marker bypass, a descriptive-only
+  capital ceiling, and replica-unsafe embedded audit history. The corrective
+  pass redacts non-admin broker events, preserves `research_only` through every
+  runner mode plus a delivery-side guard, adds the capital-review claim gate,
+  and moves events to immutable unique database rows.
+- Corrective local verification: 303 tests passed (6 integration tests
+  deselected), Ruff passed, and `git diff --check` is clean. PostgreSQL CI also
+  exercises immutable event-row insertion and idempotency.
 - Broker execution remains `OFF`. No live order, policy arming, merge,
   deployment, or branch removal is authorized by this checkpoint.
 

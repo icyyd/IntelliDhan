@@ -120,8 +120,12 @@ class EngineRunner:
                 )
             )
             return None
-        return self._build_setup(state, sig, setup_id, factors, comp, conf, cal,
-                                 research_only=False)
+        return self._build_setup(
+            state, sig, setup_id, factors, comp, conf, cal,
+            # Global SHADOW mode may bypass calibration confidence for research,
+            # but it can never erase a strategy's structural live prohibition.
+            research_only=not sig.live_eligible,
+        )
 
     def _build_setup(self, state, sig, setup_id, factors, comp, conf, cal, *,
                      research_only: bool) -> Setup:

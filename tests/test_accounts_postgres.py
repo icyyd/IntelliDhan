@@ -27,6 +27,7 @@ def _clean_accounts(store: TerminalStore) -> None:
 
 def _clean_autotrade_settings(store: TerminalStore) -> None:
     with store._connection() as connection:
+        connection.execute("DELETE FROM autotrade_intent_events")
         connection.execute(
             "DELETE FROM runtime_settings WHERE setting_key IN (%s, %s)",
             ("autotrade_policy", "autotrade_intents"),
@@ -58,6 +59,19 @@ def test_postgres_pre_codex_policy_is_disarmed_and_versioned():
         persisted = store.get_setting("autotrade_policy")
         assert persisted["mode"] == "OFF"
         assert persisted["contract_version"] == "1.1"
+        now = datetime.now(timezone.utc).isoformat()
+        first = {
+            "event_id": "postgres-event-1", "seq": 1, "at": now,
+            "event": "TEST", "from_status": None, "to_status": "SHADOW",
+            "detail": None,
+        }
+        second = {**first, "event_id": "postgres-event-2", "seq": 2}
+        store.append_autotrade_event("intent-postgres", first)
+        store.append_autotrade_event("intent-postgres", first)
+        store.append_autotrade_event("intent-postgres", second)
+        assert [item["event_id"] for item in store.list_autotrade_events(
+            "intent-postgres"
+        )] == ["postgres-event-1", "postgres-event-2"]
     finally:
         _clean_autotrade_settings(store)
 

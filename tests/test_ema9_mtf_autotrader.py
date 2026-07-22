@@ -9,6 +9,7 @@ import pytest
 from intellidhan_engine.runner import EngineRunner
 from intellidhan_engine.strategies import Ema9MtfZeroDte, RawSignal
 from intellidhan_engine.veto import Verdict
+from intellidhan_gateway.live import LiveLoop
 from intellidhan_schemas import Bar, Timeframe
 from intellidhan_schemas.signals import Direction, Module
 
@@ -133,3 +134,45 @@ def test_runner_routes_non_live_monitor_to_separate_shadow_queue(monkeypatch):
     assert len(shadow) == 1
     assert shadow[0].research_only is True
     assert runner.pop_shadow_setups() == []
+
+
+@pytest.mark.asyncio
+async def test_global_shadow_mode_cannot_deliver_research_strategy(monkeypatch):
+    strategy = Ema9MtfZeroDte()
+    runner = EngineRunner(["SPY"], strategies=[strategy], shadow=True)
+    state = SimpleNamespace(
+        symbol="SPY",
+        session_id="2026-07-20",
+        ts=lambda: datetime(2026, 7, 20, 10, 35, tzinfo=ET),
+        mtf_matrix=lambda: {Timeframe.M5: 60.0, Timeframe.M15: 40.0},
+    )
+    signal = RawSignal(
+        strategy=strategy.key, module=Module.ZDTE, direction=Direction.LONG,
+        trigger_tf=Timeframe.M5, entry=100.0, stop=99.0,
+        targets=[101.0, 102.0, 103.0], f2_quality=80.0,
+        explain="test", invalidation="test", live_eligible=False,
+        shadow_monitor=True,
+    )
+    monkeypatch.setattr(
+        "intellidhan_engine.runner.score_factors",
+        lambda *_args: {"F1_trend": 80.0},
+    )
+    monkeypatch.setattr("intellidhan_engine.runner.composite", lambda _factors: 80.0)
+    monkeypatch.setattr(
+        "intellidhan_engine.runner.run_gates", lambda *_args: Verdict(True)
+    )
+    setup = runner._score_and_gate(state, signal)
+    assert setup is not None and setup.research_only is True
+
+    loop = LiveLoop(symbols=["SPY"])
+    delivered = []
+
+    async def capture(alert):
+        delivered.append(alert)
+
+    monkeypatch.setattr(loop, "_deliver", capture)
+    await loop._record_setup(setup, replay=False, deliver=True)
+
+    assert delivered == []
+    assert loop.alerts[-1].status == "SHADOW"
+    assert loop.alerts[-1].research_only is True

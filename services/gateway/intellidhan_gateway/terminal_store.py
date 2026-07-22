@@ -162,6 +162,14 @@ CREATE TABLE IF NOT EXISTS delivery_log (
     delivery_key TEXT PRIMARY KEY,
     created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS autotrade_intent_events (
+    event_id TEXT PRIMARY KEY,
+    intent_id TEXT NOT NULL,
+    event_at TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_autotrade_events_intent_at
+    ON autotrade_intent_events(intent_id, event_at);
 """
 
 
@@ -267,6 +275,38 @@ class TerminalStore:
             "SELECT payload FROM runtime_settings WHERE setting_key=?", (key,)
         )
         return json.loads(rows[0]["payload"]) if rows else None
+
+    def append_autotrade_event(self, intent_id: str, payload: dict[str, Any]) -> None:
+        """Insert one immutable event; event_id makes replica retries idempotent."""
+        self._execute(
+            """INSERT INTO autotrade_intent_events
+               (event_id, intent_id, event_at, payload)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(event_id) DO NOTHING""",
+            (
+                payload["event_id"],
+                intent_id,
+                payload["at"],
+                json.dumps(payload),
+            ),
+        )
+
+    def list_autotrade_events(self, intent_id: str | None = None) -> list[dict[str, Any]]:
+        if intent_id is None:
+            rows = self._fetchall(
+                """SELECT intent_id, payload FROM autotrade_intent_events
+                   ORDER BY event_at, event_id"""
+            )
+        else:
+            rows = self._fetchall(
+                """SELECT intent_id, payload FROM autotrade_intent_events
+                   WHERE intent_id=? ORDER BY event_at, event_id""",
+                (intent_id,),
+            )
+        return [
+            {"intent_id": row["intent_id"], **json.loads(row["payload"])}
+            for row in rows
+        ]
 
     # Account records are deliberately separate from shared engine state.  This
     # keeps personal limits and research lists isolated without a destructive

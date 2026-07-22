@@ -91,6 +91,7 @@ def test_control_endpoints_503_when_token_unset(client):
 def test_agent_endpoints_503_when_token_unset(client):
     assert client.get("/api/autotrade/intents").status_code == 503
     assert client.post("/api/autotrade/intents/x/claim").status_code == 503
+    assert client.post("/api/autotrade/intents/x/capital-review").status_code == 503
     assert client.post("/api/autotrade/intents/x/receipt", json={"status": "EXECUTED"}).status_code == 503
 
 
@@ -130,6 +131,7 @@ def test_trade_log_requires_account_and_returns_signal_paper_and_execution_histo
     body = response.json()
     assert any(item["alert_id"] == alert.alert_id for item in body["signals"])
     assert any(item["intent_id"] == intent.intent_id for item in body["execution_events"])
+    assert body["broker_history_visible"] is True
     assert body["live_execution_enabled"] is False
 
 
@@ -229,6 +231,25 @@ def test_supervised_lifecycle_end_to_end_via_api(client, monkeypatch, calibrated
                     json={"agent": "codex", "unexpected": True}, headers=agent)
     assert r.status_code == 422
     assert r.json()["detail"][0]["type"] == "extra_forbidden"
+
+    r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
+                    json={"agent": "codex"}, headers=agent)
+    assert r.status_code == 422
+    assert "buying-power review is required" in r.json()["detail"]
+
+    r = client.post(
+        f"/api/autotrade/intents/{intent.intent_id}/capital-review",
+        json={
+            "agent": "codex",
+            "buying_power": 10_000,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "currency": "USD",
+            "account_scope": "ROBINHOOD_AGENTIC_ONLY",
+        },
+        headers=agent,
+    )
+    assert r.status_code == 200
+    assert r.json()["capital_check"]["passed"] is True
 
     r = client.post(f"/api/autotrade/intents/{intent.intent_id}/claim",
                     json={"agent": "codex"}, headers=agent)
