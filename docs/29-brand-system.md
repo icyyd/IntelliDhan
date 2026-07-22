@@ -30,7 +30,7 @@ board only; production UI must not extract pixels or geometry from it.
 | `intellidhan-mark.svg` | Primary owl-and-lotus mark on light/neutral surfaces |
 | `intellidhan-mark-inverse.svg` | Keyed owl-and-lotus mark on midnight/navy surfaces |
 | `intellidhan-lockup.svg` | Horizontal presentation and external collateral |
-| `favicon.svg` | Browser/app icon on a midnight rounded tile |
+| `favicon.svg` | Responsive micro-mark that fills a midnight rounded tile |
 | `social-card.svg` | Editable 1200×630 social/share card with outlined text |
 | `social-card.png` | Deterministic 1200×630 Open Graph/Twitter delivery asset |
 | `intellidhan-theme.css` | Platform palette, typography, and component layer |
@@ -78,6 +78,8 @@ files in a later deployment-hardening pass if privacy policy or CSP requires it.
 
 - Clearspace around the mark: at least the diameter of the orange bindu.
 - Minimum mark size: 24px in digital UI; use 32px or larger when possible.
+- At 16px use the enlarged favicon micro-mark; do not shrink the standard mark
+  into additional padding.
 - Minimum lockup width: 180px.
 - Never stretch, rotate, bevel, shadow, or recolor the owl or individual petals.
 - Keep both eyes balanced and preserve the oval enclosure; do not detach the owl
@@ -107,9 +109,9 @@ The agent-readable implementation contract is maintained in
 The 2026-07-21 D4.2 pass supersedes the first-generation `ID` monogram. It
 verified shared owl, lotus, enclosure, eye, and bindu geometry across the mark,
 inverse mark, favicon, lockup, and social card; small-size legibility at 16, 24,
-34, and 256px; deterministic social export; gateway delivery; and the focused
-and full regression suites. Strategy, data, authentication, multi-brain, and
-broker execution behavior did not change.
+34, and 256px; deterministic social export with an approved content hash;
+gateway delivery; and the focused and full regression suites. Strategy, data,
+authentication, multi-brain, and broker execution behavior did not change.
 
 The 2026-07-19 implementation pass verified:
 

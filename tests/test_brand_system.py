@@ -1,3 +1,4 @@
+import hashlib
 import re
 import struct
 from pathlib import Path
@@ -87,9 +88,11 @@ def test_d42_owl_lotus_geometry_is_shared_across_brand_assets():
         "social-card.svg",
     )
     required_geometry = (
-        'd="M128 17C77 17 41 55 41 108v40c0 54 36 91 87 91s87-37 87-91v-40c0-53-36-91-87-91Z"',
-        'd="M128 108C115 79 96 59 70 54c12 15 15 29 14 44-1 21 8 38 25 49-5-17-4-31 2-41 4-7 10-6 17 2Z"',
-        'd="M128 108c13-29 32-49 58-54-12 15-15 29-14 44 1 21-8 38-25 49 5-17 4-31-2-41-4-7-10-6-17 2Z"',
+        'd="M128 17C72 17 33 56 33 109v40c0 54 39 90 95 90s95-36 95-90v-40c0-53-39-92-95-92Z"',
+        'd="M68 63c14 15 39 10 60 51"',
+        'd="M188 63c-14 15-39 10-60 51"',
+        'd="M77 69c-24 20-22 53 17 70"',
+        'd="M179 69c24 20 22 53-17 70"',
         'd="M128 155c-18 19-23 43 0 67 23-24 18-48 0-67Z"',
         'd="M118 222c-35 1-55-20-58-54 29 0 51 19 58 54Z"',
         'd="M138 222c35 1 55-20 58-54-29 0-51 19-58 54Z"',
@@ -98,8 +101,8 @@ def test_d42_owl_lotus_geometry_is_shared_across_brand_assets():
         source = (BRAND / name).read_text(encoding="utf-8")
         assert all(path in source for path in required_geometry)
         assert 'd="M86 47h48c49 0 81 32 81 80' not in source
-        assert 'cx="94" cy="101"' in source
-        assert 'cx="162" cy="101"' in source
+        assert 'cx="91" cy="101"' in source
+        assert 'cx="165" cy="101"' in source
         assert 'cx="128" cy="218"' in source
 
 
@@ -113,6 +116,9 @@ def test_external_brand_artwork_uses_outlined_text_and_exact_share_dimensions():
     png = (BRAND / "social-card.png").read_bytes()
     assert png[:8] == b"\x89PNG\r\n\x1a\n"
     assert struct.unpack(">II", png[16:24]) == (1200, 630)
+    assert hashlib.sha256(png).hexdigest() == (
+        "62a51ab4cafca3913d8c8c7d959a45fca5b8cb7c70a5d502966511089c7447be"
+    )
 
 
 def _relative_luminance(hex_color: str) -> float:

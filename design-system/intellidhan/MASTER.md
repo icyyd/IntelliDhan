@@ -86,7 +86,7 @@ Production assets live in `web/assets/brand/`:
 - `intellidhan-mark.svg` — light-surface owl-and-lotus mark;
 - `intellidhan-mark-inverse.svg` — dark-surface keyed owl-and-lotus mark;
 - `intellidhan-lockup.svg` — horizontal brand lockup;
-- `favicon.svg` — app/browser tile;
+- `favicon.svg` — enlarged responsive micro-mark on an app/browser tile;
 - `social-card.svg` — editable 1200×630 share-card source with outlined text;
 - `social-card.png` — deterministic 1200×630 delivery export for previews;
 - `intellidhan-theme.css` — web implementation tokens and overrides;

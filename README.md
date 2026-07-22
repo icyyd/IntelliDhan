@@ -2,9 +2,10 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-07-21 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** D4.2 IntelliDhan owl-and-lotus identity with a soft-flared
-editorial wordmark, orange bindu, portable outlined SVG artwork,
-deterministic share imagery, AA light-mode brand/semantic/faint tokens across
+**Last system pass:** D4.2 IntelliDhan owl-and-lotus identity with rounded
+brow/cheek contours, a responsive micro-mark, soft-flared editorial wordmark,
+orange bindu, portable outlined SVG artwork, hash-locked share imagery,
+AA light-mode brand/semantic/faint tokens across
 flat and tinted cards, and a restrained midnight-navy/orange terminal theme;
 the production mark stays readable from favicon to presentation scale and is
 covered by focused brand checks plus the full non-integration regression suite

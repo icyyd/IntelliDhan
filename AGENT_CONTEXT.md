@@ -476,6 +476,11 @@ For each coherent work unit:
   from production assets; its old concept board is archived reference only.
 - Updated production mark, inverse mark, favicon, horizontal lockup, social SVG,
   deterministic social PNG, brand documentation, README, and regression tests.
+- Independent review rejected the first vector translation for sharp owl
+  wedges, a narrow enclosure, excess favicon padding, and weak raster parity
+  coverage. The corrected master uses the selected D4.2 rounded brow/cheek
+  contours and wider oval; the responsive favicon fills the tile at 16px; and
+  the social PNG has an approved SHA-256 regression assertion.
 - Strategy, data, authentication, multi-brain analysis, and Robinhood execution
   behavior remain out of scope and unchanged.
 - Verification: focused brand/terminal checks passed (`43`); the full
