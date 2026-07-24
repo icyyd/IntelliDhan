@@ -13,6 +13,7 @@ from starlette.websockets import WebSocketDisconnect
 from intellidhan_gateway import app as gateway
 from intellidhan_gateway.auth import (
     SESSION_COOKIE,
+    SESSION_MAX_AGE_SECONDS,
     hash_password,
     session_token_hash,
     verify_password,
@@ -82,6 +83,33 @@ def test_first_account_is_admin_and_session_token_is_not_stored(
     assert stored and verify_password("a long test password 123", stored["password_hash"])
     assert stored["password_hash"] != "a long test password 123"
     assert client.get("/api/auth/session").json()["user"]["email"] == "admin@example.com"
+
+
+def test_account_session_lasts_at_least_30_days_and_survives_store_reopen(
+    client, account_store, monkeypatch
+):
+    response = register(client, email="thirty-day@example.com")
+    assert response.status_code == 200
+    assert SESSION_MAX_AGE_SECONDS >= 30 * 24 * 60 * 60
+    cookie_header = response.headers["set-cookie"].lower()
+    assert f"max-age={SESSION_MAX_AGE_SECONDS}" in cookie_header
+
+    raw_token = client.cookies.get(SESSION_COOKIE)
+    row = account_store._fetchall(
+        "SELECT created_at, expires_at FROM user_sessions WHERE session_hash=?",
+        (session_token_hash(raw_token),),
+    )[0]
+    created = datetime.fromisoformat(row["created_at"])
+    expires = datetime.fromisoformat(row["expires_at"])
+    # Creation and expiry are recorded in separate clock reads; allow the
+    # sub-second gap while asserting the full 30-day contract.
+    assert expires - created >= timedelta(days=30) - timedelta(seconds=1)
+
+    # Reopening the same durable store must not invalidate a valid cookie.
+    reopened = TerminalStore(account_store.location)
+    reopened.init_schema()
+    monkeypatch.setattr(gateway.loop, "store", reopened)
+    assert client.get("/api/auth/session").json()["authenticated"] is True
 
 
 def test_registration_requires_invite_and_validates_password(client):

@@ -19,7 +19,11 @@ from fastapi import HTTPException, Request, WebSocket
 
 OWNER_COOKIE = "intellidhan_owner"
 SESSION_COOKIE = "intellidhan_session"
-SESSION_MAX_AGE_SECONDS = 60 * 60 * 12
+# Keep browser and database-backed account sessions aligned.  This is an
+# absolute lifetime (not an idle timeout), so a user who signs in can return
+# for 30 days without being silently logged out.  Explicit logout/revocation
+# still invalidates the session immediately.
+SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 SESSION_CLOCK_SKEW_SECONDS = 60
 PASSWORD_MIN_LENGTH = 12
 PASSWORD_MAX_LENGTH = 128

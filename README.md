@@ -12,7 +12,7 @@ must not be presented as implemented.
 ## Current implementation
 
 - Card-first web terminal with Signals, Discover, Analyze, 0DTE, and Swing tasks.
-- Invite-only database accounts with scrypt password hashes, opaque
+- Invite-only database accounts with scrypt password hashes, opaque 30-day
   server-expiring sessions, and ADMIN/TRADER/VIEWER roles. Preferences, capital
   limits, watchlists, and saved screens are isolated per user; broker
   credentials never enter this app.

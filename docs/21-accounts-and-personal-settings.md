@@ -1,6 +1,6 @@
 # Accounts and Personal Settings
 
-**Status:** implemented foundation · **Updated:** 2026-07-13
+**Status:** implemented foundation · **Updated:** 2026-07-24
 
 This document is the agent-readable contract for identity and user-owned state.
 It supersedes references to the web terminal as an "owner-only" application.
@@ -44,7 +44,7 @@ parameters are fixed and validated before hashing so database values cannot
 request unbounded work. A login creates a 256-bit opaque token in an HttpOnly,
 SameSite=Strict cookie. Only the
 SHA-256 digest of that token is stored in `user_sessions`; sessions expire after
-12 hours and are revoked in the database at logout. WebSocket authorization
+30 days and are revoked in the database at logout. WebSocket authorization
 uses the same database session, closes at its server-side expiry, and
 periodically revalidates the session so a live socket cannot outlast revocation.
 
@@ -95,6 +95,10 @@ PostgreSQL through `DATABASE_URL` is required for durable Koyeb accounts. The
 SQLite fallback is suitable for local development only unless it is on a
 mounted persistent volume. Losing an ephemeral SQLite file loses accounts,
 password hashes, sessions, preferences, limits, watchlists, and screens.
+
+The 30-day cookie lifetime does not replace durable storage: if a deployment
+recreates an ephemeral SQLite file, the browser may still hold a cookie but the
+server has no matching session digest and must require sign-in again.
 
 ## 5. API contract
 
