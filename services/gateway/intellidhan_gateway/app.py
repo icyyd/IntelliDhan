@@ -46,6 +46,7 @@ from intellidhan_gateway.claude_research import ClaudeResearchReviewer
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.daily_brief import DailyBriefService
 from intellidhan_gateway.live import LiveLoop
+from intellidhan_gateway.macro_news import MacroNewsService
 from intellidhan_gateway.research_feeds import ResearchFeedService
 from intellidhan_gateway.research_consensus import (
     build_research_consensus,
@@ -64,6 +65,7 @@ loop = LiveLoop()
 stock_analyzer = StockAnalysisService()
 discovery = DiscoveryService()
 daily_brief_service = DailyBriefService()
+macro_news_service = MacroNewsService()
 research_feed_service = ResearchFeedService()
 ai_thesis_service = OpenAIThesisService()
 claude_research_reviewer = ClaudeResearchReviewer()
@@ -448,6 +450,14 @@ async def daily_brief(request: Request):
     _require_personal(request)
     rate_limiter.check(_client_key(request, "daily-brief"), limit=30, window_seconds=60)
     return await daily_brief_service.get(loop.store)
+
+
+@app.get("/api/news")
+async def macro_news(request: Request):
+    """Return short, cached macro headlines for context only."""
+    _require_personal(request)
+    rate_limiter.check(_client_key(request, "news"), limit=30, window_seconds=60)
+    return await macro_news_service.get()
 
 
 @app.get("/api/search")

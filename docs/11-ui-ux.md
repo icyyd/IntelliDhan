@@ -40,6 +40,10 @@ the first viewport answers what matters, why it matters, and what invalidates it
 - **Decision hero:** active plans, held-back count, and next evaluation—not vanity
   market statistics.
 - **Benchmark pulse:** SPX, SPY, and QQQ with freshness/source state.
+- **Macro pulse:** `/api/news` supplies up to eight cached, source-linked
+  headlines with `HIGH`/`WATCH`/`MARKET` labels. The feed is contextual only,
+  filters unsafe links, and renders an explicit unavailable state without
+  changing ranking, signals, or execution.
 - **Top 3 in focus:** deterministic configured-universe rank with technical,
   financial, and overall research scores, coverage, confirmation, and latest
   filing context.

@@ -29,6 +29,9 @@ must not be presented as implemented.
 - Card-first Today terminal with SPX/SPY/QQQ context, a deterministic top-three
   focus list, curated radar, rich signal plans, Discover, Analyze, 0DTE, and
   Swing tasks.
+- Single daily pane with the brief and signal focus in the center, plus a cached
+  source-linked macro pulse in the right rail; repeated engine-focus copy is
+  hidden from the landing view.
 - Production D4.2 owl-and-lotus assets, favicon, deterministic 1200×630 share artwork,
   agent-readable design tokens, and a responsive dark/light visual theme.
   External brand lettering is outlined for portable rendering; orange marks
