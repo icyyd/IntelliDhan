@@ -35,6 +35,10 @@ must not be presented as implemented.
   cards expose a compact business case, evidence, analyst-target context when
   available, and explicit invalidation/risk context before the full Analyze
   dossier.
+- Responsive collision guards keep the header, mobile task bar, sign-in/account
+  controls, and compact action rows inside the viewport from 320px through
+  desktop widths; controls compress or hide status-only chips before they can
+  overlap or paint off-canvas.
 - Single daily pane with the brief and signal focus in the center, plus a cached
   source-linked macro pulse in the right rail; repeated engine-focus copy is
   hidden from the landing view.

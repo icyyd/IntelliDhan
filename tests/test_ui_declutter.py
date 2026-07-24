@@ -100,3 +100,12 @@ def test_decluttered_terminal_has_unique_element_ids():
     parser.feed(Path("web/index.html").read_text(encoding="utf-8"))
     duplicates = sorted({value for value in parser.ids if parser.ids.count(value) > 1})
     assert duplicates == []
+
+
+def test_responsive_header_and_mobile_nav_have_collision_guards():
+    source = Path("web/index.html").read_text(encoding="utf-8")
+    assert "@media (max-width:680px)" in source
+    assert ".topbar #dataHealth,.topbar #session{display:none}" in source
+    assert ".topbar .icon-btn{flex:0 0 40px; width:40px; min-width:40px}" in source
+    assert ".mobile-nav-item{flex:1 1 0; min-width:0" in source
+    assert "overflow:hidden; text-overflow:ellipsis" in source
