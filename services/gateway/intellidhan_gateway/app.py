@@ -39,6 +39,7 @@ from intellidhan_gateway.auth import (
 from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisService
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.live import LiveLoop
+from intellidhan_gateway.macro_news import MacroNewsService
 from intellidhan_gateway.stock_analysis import StockAnalysisService
 from intellidhan_gateway.workspace_agent import (
     WorkspaceAgentTriggerService,
@@ -53,6 +54,7 @@ stock_analyzer = StockAnalysisService()
 discovery = DiscoveryService()
 ai_thesis_service = OpenAIThesisService()
 workspace_agent_service = WorkspaceAgentTriggerService()
+macro_news_service = MacroNewsService()
 rate_limiter = RateLimiter()
 
 DEFAULT_PREFERENCES = {
@@ -392,6 +394,14 @@ async def calibration():
 async def briefing(request: Request):
     _require_personal(request)
     return loop.last_briefing or {"status": "not generated yet (8:30 ET on trading days)"}
+
+
+@app.get("/api/news")
+async def macro_news(request: Request):
+    """Return short, cached macro headlines for context only."""
+    _require_personal(request)
+    rate_limiter.check(_client_key(request, "news"), limit=30, window_seconds=60)
+    return await macro_news_service.get()
 
 
 @app.get("/api/analyze/{symbol}")
@@ -802,7 +812,7 @@ async def claim_autotrade_intent(
 ):
     _require_token(request, "AUTOTRADE_AGENT_TOKEN")
     try:
-        return loop.autotrade.claim(intent_id, payload.get("agent", "claude")).model_dump(
+        return loop.autotrade.claim(intent_id, payload.get("agent", "codex")).model_dump(
             mode="json"
         )
     except (ValueError, KeyError) as exc:

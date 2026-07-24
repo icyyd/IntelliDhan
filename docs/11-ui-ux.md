@@ -34,7 +34,10 @@ A graphically rich, real-time trading workstation — not a form-and-modal web p
 ```
 
 ### 2.1 Home / Command Center
-- **Hero: Daily Briefing panel** (doc 12 content, rendered rich): market bias meter (risk-on↔risk-off), index cards (SPX/NDX/SMH/VIX) each with trend matrix + key levels, macro calendar strip with countdown chips, headline & ratings digest.
+- **Single-pane daily view:** the welcome header is intentionally lightweight. One “Today at a glance” panel owns the daily bias, three-point game plan, freshness, and a concise macro headline feed; the same brief is not repeated in the right rail.
+- **Market pulse:** the index context row stays compact and emphasizes the configured decision symbols (SPX/SPY/QQQ where available) rather than duplicating the daily brief.
+- **Macro feed contract:** `/api/news` returns up to eight source-linked headlines with `HIGH`/`WATCH`/`MARKET` impact labels and a five-minute in-process cache. Feed outages render an explicit unavailable state and never alter ranking, signals, or execution.
+- **Detailed briefing route (future/archive):** the full rich briefing can retain the expanded bias meter, index cards, macro calendar, and ratings digest without crowding the landing view.
 - **Sector Heat Map widget:** Finviz-style treemap (internally computed; 1D/1W/1M toggle), cell click → sector drill-down with constituent RS ranks; "open full map on Finviz" link-out.
 - **Today row:** active alerts across modules (horizontal card scroll), P&L-today tile, budget-used gauges per module, cooldown/kill-switch status.
 - **Calibration strip:** claimed-vs-realized sparkline + "engine honesty" badge (RULE-C2, always visible).

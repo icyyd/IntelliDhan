@@ -450,6 +450,39 @@ body{
 .desk-eyebrow{color:var(--cyan); font-size:11px; font-weight:750; letter-spacing:.1em; text-transform:uppercase}
 .desk-hero h1{font-size:30px; line-height:1.12; letter-spacing:-.035em; margin:5px 0 5px}
 .desk-hero p{margin:0; color:var(--text-dim); font-size:13px}
+.home-hero{align-items:center; padding-top:2px}
+.home-freshness{display:inline-flex; align-items:center; gap:7px; margin-left:auto; padding:7px 11px; border:1px solid var(--border); border-radius:999px; background:var(--tint-c); color:var(--text-dim); font-size:10.5px; white-space:nowrap}
+.home-freshness .dot{width:6px; height:6px}
+.daily-pane{padding:18px 20px}
+.daily-pane-head{align-items:center; margin-bottom:16px}
+.daily-pane-head .section-heading-copy h2{font-size:18px}
+.daily-pane-head .section-heading-copy p{font-size:11px}
+.home-bias{padding:7px 11px; border:1px solid var(--border); border-radius:999px; background:var(--tint-c); color:var(--text-dim); font:750 10px var(--mono); letter-spacing:.06em; white-space:nowrap}
+.home-bias.risk-on{color:var(--teal); border-color:rgba(94,234,212,.28); background:rgba(94,234,212,.08)}
+.home-bias.risk-off{color:var(--red); border-color:rgba(251,113,133,.28); background:rgba(251,113,133,.08)}
+.daily-pane-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.9fr); gap:18px}
+.daily-brief-copy{min-width:0; padding:13px 15px; border:1px solid var(--border); border-radius:17px; background:rgba(255,255,255,.025)}
+.daily-brief-copy .brief-bias{display:none}
+.daily-brief-copy .brief-plan{padding-left:17px; margin:0; line-height:1.65}
+.daily-brief-copy .brief-plan li{margin-bottom:4px}
+.daily-brief-copy .brief-discipline{margin-top:12px; padding-top:10px; border-top:1px solid var(--border-soft); color:var(--gold); font-size:11px; line-height:1.5}
+.macro-feed{min-width:0; padding:13px 15px; border:1px solid var(--border); border-radius:17px; background:rgba(255,255,255,.025)}
+.macro-feed-head{display:flex; align-items:flex-start; gap:12px; margin-bottom:8px}
+.macro-feed-head h3{margin:0; font-size:13px; letter-spacing:-.01em}
+.macro-feed-head p{margin:2px 0 0; color:var(--text-faint); font-size:10.5px}
+.feed-state{margin-left:auto; padding:3px 7px; border-radius:999px; background:var(--tint-d); color:var(--text-faint); font:650 9.5px var(--mono); text-transform:uppercase; white-space:nowrap}
+.feed-state.live{color:var(--teal); background:rgba(94,234,212,.08)}
+.feed-state.warn{color:var(--gold); background:rgba(246,200,107,.08)}
+.macro-item{display:block; padding:9px 0; border-top:1px solid var(--border-soft); text-decoration:none}
+.macro-item:first-child{border-top:0}
+.macro-item:hover .macro-item-title{color:var(--cyan)}
+.macro-item-meta{display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:3px; color:var(--text-faint); font-size:9.5px}
+.macro-impact{padding:2px 6px; border-radius:999px; font:750 8.5px var(--mono); letter-spacing:.04em; background:var(--tint-d); color:var(--text-faint)}
+.macro-impact.high{color:var(--amber); background:rgba(251,191,104,.09)}
+.macro-impact.watch{color:var(--cyan); background:rgba(145,164,255,.09)}
+.macro-item-title{display:block; color:var(--text); font-size:11.5px; line-height:1.35; transition:color 160ms ease}
+.macro-item-summary{display:block; margin-top:3px; color:var(--text-faint); font-size:10px; line-height:1.35}
+.macro-feed .empty{padding:18px 4px; text-align:left; font-size:11px}
 .desk-stats{display:grid; grid-template-columns:repeat(3,minmax(130px,1fr)); gap:10px; margin-left:auto; width:min(560px,100%)}
 .desk-stat{display:flex; align-items:center; gap:10px; padding:11px 13px; border:1px solid var(--border); border-radius:18px; background:rgba(255,255,255,.035)}
 .stat-bubble{display:grid; place-items:center; width:34px; height:34px; border-radius:13px; background:rgba(145,164,255,.13); color:var(--cyan); flex:none}
@@ -612,12 +645,17 @@ dialog#autotrade-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:b
   .tape{display:none}
   .desk-hero{display:block}
   .desk-stats{margin:14px 0 0; width:100%}
+  .home-freshness{margin:14px 0 0}
+  .daily-pane-grid{grid-template-columns:1fr}
 }
 @media (max-width:700px){
   #queueTracking{grid-template-columns:1fr}
   .section-heading{align-items:flex-start; flex-wrap:wrap}
   .queue-tabs{margin-left:0}
   .desk-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .daily-pane{padding:16px}
+  .daily-pane-head{align-items:flex-start; gap:10px}
+  .daily-pane-head .home-bias{margin-left:0}
   .desk-stat:last-child{grid-column:1/-1}
   .decision-grid{grid-template-columns:1fr}
   .decision-cell:last-child{border-right:1px solid var(--border)}
@@ -1040,16 +1078,29 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 
   <main class="workspace" id="main">
    <div id="view-signals">
-    <section class="desk-hero" aria-labelledby="deskTitle">
+    <section class="desk-hero home-hero" aria-labelledby="deskTitle">
       <div class="desk-copy">
-        <div class="desk-eyebrow">Decision-ready insights</div>
-        <h1 id="deskTitle">Signal inbox</h1>
-        <p>Current opportunities, historical reliability, and risk context—without the noise.</p>
+        <div class="desk-eyebrow" id="homeDateLabel">Market command center</div>
+        <h1 id="deskTitle">Good morning, here’s today’s edge</h1>
+        <p>One calm view of the market, the macro backdrop, and the setups worth your attention.</p>
       </div>
-      <div class="desk-stats" aria-label="Signal summary">
-        <div class="desk-stat"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b id="summarySignals">—</b><small>Active signals</small></span></div>
-        <div class="desk-stat"><span class="stat-bubble warm"><svg class="icon"><use href="#i-alert"/></svg></span><span><b id="summarySuppressed">—</b><small>Held-back candidates</small></span></div>
-        <div class="desk-stat"><span class="stat-bubble mint"><svg class="icon"><use href="#i-clock"/></svg></span><span><b id="summaryNext">—</b><small>Next evaluation</small></span></div>
+      <span class="home-freshness" id="homeFreshness" role="status"><span class="dot"></span> Waiting for the latest market read</span>
+    </section>
+
+    <section class="panel daily-pane" aria-labelledby="dailyPaneTitle">
+      <div class="section-heading daily-pane-head">
+        <div class="section-heading-copy">
+          <h2 id="dailyPaneTitle">Today at a glance</h2>
+          <p id="briefGenerated">The brief and macro feed update automatically.</p>
+        </div>
+        <div class="home-bias" id="homeBias" aria-label="Daily market bias">—</div>
+      </div>
+      <div class="daily-pane-grid">
+        <div class="daily-brief-copy" id="briefBody"><div class="empty">Loading today’s brief…</div></div>
+        <section class="macro-feed" aria-labelledby="macroFeedTitle">
+          <div class="macro-feed-head"><div><h3 id="macroFeedTitle">Macro pulse</h3><p>Relevant market headlines, context only.</p></div><span class="feed-state" id="macroFeedState">Loading</span></div>
+          <div id="macroNews" aria-live="polite"><div class="empty">Loading headlines…</div></div>
+        </section>
       </div>
     </section>
 
@@ -1073,7 +1124,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       <div id="queueSuppressed" hidden></div>
     </section>
 
-    <section class="panel context-panel" id="contextPanel" aria-labelledby="contextTitle">
+    <section class="panel context-panel" id="contextPanel" aria-labelledby="contextTitle" hidden>
       <div class="context-head">
         <div>
           <div class="context-kicker" id="contextTitle">Selected setup</div>
@@ -1282,14 +1333,9 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   </main>
 
   <aside class="decision-rail" aria-label="Daily context">
-    <section class="panel" id="briefPanel" hidden>
-      <div class="panel-head"><h2>Today's focus</h2></div>
-      <div id="briefBody"></div>
-    </section>
-
     <section class="panel autotrade-panel" aria-labelledby="autotradeTitle">
       <div class="panel-head"><h2 id="autotradeTitle">Auto-trade bridge</h2><span class="auto-mode off" id="autotradeMode">OFF</span></div>
-      <div class="auto-agent"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b>Claude → Robinhood MCP</b><small>Broker authentication remains with the primary agent</small></span></div>
+      <div class="auto-agent"><span class="stat-bubble"><svg class="icon"><use href="#i-activity"/></svg></span><span><b>Codex → Robinhood MCP</b><small>Broker authentication remains with the primary agent</small></span></div>
       <div class="auto-stats">
         <span><b id="autotradeReady">0</b><small>Ready</small></span>
         <span><b id="autotradeApproval">0</b><small>Needs approval</small></span>
@@ -1414,7 +1460,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 <!-- Agent-mediated auto-trade policy; Robinhood credentials never enter this form. -->
 <dialog id="autotrade-dialog">
   <div class="bd-head2">
-    <div><h2>Auto-trade policy</h2><div class="dialog-subtitle">IntelliDhan governs intents; Claude executes through Robinhood MCP.</div></div>
+    <div><h2>Auto-trade policy</h2><div class="dialog-subtitle">IntelliDhan governs intents; Codex executes through Robinhood MCP.</div></div>
     <button class="bd-close" onclick="document.getElementById('autotrade-dialog').close()" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
   <div class="auto-form">
@@ -1442,7 +1488,7 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 const ARROWS = {STRONG_UP:"strong-up",UP:"up",NEUTRAL:"",DOWN:"down",STRONG_DOWN:"strong-down"};
 const ICON = {STRONG_UP:"i-up",UP:"i-up",NEUTRAL:"i-minus",DOWN:"i-down",STRONG_DOWN:"i-down"};
 const tfOrder = ["M","W","D","4H","1H","15m","5m"];
-let lastState = null, calibration = {}, briefing = null;
+let lastState = null, calibration = {}, briefing = null, macroNews = null;
 let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
@@ -1510,7 +1556,8 @@ function selectSymbol(symbol){
   renderContext(lastState);
   renderMatrix(lastState);
   renderTracking(lastState);
-  document.getElementById("contextPanel").scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  const contextPanel=document.getElementById("contextPanel");
+  if(contextPanel){ contextPanel.hidden=false; contextPanel.scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); }
 }
 function selectAlert(alertId){
   const alert = activeAlerts(lastState||{}).find(a=>a.alert_id===alertId);
@@ -1521,7 +1568,8 @@ function selectAlert(alertId){
   renderContext(lastState);
   renderMatrix(lastState);
   renderTracking(lastState);
-  document.getElementById("contextPanel").scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  const contextPanel=document.getElementById("contextPanel");
+  if(contextPanel){ contextPanel.hidden=false; contextPanel.scrollIntoView({block:"start", behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); }
 }
 
 function fmtAge(iso){
@@ -1539,6 +1587,12 @@ function fmtCountdown(iso){
   const m = Math.floor(ms/60000);
   if(m < 60) return m+"m left";
   return Math.floor(m/60)+"h "+(m%60)+"m left";
+}
+function fmtNewsTime(value){
+  if(!value) return "";
+  const parsed=new Date(value);
+  if(Number.isNaN(parsed.getTime())) return String(value).slice(0,22);
+  return parsed.toLocaleDateString([], {month:"short", day:"numeric"})+" · "+parsed.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
 }
 
 async function fetchJSON(url, options){
@@ -1576,11 +1630,15 @@ async function refreshCalibration(){
   }catch(e){}
 }
 async function refreshBriefing(){
-  if(!ownerAuthenticated){ briefing=null; renderBriefing(); return; }
+  if(!ownerAuthenticated){ briefing=null; macroNews=null; renderBriefing(); renderMacroNews(); return; }
   try{
-    const b = await fetchJSON("/api/briefing");
+    const [briefResult, newsResult] = await Promise.allSettled([fetchJSON("/api/briefing"), fetchJSON("/api/news")]);
+    const b=briefResult.status==="fulfilled"?briefResult.value:null;
+    const feed=newsResult.status==="fulfilled"?newsResult.value:null;
     briefing = b && b.bias ? b : null;
+    macroNews = feed && Array.isArray(feed.items) ? feed : null;
     renderBriefing();
+    renderMacroNews();
   }catch(e){}
 }
 
@@ -1598,7 +1656,7 @@ function setHealth(mode){
 function clearPersonalState(reason="Sign in required."){
   ownerAuthenticated=false;
   accountUser=null; preferencesCache=null; preferencesApplied=false;
-  lastState=null; briefing=null; watchlistsCache=[]; savedScreensCache=[];
+  lastState=null; briefing=null; macroNews=null; watchlistsCache=[]; savedScreensCache=[];
   symbolOrder=[]; selectedSymbol=null; selectedAlertId=null; selectedSwingSymbol=null;
   currentDossier=null; selectionTouched=false;
   if(typeof autotradeCache!=="undefined") autotradeCache=null;
@@ -1619,8 +1677,11 @@ function clearPersonalState(reason="Sign in required."){
   document.getElementById("tape").replaceChildren();
   document.getElementById("symCount").textContent="—";
   document.getElementById("session").textContent="—";
-  document.getElementById("briefPanel").hidden=true;
   document.getElementById("briefBody").replaceChildren();
+  document.getElementById("macroNews").replaceChildren();
+  document.getElementById("contextPanel").hidden=true;
+  document.getElementById("homeBias").textContent="—";
+  document.getElementById("homeBias").className="home-bias";
   document.getElementById("autotradeMode").textContent="OFF";
   document.getElementById("autotradeMode").className="auto-mode off";
   document.getElementById("autotradeReady").textContent="0";
@@ -1693,9 +1754,12 @@ function renderAll(){
 }
 
 function renderOverview(s){
-  document.getElementById("summarySignals").textContent=activeAlerts(s).length;
-  document.getElementById("summarySuppressed").textContent=(s.suppressed||[]).length+heldDataAlerts(s).length;
-  document.getElementById("summaryNext").textContent=s.session==="RTH"?"5 min":"Next open";
+  const now=new Date();
+  document.getElementById("homeDateLabel").textContent=`${now.toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"})} · ${s.session==="RTH"?"Market open":"Market closed"}`;
+  const freshness=document.getElementById("homeFreshness");
+  const age=s.last_poll ? (Date.now()-new Date(s.last_poll).getTime())/1000 : Infinity;
+  const fresh=Number.isFinite(age) && age<150;
+  freshness.innerHTML=`<span class="dot ${fresh?"live":"warn"}"></span> ${s.last_poll?`Market read ${fmtAge(s.last_poll)}`:"Waiting for market read"}`;
 }
 
 function renderDataQualityNotice(s){
@@ -1890,14 +1954,37 @@ function renderMatrix(s){
 }
 
 function renderBriefing(){
-  const panel = document.getElementById("briefPanel");
-  if(!briefing){ panel.hidden = true; return; }
-  panel.hidden = false;
-  const biasColor = briefing.bias === "RISK-ON" ? "var(--teal)" : briefing.bias === "RISK-OFF" ? "var(--red)" : "var(--text-dim)";
-  document.getElementById("briefBody").innerHTML = `
-    <div class="brief-bias"><b style="color:${biasColor}">${briefing.bias}</b><span class="num" style="color:var(--text-faint)">D-trend ${briefing.bias_score>0?'+':''}${briefing.bias_score}</span></div>
-    <ul class="brief-plan">${(briefing.game_plan||[]).map(p=>`<li>${esc(plainBriefingText(p))}</li>`).join("")}</ul>
-    <div style="margin-top:8px;color:var(--gold);font-size:11.5px">${esc(briefing.discipline_card||"")}</div>`;
+  const bias = document.getElementById("homeBias");
+  const body = document.getElementById("briefBody");
+  if(!briefing){
+    bias.textContent="NO BRIEF";
+    bias.className="home-bias";
+    document.getElementById("briefGenerated").textContent="No daily brief has been generated yet; market context remains available below.";
+    body.innerHTML=`<div class="empty"><b>Daily brief pending</b>The engine publishes the morning brief on trading days. Use the live signal cards and market pulse for current context.</div>`;
+    return;
+  }
+  bias.textContent=`${briefing.bias} · D ${briefing.bias_score>0?'+':''}${briefing.bias_score}`;
+  bias.className=`home-bias ${briefing.bias === "RISK-ON" ? "risk-on" : briefing.bias === "RISK-OFF" ? "risk-off" : ""}`;
+  document.getElementById("briefGenerated").textContent=briefing.generated_at ? `Published ${fmtAge(briefing.generated_at)} · refreshes automatically` : "Live daily brief";
+  body.innerHTML = `
+    <ul class="brief-plan">${(briefing.game_plan||[]).slice(0,3).map(p=>`<li>${esc(plainBriefingText(p))}</li>`).join("")}</ul>
+    <div class="brief-discipline">${esc(briefing.discipline_card||"")}</div>`;
+}
+function renderMacroNews(){
+  const output=document.getElementById("macroNews"), state=document.getElementById("macroFeedState");
+  if(!macroNews || !macroNews.items?.length){
+    state.textContent="Unavailable"; state.className="feed-state warn";
+    output.innerHTML=`<div class="empty"><b>Headlines are unavailable</b>The feed will retry automatically. No news is treated as a trading signal.</div>`;
+    return;
+  }
+  state.textContent=macroNews.status==="fresh"?"Live feed":"Cached";
+  state.className=`feed-state ${macroNews.status==="fresh"?"live":""}`;
+  output.innerHTML=macroNews.items.slice(0,5).map(item=>`
+    <a class="macro-item" href="${esc(item.link)}" target="_blank" rel="noopener noreferrer">
+      <span class="macro-item-meta"><span class="macro-impact ${(item.impact||"").toLowerCase()}">${esc(item.impact||"MARKET")}</span><span>${esc(item.source||"Market feed")}</span>${item.published_at?`<span>· ${esc(fmtNewsTime(item.published_at))}</span>`:""}</span>
+      <span class="macro-item-title">${esc(item.title)}</span>
+      ${item.summary?`<span class="macro-item-summary">${esc(item.summary)}</span>`:""}
+    </a>`).join("");
 }
 function plainBriefingText(value){
   return String(value||"").replaceAll("calibrated","historically validated").replaceAll("calibration","historical reliability").replaceAll("auction","market balance");
