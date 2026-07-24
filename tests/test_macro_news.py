@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import intellidhan_gateway.app as gateway
-from intellidhan_gateway.macro_news import MacroNewsService, parse_rss
+from intellidhan_gateway.macro_news import MacroNewsService, _relevance, parse_rss
 from intellidhan_gateway.terminal_store import TerminalStore
 
 
@@ -29,6 +29,11 @@ def test_parse_rss_normalizes_headlines_and_strips_markup():
 def test_parse_rss_rejects_non_web_links():
     payload = "<rss><channel><item><title>Bad</title><link>javascript:alert(1)</link></item></channel></rss>"
     assert parse_rss(payload, "Test") == []
+
+
+def test_relevance_uses_terms_not_substrings_or_overlapping_plural_hits():
+    assert _relevance({"title": "Corporate earnings update", "summary": ""}) == 0
+    assert _relevance({"title": "Rates move higher", "summary": ""}) == 1
 
 
 @pytest.mark.asyncio

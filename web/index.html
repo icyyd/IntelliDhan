@@ -2476,7 +2476,7 @@ function renderMacroNews(){
     output.innerHTML=`<div class="empty"><b>Headlines are unavailable</b>The feed will retry automatically. News never creates a signal.</div>`;
     return;
   }
-  state.textContent=macroNews.status==="fresh"?"Live feed":"Cached";
+  state.textContent=macroNews.as_of?`Updated ${fmtAge(macroNews.as_of)}`:"Cached";
   state.className=`feed-state ${macroNews.status==="fresh"?"live":""}`;
   output.innerHTML=macroNews.items.slice(0,5).map(item=>`
     <a class="macro-item" href="${esc(item.link)}" target="_blank" rel="noopener noreferrer">

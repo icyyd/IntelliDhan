@@ -102,7 +102,19 @@ def parse_rss(payload: str, source: str) -> list[dict[str, Any]]:
 
 def _relevance(item: dict[str, Any]) -> int:
     haystack = f"{item.get('title', '')} {item.get('summary', '')}".lower()
-    return sum(2 if term in _HIGH_IMPACT_TERMS else 1 for term in _MACRO_TERMS if term in haystack)
+    return sum(
+        2 if term in _HIGH_IMPACT_TERMS else 1
+        for term in _MACRO_TERMS
+        if re.search(rf"(?<!\w){re.escape(term)}(?!\w)", haystack)
+    )
+
+
+def _has_high_impact(item: dict[str, Any]) -> bool:
+    haystack = f"{item.get('title', '')} {item.get('summary', '')}".lower()
+    return any(
+        re.search(rf"(?<!\w){re.escape(term)}(?!\w)", haystack)
+        for term in _HIGH_IMPACT_TERMS
+    )
 
 
 @dataclass
@@ -115,6 +127,7 @@ class MacroNewsService:
     )
     cache_seconds: int = 300
     timeout_seconds: float = 5.0
+    max_age_seconds: int = 72 * 60 * 60
 
     def __post_init__(self) -> None:
         self._cached: dict[str, Any] | None = None
@@ -144,14 +157,23 @@ class MacroNewsService:
                 deduped.setdefault(item["link"] or item["title"], item)
             items = list(deduped.values())
             for item in items:
+                item["_published_epoch"] = _published_epoch(item.get("published_at"))
+            now_epoch = time.time()
+            items = [
+                item for item in items
+                if not item.get("published_at")
+                or not item.get("_published_epoch")
+                or now_epoch - item["_published_epoch"] <= self.max_age_seconds
+            ]
+            for item in items:
                 score = _relevance(item)
-                item["impact"] = "HIGH" if score >= 2 else "WATCH" if score else "MARKET"
+                item["impact"] = "HIGH" if _has_high_impact(item) else "WATCH" if score else "MARKET"
                 item["relevance"] = score
                 item["_published_epoch"] = _published_epoch(item.get("published_at"))
             relevant = [item for item in items if item["relevance"] > 0]
             if len(relevant) >= 3:
                 items = relevant
-            items.sort(key=lambda item: (item["relevance"], item.get("_published_epoch", 0)), reverse=True)
+            items.sort(key=lambda item: (item.get("_published_epoch", 0), item["relevance"]), reverse=True)
             for item in items:
                 item.pop("_published_epoch", None)
             self._cached = {
