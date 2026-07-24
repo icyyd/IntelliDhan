@@ -1133,12 +1133,13 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 .anchor-strip{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px}
 .anchor-card{position:relative; overflow:hidden; min-height:108px; padding:16px; border:1px solid var(--border); border-radius:22px; background:var(--card-gradient)}
 .anchor-card::after{content:""; position:absolute; width:84px; height:84px; right:-30px; bottom:-42px; border-radius:50%; background:rgba(145,164,255,.08)}
-.anchor-head{display:flex; align-items:center; gap:8px}
-.anchor-symbol{font:800 16px var(--mono)}
+.anchor-head{display:flex; align-items:center; gap:8px; min-width:0}
+.anchor-symbol{display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:800 16px var(--mono)}
 .anchor-role{color:var(--text-faint); font-size:10px}
 .anchor-price{display:block; margin-top:13px; font:750 22px var(--mono); letter-spacing:-.025em}
-.anchor-foot{display:flex; align-items:center; gap:7px; margin-top:4px; color:var(--text-faint); font-size:10px}
+.anchor-foot{display:flex; align-items:center; gap:7px; min-width:0; margin-top:4px; color:var(--text-faint); font-size:10px}
 .anchor-foot .dot{width:6px; height:6px}
+.anchor-foot-copy{display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 
 .focus-shell{display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:14px; align-items:start}
 .focus-main,.curated-panel,.strategy-shelf{border:1px solid var(--border); border-radius:26px; background:var(--panel-gradient); box-shadow:var(--shadow-card)}
@@ -1612,9 +1613,9 @@ body.signals-home .legacy-signal-board{display:none}
         <div id="todayTrend" class="today-trend-content"><div class="today-loading">Reading SPX, SPY and QQQ…</div></div>
         <div class="today-subhead"><span>Benchmarks</span><small>Daily · hourly · 5m</small></div>
         <section class="anchor-strip today-anchor-strip" id="focusAnchors" aria-label="SPX, SPY and QQQ market pulse">
-          <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPX</span><span class="anchor-role">Broad market</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading</div></div>
-          <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPY</span><span class="anchor-role">Liquidity proxy</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading</div></div>
-          <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">QQQ</span><span class="anchor-role">Growth leadership</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading</div></div>
+          <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPX</span><span class="anchor-role">Broad market</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span><span class="anchor-foot-copy">Loading</span></div></div>
+          <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPY</span><span class="anchor-role">Liquidity proxy</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span><span class="anchor-foot-copy">Loading</span></div></div>
+          <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">QQQ</span><span class="anchor-role">Growth leadership</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span><span class="anchor-foot-copy">Loading</span></div></div>
         </section>
         <div class="today-pane-foot"><span>Auto-refreshes every 2 minutes</span><button class="today-link" type="button" onclick="openAutotrade()">Review auto-trader</button></div>
         <section class="data-quality-notice today-data-quality" id="dataQualityNotice" role="status" aria-live="polite" hidden>
@@ -2254,7 +2255,7 @@ function renderFocus(){
   anchors.innerHTML=(focusData.anchors||[]).map(item=>`<article class="anchor-card">
     <div class="anchor-head"><span class="anchor-symbol">${esc(item.symbol)}</span><span class="anchor-role">${esc(roles[item.symbol]||"Benchmark")}</span></div>
     <span class="anchor-price">${item.price==null?"—":`$${esc(fmtMoney(item.price))}`}</span>
-    <div class="anchor-foot" title="${esc(item.status==="INDICATIVE"?`Checked ${fmtQuoteTime(item.observed_at)}; provider price timestamp unavailable`:item.as_of||item.observed_at||item.status)}"><span class="dot ${item.status==="AVAILABLE"?"live":item.status==="INDICATIVE"||item.status==="STALE"?"warn":"down"}"></span>${esc(item.status==="AVAILABLE"?`${item.source||"market feed"} · ${fmtQuoteTime(item.as_of)}`:item.status==="INDICATIVE"?`${item.source||"market feed"} · indicative`:item.status==="STALE"?"Last-known value":"Feed unavailable")}</div>
+    <div class="anchor-foot" title="${esc(item.status==="INDICATIVE"?`Checked ${fmtQuoteTime(item.observed_at)}; provider price timestamp unavailable`:item.as_of||item.observed_at||item.status)}"><span class="dot ${item.status==="AVAILABLE"?"live":item.status==="INDICATIVE"||item.status==="STALE"?"warn":"down"}"></span><span class="anchor-foot-copy">${esc(item.status==="AVAILABLE"?`${item.source||"market feed"} · ${fmtQuoteTime(item.as_of)}`:item.status==="INDICATIVE"?`${item.source||"market feed"} · indicative`:item.status==="STALE"?"Last-known value":"Feed unavailable")}</span></div>
   </article>`).join("");
   const rows=focusData.focus||[];
   grid.innerHTML=rows.length?rows.map((row,index)=>{
@@ -2393,7 +2394,7 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   document.getElementById("dailySetup").hidden=true;
   document.getElementById("contextPanel").hidden=true;
   document.getElementById("riskPanel").hidden=true;
-  document.getElementById("focusAnchors").innerHTML=["SPX","SPY","QQQ"].map(symbol=>`<article class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">${symbol}</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot warn"></span>Sign in to refresh</div></article>`).join("");
+  document.getElementById("focusAnchors").innerHTML=["SPX","SPY","QQQ"].map(symbol=>`<article class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">${symbol}</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot warn"></span><span class="anchor-foot-copy">Sign in to refresh</span></div></article>`).join("");
   document.getElementById("focusGrid").innerHTML=`<div class="empty">Sign in to build the current focus list.</div>`;
   document.getElementById("curatedFocusList").innerHTML=`<div class="empty">Sign in to load candidates.</div>`;
   document.getElementById("focusFeedStatus").replaceChildren();

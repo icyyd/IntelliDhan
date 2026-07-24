@@ -109,3 +109,12 @@ def test_responsive_header_and_mobile_nav_have_collision_guards():
     assert ".topbar .icon-btn{flex:0 0 40px; width:40px; min-width:40px}" in source
     assert ".mobile-nav-item{flex:1 1 0; min-width:0" in source
     assert "overflow:hidden; text-overflow:ellipsis" in source
+
+
+def test_anchor_status_text_cannot_slide_under_status_dot():
+    source = Path("web/index.html").read_text(encoding="utf-8")
+    assert ".anchor-foot{display:flex; align-items:center; gap:7px; min-width:0" in source
+    assert ".anchor-foot-copy{display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}" in source
+    assert source.count('class="anchor-foot-copy"') >= 5
+    assert ".anchor-head{display:flex; align-items:center; gap:8px; min-width:0}" in source
+    assert ".anchor-symbol{display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" in source
