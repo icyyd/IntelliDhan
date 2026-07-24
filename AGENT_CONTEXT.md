@@ -1,5 +1,22 @@
 # IntelliDhan Agent Context
 
+## 2026-07-24 — Responsive overlap guard
+
+- Follow-up branch `codex/overlap-fix` is based on merged `main` commit
+  `cd953a6` in isolated worktree `/tmp/intellidhan-overlap`; the shared checkout
+  remains untouched because it contains collaborator changes.
+- Responsive audit found two real overflow paths: the topbar controls extended
+  past 520px, and fixed-width mobile-nav items extended past 320–390px. A
+  compact-width guard now hides status-only health/session chips before controls
+  collide, preserves 40px account/settings hit targets, and lets mobile task
+  labels flex/ellipsis inside the viewport.
+- Browser verification found zero off-canvas visible elements and document
+  `scrollWidth === innerWidth` at 320, 375, 390, 480, 520, 600, 768, 1024, and
+  1440px. Account dialog screenshots at 320px also remain readable without
+  overlapping controls.
+- No deployment, merge, execution-mode change, or broker order was performed
+  at this checkpoint.
+
 ## 2026-07-24 — Live module simplification and research-card pass
 
 - Feature branch `codex/module-simplify` is based on `origin/main` merge

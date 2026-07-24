@@ -66,3 +66,13 @@ advisory and cannot rerank a deterministic pick or create an execution intent.
 - Unconfigured research feeds remain labelled and score coverage is preserved.
 - No routine refresh button, duplicate module summary, or chart-first panel is
   introduced.
+
+## Responsive collision guard
+
+At compact widths the header must remain a single row: health/session chips are
+removed before account/settings controls can shrink into one another, icon
+buttons retain a usable 40px hit target, and the command button remains a
+single flex item. The mobile task bar uses equal flexible segments with clipped
+labels rather than fixed-width items that extend past the viewport. The page's
+document `scrollWidth` must equal the viewport width at 320, 375, 390, 480,
+520, 600, 768, 1024, and 1440px test viewports.

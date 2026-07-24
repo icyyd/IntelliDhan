@@ -1390,6 +1390,21 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   .focus-main{padding:14px}
   .curated-list{grid-template-columns:1fr}
 }
+
+/* Responsive collision guard: controls must wrap or compress before they
+   can paint outside the viewport. Keep the account and settings actions
+   reachable even when the status chips are hidden at compact widths. */
+@media (max-width:680px){
+  .topbar{gap:8px; overflow:hidden}
+  .topbar #dataHealth,.topbar #session{display:none}
+  .topbar .spacer{flex:1 1 auto; min-width:0}
+  .topbar .cmdk-btn{flex:0 0 auto; padding:5px 9px}
+  .topbar .icon-btn{flex:0 0 40px; width:40px; min-width:40px}
+}
+@media (max-width:480px){
+  .mobile-nav{gap:3px; overflow:hidden; padding:4px}
+  .mobile-nav-item{flex:1 1 0; min-width:0; padding:8px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+}
 </style>
 <link rel="stylesheet" href="/assets/brand/intellidhan-theme.css">
 <script>try{if(localStorage.getItem("id-theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
