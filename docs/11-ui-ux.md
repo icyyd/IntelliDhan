@@ -65,6 +65,36 @@ Three-zone cockpit:
 3. **Optional context drawer:** chart and specialist tables. A chart rack may be
    offered as a secondary expert view, never as the default home hierarchy.
 
+The implemented 0DTE and Swing screens use the same rule in a compact form: a
+single module header shows active/held-back counts and a live freshness label,
+the alert queue is the first content, and market/profile or daily-chart context
+is inside a closed disclosure panel. This keeps signal triage fast without
+removing expert detail.
+
+All user-facing research surfaces are feed-driven. Streaming engine state is
+updated through the existing socket/15-second poll path; slower external feeds
+and the daily brief roll on a two-minute cadence. The UI must show “Checking…”,
+“Scan checked · Xm ago”, or a clear unavailable state rather than offer a
+manual refresh button for routine data.
+
+### 2.2.1 Stock-pick card contract
+
+The Top 3 focus cards are a compact research brief, not a price-only screener.
+Each card keeps the deterministic setup label and technical/financial/overall
+scores, then offers a collapsed **Investment case** disclosure containing:
+
+- a short company/business description and up to two source-backed setup facts;
+- analyst-target context only when supplied by the configured research feed;
+- the setup invalidation, available realized-volatility context, and one fresh
+  headline when available; and
+- latest-filing context and source coverage when present.
+
+Missing providers remain visible as missing coverage. The card never invents a
+target, treats a research tier as a guaranteed probability, or turns the
+summary into an unaudited buy/sell recommendation; the full business,
+fundamental, SEC, news, social, multi-brain, and backtest dossier remains in
+Analyze.
+
 ### 2.3 Trade Log — views per doc 10 §3 (ledger/performance/calibration/discipline/journal as tabs).
 
 ### 2.4 Settings

@@ -1,8 +1,8 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-21 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-07-24 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** two-mode SPY/QQQ 9EMA auto-trader contract. `SIMULATION`
+**Last system pass:** live-refresh module simplification and richer stock-pick research cards. The two-mode SPY/QQQ 9EMA auto-trader contract remains unchanged. `SIMULATION`
 uses real official-MCP option quotes and logs hypothetical entries/exits;
 time-limited `LIVE` stages long 0/1DTE orders only after evidence, health,
 capital, broker-review, and explicit confirmation gates. Selection prefers the
@@ -29,6 +29,12 @@ must not be presented as implemented.
 - Card-first Today terminal with SPX/SPY/QQQ context, a deterministic top-three
   focus list, curated radar, rich signal plans, Discover, Analyze, 0DTE, and
   Swing tasks.
+- Module screens now keep the signal queue primary, expose compact live status
+  strips, and collapse chart/profile context until requested. External research
+  feeds and the daily brief refresh automatically every two minutes; stock-pick
+  cards expose a compact business case, evidence, analyst-target context when
+  available, and explicit invalidation/risk context before the full Analyze
+  dossier.
 - Single daily pane with the brief and signal focus in the center, plus a cached
   source-linked macro pulse in the right rail; repeated engine-focus copy is
   hidden from the landing view.
@@ -151,6 +157,7 @@ requires the same-commit README update.
 | 28 | [Platform Safety &amp; Data Integrity](docs/28-platform-safety-and-data-integrity.md) | Active token, research-isolation, persistence, no-lookahead, GitOps, and deployment controls |
 | 29 | [Brand System](docs/29-brand-system.md) | Approved D4.2 owl-and-lotus identity, SVG asset stack, palette, typography, usage rules, and product application |
 | 30 | [SPY/QQQ 9EMA 0DTE Auto-Trader](docs/30-ema9-0dte-shadow-autotrader.md) | Exact rules, historical evidence, real-quote Simulation journal, 0/1DTE selection/sizing, trend-break exits, and Live-promotion gates |
+| 31 | [Live Modules &amp; Research Cards](docs/31-live-modules-and-research-cards.md) | Auto-refresh cadence, simplified module hierarchy, and the stock-pick evidence/risk presentation contract |
 
 ## Core Product Tenets
 

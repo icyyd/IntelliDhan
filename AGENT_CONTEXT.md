@@ -1,5 +1,29 @@
 # IntelliDhan Agent Context
 
+## 2026-07-24 — Live module simplification and research-card pass
+
+- Feature branch `codex/module-simplify` is based on `origin/main` merge
+  `0df3aef` in isolated worktree `/tmp/intellidhan-module-simplify`; the shared
+  checkout remains untouched because it contains collaborator changes.
+- 0DTE and Swing views now use compact headers with active/held-back counts and
+  live freshness labels. Signal queues stay first; market profile and daily
+  chart context are closed disclosures to avoid chart-first redundancy.
+- Routine focus/daily data refreshes automatically every two minutes while the
+  existing engine/WebSocket state remains fast. Focus polling respects provider
+  cache TTLs, has an in-flight guard, and exposes “Checking…” / “Scan checked”
+  states instead of a routine manual refresh button.
+- Top focus cards now offer a collapsed Investment case with business context,
+  two setup facts, analyst-target context when supplied, social mentions/score,
+  invalidation, volatility, negative-news risk, filing context, and source
+  coverage. The full multi-brain, SEC/news/social dossier remains in Analyze;
+  missing feeds are never filled with generated claims.
+- Independent review found and corrected forced-refresh quota risk, overlapping
+  focus scans, positive-headline risk mislabeling, missing compact social
+  context, and freshness wording that could overstate upstream recency.
+- Validation: 335 tests passed (6 deselected), inline JavaScript `node --check`,
+  and `git diff --check` all pass. No merge, deployment, execution-mode change,
+  or broker order was performed.
+
 # 2026-07-21 — Two-mode 9EMA option lifecycle
 
 - Independent review of checkpoint `bcbd8fd` found bearish-plan, kill-switch,
