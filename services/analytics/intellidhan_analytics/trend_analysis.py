@@ -14,7 +14,7 @@ from statistics import mean, pstdev
 
 from intellidhan_schemas import Bar
 
-ANALYTICS_VERSION = "trend-analysis-v2"
+ANALYTICS_VERSION = "trend-analysis-v3"
 MIN_ANALYSIS_BARS = 260
 MIN_BACKTEST_BARS = 300
 FORECAST_HORIZONS = {"one_month": 21, "three_months": 63}
@@ -29,6 +29,14 @@ def _pct(value: float) -> float:
 
 def _return(closes: list[float], days: int) -> float:
     return closes[-1] / closes[-1 - days] - 1.0
+
+
+def _ema(values: list[float], period: int) -> float:
+    multiplier = 2.0 / (period + 1.0)
+    result = mean(values[:period])
+    for value in values[period:]:
+        result = value * multiplier + result * (1.0 - multiplier)
+    return result
 
 
 def _true_ranges(bars: list[Bar]) -> list[float]:
@@ -252,6 +260,8 @@ def analyze_daily_trend(bars: list[Bar], risk_budget: float | None = None) -> di
     price = closes[-1]
 
     sma200 = mean(closes[-200:])
+    sma50 = mean(closes[-50:])
+    ema9 = _ema(closes[-60:], 9)
     sma200_prior = mean(closes[-220:-20])
     sma_distance = price / sma200 - 1.0
     sma_slope = sma200 / sma200_prior - 1.0
@@ -349,6 +359,18 @@ def analyze_daily_trend(bars: list[Bar], risk_budget: float | None = None) -> di
                 "rule": "95% or more of the 52-week high is positive momentum context",
                 "backtest_note": "context only; the published effect is cross-sectional",
             },
+        },
+        "key_levels": {
+            "last_close": round(price, 4),
+            "daily_ema_9": round(ema9, 4),
+            "sma_50": round(sma50, 4),
+            "sma_200": round(sma200, 4),
+            "breakout_confirmation_55d": round(prior_55_high, 4),
+            "invalidation_reference_20d": round(prior_20_low, 4),
+            "high_52w": round(high_52w, 4),
+            "low_52w": round(low_52w, 4),
+            "two_atr_risk_reference": round(price - 2.0 * atr14, 4),
+            "note": "Completed adjusted daily references; not guaranteed support, resistance, or option strikes.",
         },
         "risk": {
             "atr14": round(atr14, 4),

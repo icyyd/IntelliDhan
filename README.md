@@ -1,6 +1,21 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-14 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-07-21 · **Status:** Working personal-terminal foundation
+
+**Last system pass:** two-mode SPY/QQQ 9EMA auto-trader contract. `SIMULATION`
+uses real official-MCP option quotes and logs hypothetical entries/exits;
+time-limited `LIVE` stages long 0/1DTE orders only after evidence, health,
+capital, broker-review, and explicit confirmation gates. Selection prefers the
+highest feasible absolute delta, then uses the maximum whole-contract size
+inside the 80% buying-power, per-order, and daily-risk thresholds. Historical
+evidence still fails promotion, so the strategy remains Simulation-only and no
+real order was placed. A safety re-review added bearish long-put support,
+claim-time quote/price/risk revalidation, sellout deadlines, mode-switch claim
+revocation, strict receipt schemas, and immutable full trade-journal events.
+Selections can be refreshed until entry, failed exits remain open exposure until
+broker-confirmed closure, and simulated quotes are bound to the selected option.
+Live v2 rejects static option plans; every option order must pass the dynamic
+quote, expiry, liquidity, sellout, sizing, and claim-time policy checks.
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -11,9 +26,21 @@ must not be presented as implemented.
 
 ## Current implementation
 
-- Card-first web terminal with Signals, Discover, Analyze, 0DTE, and Swing tasks.
-- Single-pane Home view with one daily brief, SPX/SPY/QQQ market pulse, a cached macro-news feed, and active signal cards; repeated context panels are kept out of the landing view.
-- Invite-only database accounts with scrypt password hashes, opaque 30-day
+- Card-first Today terminal with SPX/SPY/QQQ context, a deterministic top-three
+  focus list, curated radar, rich signal plans, Discover, Analyze, 0DTE, and
+  Swing tasks.
+- Single daily pane with the brief and signal focus in the center, plus a cached
+  source-linked macro pulse in the right rail; repeated engine-focus copy is
+  hidden from the landing view.
+- Production D4.2 owl-and-lotus assets, favicon, deterministic 1200×630 share artwork,
+  agent-readable design tokens, and a responsive dark/light visual theme.
+  External brand lettering is outlined for portable rendering; orange marks
+  brand, focus, and primary actions while labeled green/red remain reserved for
+  market semantics.
+- Optional SEC filing/financial-strength, Alpha Vantage news-tone, and Finnhub
+  social-attention enrichment. Every provider carries source status and missing
+  inputs are excluded with visible score coverage.
+- Invite-only database accounts with scrypt password hashes, opaque
   server-expiring sessions, and ADMIN/TRADER/VIEWER roles. Preferences, capital
   limits, watchlists, and saved screens are isolated per user; broker
   credentials never enter this app.
@@ -27,6 +54,13 @@ must not be presented as implemented.
 - Optional, account-only OpenAI thesis synthesis from server evidence with
   a closed evidence-selection schema and server-rendered narrative; it cannot
   invent prose, alter rank, or create an execution intent.
+- Optional, signed-in Claude review of the immutable multi-brain dossier packet.
+  Claude uses server-side structured output without tools, browsing, MCP, or
+  automation or personal sizing state; user capital budgets and reference
+  quantities are excluded. It can surface conflicts, risks, and diligence
+  questions, but cannot change deterministic specialist scores, posture, rank,
+  sizing, or execution. Configure only the deployment secret
+  `ANTHROPIC_API_KEY`; never paste the key into the browser or repository.
 - Optional ADMIN/TRADER dispatch of a server-verified candidate to a published
   ChatGPT Workspace Agent for deeper research. IntelliDhan requests analysis
   only; production requires a dedicated agent with no broker tools and no
@@ -34,12 +68,27 @@ must not be presented as implemented.
   delivery action is the only allowed exception. The trigger API queues the run
   but does not yet return its output.
 - Arbitrary-ticker, adjusted-history analysis with conservative 21/63-session
-  forward evidence and fixed-rule backtests.
-- Separate, research-only `EMA9_CROSSOVER` harness with completed-bar
-  cross semantics, next-bar fills, gap-aware continuous ATR trailing stops,
-  cost-aware walk-forward tuning, strict fresh-cross confirmation, re-entry
-  cooldown, and explicit no-promotion reporting. A second regression pass
-  found no stable way to increase coverage and net expectancy together.
+  forward evidence and fixed-rule backtests; signed-in configured-universe
+  dossiers also expose the current SEC/news/social research snapshot.
+- Codex execution-intent bridge for Robinhood's official Trading MCP. Contract
+  v2.0 exposes only `SIMULATION` and time-limited `LIVE`; the project declaration
+  contains no credentials and claims require the exact `codex` identity.
+  Simulation is the default, broker authentication stays in the local Codex
+  host, and the former Claude execution contract remains archived.
+- Research-only `EMA9_MTF_0DTE` monitor for completed-bar SPY/QQQ 9EMA reclaims
+  with 5m/15m/1h/daily alignment, VWAP, RSI, relative-volume, time-window, and
+  risk-geometry gates. Qualified observations are stored as `SHADOW` signals
+  and underlying paper trades; they cannot reach Telegram or Robinhood. The
+  chronological 55-day study failed its sample/stability bar, so no profitability
+  or probability claim is made.
+- Authenticated `/api/trade-log` combines signal plans, underlying paper
+  outcomes, real-quote option Simulation entries/exits with reasoning, and
+  immutable intent history. Global broker events remain ADMIN/owner-only.
+  Dynamic 9EMA option plans accept only fresh liquid 0/1DTE candidates, prefer
+  the highest affordable delta, and maximize whole contracts inside all active
+  capital and risk caps; long-option premium is treated as maximum order risk.
+  Pending Simulation intents expire with signal validity and block when their
+  source signal is canceled.
 
 Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
 Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
@@ -47,6 +96,24 @@ least 24 characters for first-admin setup, optionally set a separate
 `INTELLIDHAN_INVITE_CODE`, and configure durable state before production. Open
 the Account panel to create the first administrator. See
 [Accounts and personal settings](docs/21-accounts-and-personal-settings.md).
+For broker automation, trust the repository, authenticate the declared MCP with
+`codex mcp login robinhood-trading`, and follow the mandatory
+[Codex + Robinhood execution contract](docs/27-codex-robinhood-execution.md).
+
+## Repository change discipline
+
+Every system-changing pass must update this `README.md` in the same commit.
+Reconcile the date and last-system-pass marker, current capabilities, setup and
+deployment instructions, safety boundaries, and document index as applicable.
+`AGENT_CONTEXT.md` and pull-request notes supplement this README; they do not
+replace the README update. CI checks each commit after this policy is present on
+the base branch and rejects changes to runtime, configuration, UI, deployment,
+scripts, architecture, or active system documentation that omit `README.md`.
+Tracking/build boundaries such as `.gitignore`, `.dockerignore`, `.claude/`,
+and `.codex/` are included; explicitly archived or decommissioned docs and
+test-only/context-only commits are excluded. Rename detection is disabled for
+this check so moving an active system file into an excluded location still
+requires the same-commit README update.
 
 ## Document Index
 
@@ -68,6 +135,7 @@ the Account panel to create the first administrator. See
 | 13 | [Risk, Guardrails & Compliance](docs/13-risk-and-compliance.md) | Capital protection rules, kill switches, disclaimers, data licensing |
 | 14 | [Roadmap & Milestones](docs/14-roadmap.md) | Phased build plan from MVP to full platform |
 | 15 | [Technical Playbook](docs/15-technical-playbook.md) | Price action (4 stages, M.A.E., candlestick reading), chart-pattern library, MACD sheet, tape proxies |
+| 15a | [Multi-Brain Stock Analysis](docs/15-multibrain-stock-analysis.md) | Deterministic specialist reconciliation plus isolated, advisory Claude review contract |
 | 16 | [Market Profile Layer](docs/16-market-profile.md) | Dalton auction theory: value areas, open types, day types, failed auctions, p/b shape vetoes |
 | 17 | [Trader Psychology Layer](docs/17-trader-psychology.md) | Douglas probabilistic voice + consistency framework; Tendler mental-game toolkit & error detection |
 | 18 | [Enhancement Review](docs/18-enhancement-review.md) | Post-implementation audit: research/production parity, risk-state wiring, evidence vocabulary, UX direction — living document, agent-readable implementation brief |
@@ -76,7 +144,13 @@ the Account panel to create the first administrator. See
 | 21 | [Accounts &amp; Personal Settings](docs/21-accounts-and-personal-settings.md) | Account/session architecture, roles, user-owned database state, APIs, and deployment requirements |
 | 22 | [Smart-Play Scanner &amp; AI Thesis](docs/22-smart-play-scanner-and-ai-thesis.md) | Fixed momentum/breakout/pullback rules, walk-forward diagnostic, OpenAI evidence contract, and card-first UX |
 | 23 | [ChatGPT Workspace Agent Dispatch](docs/23-chatgpt-workspace-agent-dispatch.md) | Published-agent API trigger, security boundary, setup, UX, and operational contract |
-| 24 | [9EMA Crossover Backtest](docs/24-ema9-crossover-backtest.md) | Exact close-cross rule, continuous ATR trail, walk-forward tuning, and promotion gates |
+| 24 | [Daily Brief Landing Integration](docs/24-daily-brief-landing-integration.md) | Private artifact adapter, freshness/fallback contract, setup-card UX, and deployment configuration |
+| 25 | [Signal Terminal Redesign](docs/25-signal-terminal-redesign.md) | Agent-readable Today hierarchy, multi-feed rank contract, rich alerts, strategy evidence boundaries, and rollout plan |
+| 26 | [UI Decluttering Pass](docs/26-ui-declutter-pass.md) | Reduced Today hierarchy, removed duplicate panels, and progressive-disclosure contract |
+| 27 | [Codex + Robinhood Execution](docs/27-codex-robinhood-execution.md) | Two-mode contract, highest-feasible-delta selection, maximum-threshold sizing, official MCP loop, and fail-closed execution |
+| 28 | [Platform Safety &amp; Data Integrity](docs/28-platform-safety-and-data-integrity.md) | Active token, research-isolation, persistence, no-lookahead, GitOps, and deployment controls |
+| 29 | [Brand System](docs/29-brand-system.md) | Approved D4.2 owl-and-lotus identity, SVG asset stack, palette, typography, usage rules, and product application |
+| 30 | [SPY/QQQ 9EMA 0DTE Auto-Trader](docs/30-ema9-0dte-shadow-autotrader.md) | Exact rules, historical evidence, real-quote Simulation journal, 0/1DTE selection/sizing, trend-break exits, and Live-promotion gates |
 
 ## Core Product Tenets
 
@@ -92,6 +166,6 @@ the Account panel to create the first administrator. See
 "75% chance of profitability" is a gated calibration claim, not a marketing
 label. Unvalidated evidence is capped below the live threshold, and no strategy
 is currently assumed qualified. The platform is not financial advice. It can
-create supervised, credential-free execution intents for a primary agent using
-Robinhood MCP; real execution remains fail-closed behind explicit evidence,
-allowlist, risk, owner, agent-review, protection, and reconciliation controls.
+create supervised, credential-free execution intents for OpenAI Codex using the
+official Robinhood Trading MCP; real execution remains fail-closed behind explicit evidence,
+allowlist, risk, owner, broker-review/confirmation, protection, and reconciliation controls.

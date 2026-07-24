@@ -1,5 +1,11 @@
 # 02 — Data Sources & Integrations
 
+**Status note:** the source matrix describes the target provider architecture,
+not a hard-coded Robinhood tool contract. Robinhood MCP tool labels below are
+historical capability examples only. Codex must discover the official server's
+advertised tools and schemas at runtime and follow doc 27; IntelliDhan services
+never import or call a Robinhood client.
+
 ## 1. Source Matrix
 
 | Data need | Primary source | Fallback | Cadence | Notes |
@@ -77,7 +83,7 @@ Two roles:
 | Account context | `get_accounts`, `get_portfolio`, `get_equity_positions`, `get_option_positions` | Capital-aware sizing; "you already hold X" conflict warnings on alerts |
 | Performance truth | `get_pnl_trade_history`, `get_realized_pnl` | Trade log reconciliation: realized results of taken alerts |
 | Discovery | `create_scan`, `run_scan`, watchlist tools | Server-side pre-screens for swing/HODL candidate universes |
-| Order staging | `review_equity_order`, `review_option_order`, then `place_*` **only after in-app human confirm** | One-click ticket from an alert; never autonomous (doc 13 hard rule) |
+| Pre-trade review and placement | Runtime-advertised official MCP review and write tools; names and fields are never assumed | Codex follows doc 27. `SIMULATION` cannot place. Separately authorized, time-limited `LIVE` may stage eligible intents, but the broker preview must still be explicitly confirmed before placement. |
 
 ## 5. Telegram Integration
 

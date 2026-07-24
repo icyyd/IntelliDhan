@@ -1,18 +1,26 @@
 autotrade:
-  # OFF creates no execution intents. SHADOW records non-executable intents.
-  # SUPERVISED requires approval per intent. ARMED is time-limited and lets
-  # Claude claim eligible intents without per-order UI approval.
-  mode: "OFF"
-  armed_until: null
+  contract_version: "2.0"
+  # Two modes only. SIMULATION watches real quotes and records hypothetical
+  # entries/exits. LIVE is time-limited and stages real Robinhood orders.
+  mode: "SIMULATION"
+  live_until: null
   min_confidence: 0.75
   max_dollar_risk_per_order: 250.0
   max_daily_dollar_risk: 500.0
   max_open_intents: 1
-  allowed_symbols: []
-  allowed_strategies: []
-  allowed_modules: []
-  allow_options: false
+  # Use the largest whole-contract position inside this fraction and every
+  # stricter per-order/daily-risk threshold. Long-option premium is max loss.
+  max_available_capital_fraction: 0.80
+  allowed_symbols: [SPY, QQQ]
+  allowed_strategies: [EMA9_MTF_0DTE]
+  allowed_modules: [0DTE]
+  allow_options: true
+  option_expiry_days: [0, 1]
+  min_option_volume: 100
+  min_option_open_interest: 500
+  max_option_spread_fraction: 0.10
+  max_option_quote_age_seconds: 30
   require_explicit_calibration: true
-  agent: claude
+  agent: codex
   revision: 1
   updated_at: "2026-07-12T00:00:00Z"

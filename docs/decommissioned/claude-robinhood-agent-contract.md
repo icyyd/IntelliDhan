@@ -1,8 +1,21 @@
-# IntelliDhan Primary Agent Contract
+# DECOMMISSIONED — Claude + Robinhood agent contract
+
+> Archived on 2026-07-18 for historical reference and possible future reuse.
+> This is not an active instruction source. Its claim identity is rejected by
+> contract v1.1. Restoration requires a new reviewed migration, rotated
+> credentials, shadow validation, and explicit user approval.
+
+# IntelliDhan Primary Agent Contract (historical)
 
 Claude is the primary execution agent. Robinhood MCP authentication stays in
 Claude; IntelliDhan never receives Robinhood credentials, account numbers, or
 MCP tokens.
+
+After reading this contract, read `AGENT_CONTEXT.md` for the current branch,
+pull-request, architecture, evidence, validation, and handoff state. Keep that
+summary current when a material implementation decision, dependency, test
+result, or next step changes. Never place credentials, tokens, account details,
+or personal data in the context file.
 
 ## Auto-trade boundary
 

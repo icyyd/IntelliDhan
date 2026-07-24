@@ -11,11 +11,15 @@ import os
 import secrets
 import time
 from contextlib import asynccontextmanager, suppress
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
-from fastapi import Body, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, ConfigDict, Field
 
 from intellidhan_gateway.auth import (
     OWNER_COOKIE,
@@ -37,9 +41,17 @@ from intellidhan_gateway.auth import (
     websocket_principal,
 )
 from intellidhan_gateway.ai_thesis import AIThesisUnavailable, OpenAIThesisService
+from intellidhan_gateway.autotrade import AUTOTRADE_CONTRACT_VERSION, OptionCandidate
+from intellidhan_gateway.claude_research import ClaudeResearchReviewer
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
+from intellidhan_gateway.daily_brief import DailyBriefService
 from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.macro_news import MacroNewsService
+from intellidhan_gateway.research_feeds import ResearchFeedService
+from intellidhan_gateway.research_consensus import (
+    build_research_consensus,
+    technical_score,
+)
 from intellidhan_gateway.stock_analysis import StockAnalysisService
 from intellidhan_gateway.workspace_agent import (
     WorkspaceAgentTriggerService,
@@ -52,9 +64,12 @@ WEB_DIR = Path(__file__).resolve().parents[3] / "web"
 loop = LiveLoop()
 stock_analyzer = StockAnalysisService()
 discovery = DiscoveryService()
-ai_thesis_service = OpenAIThesisService()
-workspace_agent_service = WorkspaceAgentTriggerService()
+daily_brief_service = DailyBriefService()
 macro_news_service = MacroNewsService()
+research_feed_service = ResearchFeedService()
+ai_thesis_service = OpenAIThesisService()
+claude_research_reviewer = ClaudeResearchReviewer()
+workspace_agent_service = WorkspaceAgentTriggerService()
 rate_limiter = RateLimiter()
 
 DEFAULT_PREFERENCES = {
@@ -67,6 +82,34 @@ DEFAULT_PREFERENCES = {
 VALID_ROLES = {"ADMIN", "TRADER", "VIEWER"}
 _DUMMY_PASSWORD_HASH = hash_password("not-a-real-account-password")
 WS_SESSION_RECHECK_SECONDS = 30.0
+
+
+class CodexClaimRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent: Literal["codex"]
+    underlying_price: float = Field(gt=0)
+    observed_at: datetime
+
+
+class CodexCapitalReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent: Literal["codex"]
+    buying_power: float = Field(gt=0)
+    observed_at: datetime
+    currency: Literal["USD"]
+    account_scope: Literal["ROBINHOOD_AGENTIC_ONLY"]
+
+
+class CodexOptionSelectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent: Literal["codex"]
+    buying_power: float = Field(gt=0)
+    observed_at: datetime
+    account_scope: Literal["ROBINHOOD_AGENTIC_ONLY"]
+    candidates: list[OptionCandidate] = Field(min_length=1, max_length=500)
 
 
 @asynccontextmanager
@@ -87,6 +130,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="IntelliDhan", lifespan=lifespan)
+app.mount("/assets", StaticFiles(directory=WEB_DIR / "assets"), name="assets")
 
 
 def _require_token(request: Request, env_name: str, *, control: bool = False) -> None:
@@ -123,6 +167,10 @@ def _require_control(request: Request) -> None:
     if principal:
         raise HTTPException(status_code=403, detail="administrator access is required")
     _require_token(request, "AUTOTRADE_CONTROL_TOKEN", control=True)
+
+
+def _require_codex_agent(request: Request) -> None:
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
 
 
 def _require_personal(request: Request, *, roles: set[str] | None = None):
@@ -396,12 +444,151 @@ async def briefing(request: Request):
     return loop.last_briefing or {"status": "not generated yet (8:30 ET on trading days)"}
 
 
+@app.get("/api/daily-brief")
+async def daily_brief(request: Request):
+    """Return the normalized external premarket report with last-good fallback."""
+    _require_personal(request)
+    rate_limiter.check(_client_key(request, "daily-brief"), limit=30, window_seconds=60)
+    return await daily_brief_service.get(loop.store)
+
+
 @app.get("/api/news")
 async def macro_news(request: Request):
     """Return short, cached macro headlines for context only."""
     _require_personal(request)
     rate_limiter.check(_client_key(request, "news"), limit=30, window_seconds=60)
     return await macro_news_service.get()
+
+
+@app.get("/api/search")
+async def search_securities(
+    request: Request,
+    q: str = Query(..., min_length=1, max_length=80),
+    limit: int = Query(8, ge=1, le=12),
+):
+    """Debounced ticker/company lookup for the on-demand research desk."""
+    rate_limiter.check(_client_key(request, "security-search"), limit=30, window_seconds=60)
+    try:
+        return await asyncio.wait_for(research_feed_service.search(q, limit=limit), timeout=12)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="security search timed out") from exc
+
+
+async def _focus_quote(symbol: str) -> dict:
+    try:
+        quote = await asyncio.wait_for(discovery.provider.get_quote(symbol), timeout=10)
+        return {
+            "symbol": symbol,
+            "price": quote.last,
+            "as_of": None,
+            "observed_at": quote.ts.isoformat(),
+            "source": quote.source,
+            "status": "INDICATIVE",
+            "latency": "UNVERIFIED",
+        }
+    except Exception:
+        live_symbol = loop.snapshot().get("symbols", {}).get(symbol, {})
+        last = live_symbol.get("last")
+        return {
+            "symbol": symbol,
+            "price": last,
+            "as_of": None,
+            "observed_at": loop.last_poll.isoformat() if loop.last_poll else None,
+            "source": "IntelliDhan last-known" if last is not None else None,
+            "status": "STALE" if last is not None else "UNAVAILABLE",
+            "reason": "The benchmark quote feed could not be refreshed.",
+        }
+
+
+@app.get("/api/focus")
+async def market_focus(request: Request, refresh: bool = Query(False)):
+    """Current benchmark pulse plus three deterministic research candidates."""
+    _require_personal(request)
+    rate_limiter.check(_client_key(request, "focus"), limit=12, window_seconds=60)
+    try:
+        scan, anchors = await asyncio.gather(
+            asyncio.wait_for(discovery.universe_scan(refresh=refresh), timeout=45),
+            asyncio.gather(*(_focus_quote(symbol) for symbol in ("SPX", "SPY", "QQQ"))),
+        )
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="focus scan timed out") from exc
+    rows = list(scan.get("rows", []))
+    eligible = [
+        row
+        for row in rows
+        if row.get("symbol") not in {"SPX", "SPY", "QQQ"}
+        and row.get("best_play", {}).get("eligible") is True
+    ]
+    fallbacks = [
+        row
+        for row in rows
+        if row.get("symbol") not in {"SPX", "SPY", "QQQ"} and row not in eligible
+    ]
+    complete = scan.get("complete") is True
+    # A failed constituent can change cross-sectional order. Never turn a
+    # partial configured-universe scan into a decision rank.
+    focus = (eligible + fallbacks)[:3] if complete else []
+    curated = (eligible + fallbacks)[:8] if complete else []
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "completed_session": scan.get("completed_session"),
+        "complete": complete,
+        "errors": scan.get("errors", {}),
+        "anchors": anchors,
+        "focus": focus,
+        "curated_watchlist": curated,
+        "ranking": "smart-play-v1",
+        "ranking_scope": "configured-live universe only",
+        "ai_policy": (
+            "OpenAI may review supplied evidence after an explicit account action; "
+            "it cannot change rank or create a trade."
+        ),
+    }
+
+
+@app.get("/api/intelligence/{symbol}")
+async def research_intelligence(
+    request: Request,
+    symbol: str,
+    refresh: bool = Query(False),
+):
+    """Multi-source research rank for one configured-universe symbol."""
+    _require_personal(request)
+    rate_limiter.check(_client_key(request, "intelligence"), limit=12, window_seconds=60)
+    normalized = stock_analyzer.normalize_symbol(symbol)
+    try:
+        return await _configured_research_intelligence(normalized, refresh=refresh)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="research feeds timed out") from exc
+
+
+async def _configured_research_intelligence(
+    normalized: str,
+    *,
+    refresh: bool = False,
+) -> dict:
+    """Enrich one configured-universe row without forcing another scan."""
+    # /api/focus owns technical-universe refresh. Reuse that cached snapshot so
+    # one UI refresh does not fan out four full universe scans.
+    scan = await asyncio.wait_for(discovery.universe_scan(refresh=False), timeout=45)
+    row = next((item for item in scan.get("rows", []) if item["symbol"] == normalized), None)
+    if row is None:
+        raise LookupError(
+            f"{normalized} is not in the configured research universe; use Analyze instead"
+        )
+    result = await asyncio.wait_for(
+        research_feed_service.analyze(normalized, row, refresh=refresh),
+        timeout=30,
+    )
+    result["universe_scan_complete"] = scan.get("complete") is True
+    result["universe_errors"] = scan.get("errors", {})
+    return result
 
 
 @app.get("/api/analyze/{symbol}")
@@ -584,10 +771,38 @@ async def stock_dossier(
     cost_bps: float = Query(10.0, ge=0, le=100),
 ):
     rate_limiter.check(_client_key(request, "dossier"), limit=30, window_seconds=60)
+    principal = request_principal(request, loop.store)
+
+    async def optional_intelligence(
+        normalized: str, analysis: dict[str, object]
+    ) -> dict | None:
+        if principal is None:
+            return None
+        try:
+            return await asyncio.wait_for(
+                research_feed_service.analyze(
+                    normalized,
+                    {
+                        "symbol": normalized,
+                        "technical_score": technical_score(analysis),
+                        "as_of": analysis.get("as_of"),
+                        "consensus": analysis.get("consensus"),
+                    },
+                ),
+                timeout=30,
+            )
+        except Exception:
+            return {
+                "symbol": normalized,
+                "status": "UNAVAILABLE",
+                "reason": "Current research enrichment could not be loaded.",
+            }
+
     try:
+        normalized = stock_analyzer.normalize_symbol(symbol)
         analysis = await asyncio.wait_for(
             stock_analyzer.analyze(
-                symbol,
+                normalized,
                 years=years,
                 risk_budget=risk_budget,
                 include_backtest=include_backtest,
@@ -595,6 +810,7 @@ async def stock_dossier(
             ),
             timeout=30,
         )
+        intelligence = await optional_intelligence(normalized, analysis)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except LookupError as exc:
@@ -603,27 +819,56 @@ async def stock_dossier(
         raise HTTPException(status_code=504, detail="stock analysis provider timed out") from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail="stock analysis provider failed") from exc
-    principal = request_principal(request, loop.store)
     if principal and principal.legacy:
-        watchlists = loop.store.watchlists_for_symbol(symbol)
+        watchlists = loop.store.watchlists_for_symbol(normalized)
     elif principal:
-        watchlists = loop.store.user_watchlists_for_symbol(principal.user_id, symbol)
+        watchlists = loop.store.user_watchlists_for_symbol(principal.user_id, normalized)
     else:
         watchlists = []
+    research_pillars = intelligence.get("pillars", {}) if intelligence else {}
+    filings = intelligence.get("filings", {}) if intelligence else {}
+    if intelligence and intelligence.get("status") != "UNAVAILABLE":
+        multi_brain = build_research_consensus(analysis, intelligence)
+        try:
+            multi_brain["claude_review"] = await asyncio.wait_for(
+                claude_research_reviewer.review(
+                    normalized,
+                    analysis,
+                    intelligence,
+                    multi_brain,
+                ),
+                timeout=25,
+            )
+        except Exception:
+            multi_brain["claude_review"] = claude_research_reviewer.status(
+                "UNAVAILABLE",
+                "Claude research review is temporarily unavailable; deterministic research is unchanged.",
+            )
+        intelligence["multi_brain"] = multi_brain
+    company = intelligence.get("company", {}) if intelligence else {}
     return {
-        "security": loop.store.get_security(symbol) or {
-            "symbol": symbol.upper(),
-            "name": symbol.upper(),
+        "security": loop.store.get_security(normalized) or {
+            "symbol": normalized,
+            "name": company.get("name") or normalized,
             "source": "on-demand",
         },
         "watchlists": watchlists,
         "analysis": analysis,
+        "intelligence": intelligence,
         "coverage": {
             "technicals": "AVAILABLE",
             "forward_outlook": "AVAILABLE",
-            "fundamentals": "NOT_CONNECTED",
+            "fundamentals": research_pillars.get("fundamentals", {}).get(
+                "status", "NOT_CONNECTED"
+            ),
             "estimates": "NOT_CONNECTED",
-            "events": "NOT_CONNECTED",
+            "events": (
+                "FILING_CONTEXT_AVAILABLE"
+                if filings.get("items")
+                else "NOT_CONNECTED"
+            ),
+            "news": research_pillars.get("news", {}).get("status", "NOT_CONNECTED"),
+            "social": research_pillars.get("social", {}).get("status", "NOT_CONNECTED"),
         },
     }
 
@@ -744,6 +989,44 @@ async def get_autotrade(request: Request):
     return loop.autotrade.status()
 
 
+@app.get("/api/trade-log")
+async def get_trade_log(
+    request: Request,
+    limit: int = Query(200, ge=1, le=1000),
+):
+    """One chronological audit surface for signals, paper trades, and intents."""
+    principal = _require_personal(request)
+    broker_history_visible = principal.legacy or principal.role == "ADMIN"
+    execution_events = (
+        loop.autotrade.audit_log(5000) if broker_history_visible else []
+    )
+    return {
+        "signals": [
+            item.model_dump(mode="json") for item in loop.alerts[-limit:]
+        ][::-1],
+        "paper_trades": [
+            item.model_dump(mode="json") for item in loop.executor.trades[-limit:]
+        ][::-1],
+        "execution_events": execution_events[:limit],
+        "automation_trades": (
+            sorted(
+                [
+                    {**row["trade_event"], "mode": row.get("mode")}
+                    for row in execution_events
+                    if row.get("trade_event")
+                ],
+                key=lambda event: (
+                    event.get("observed_at") or event.get("recorded_at") or ""
+                ),
+                reverse=True,
+            )[:limit]
+            if broker_history_visible else []
+        ),
+        "broker_history_visible": broker_history_visible,
+        "live_execution_enabled": loop.autotrade.effective_mode().value == "LIVE",
+    }
+
+
 @app.put("/api/autotrade/policy")
 async def put_autotrade_policy(request: Request, updates: dict = Body(...)):
     _require_control(request)
@@ -756,7 +1039,7 @@ async def put_autotrade_policy(request: Request, updates: dict = Body(...)):
 @app.post("/api/autotrade/disarm")
 async def disarm_autotrade(request: Request):
     _require_control(request)
-    return loop.autotrade.update_policy({"mode": "OFF"}).model_dump(mode="json")
+    return loop.autotrade.update_policy({"mode": "SIMULATION"}).model_dump(mode="json")
 
 
 @app.post("/api/autotrade/intents/from-alert/{alert_id}")
@@ -767,8 +1050,6 @@ async def create_intent_from_alert(alert_id: str, request: Request):
     if alert is None:
         raise HTTPException(status_code=404, detail="unknown alert")
     intent = loop.autotrade.on_alert(alert)
-    if intent is None:
-        raise HTTPException(status_code=409, detail="automation mode is OFF")
     return intent.model_dump(mode="json")
 
 
@@ -794,13 +1075,13 @@ async def reject_autotrade_intent(
 
 @app.get("/api/autotrade/intents")
 async def list_autotrade_intents(request: Request, status: str | None = None):
-    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
     try:
         intents = loop.autotrade.list_intents(status)
     except ValueError as exc:
         raise _autotrade_error(exc) from exc
     return {
-        "contract_version": "1.0",
+        "contract_version": AUTOTRADE_CONTRACT_VERSION,
         "effective_mode": loop.autotrade.effective_mode().value,
         "intents": [item.model_dump(mode="json") for item in intents],
     }
@@ -808,11 +1089,69 @@ async def list_autotrade_intents(request: Request, status: str | None = None):
 
 @app.post("/api/autotrade/intents/{intent_id}/claim")
 async def claim_autotrade_intent(
-    intent_id: str, request: Request, payload: dict = Body(default={})
+    intent_id: str,
+    request: Request,
+    payload: CodexClaimRequest = Body(...),
+    _agent_auth: None = Depends(_require_codex_agent),
 ):
-    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
     try:
-        return loop.autotrade.claim(intent_id, payload.get("agent", "codex")).model_dump(
+        return loop.autotrade.claim(
+            intent_id,
+            payload.agent,
+            underlying_price=payload.underlying_price,
+            observed_at=payload.observed_at,
+        ).model_dump(mode="json")
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.post("/api/autotrade/intents/{intent_id}/capital-review")
+async def review_autotrade_capital(
+    intent_id: str,
+    payload: CodexCapitalReviewRequest,
+    _agent_auth: None = Depends(_require_codex_agent),
+):
+    """Record and enforce a fresh official-MCP buying-power observation."""
+    try:
+        return loop.autotrade.attest_capital(
+            intent_id,
+            agent=payload.agent,
+            buying_power=payload.buying_power,
+            observed_at=payload.observed_at,
+            currency=payload.currency,
+            account_scope=payload.account_scope,
+        ).model_dump(mode="json")
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.post("/api/autotrade/intents/{intent_id}/option-selection")
+async def review_autotrade_option_selection(
+    intent_id: str,
+    payload: CodexOptionSelectionRequest,
+    _agent_auth: None = Depends(_require_codex_agent),
+):
+    """Validate a full official-MCP candidate set and select exact contract/size."""
+    try:
+        return loop.autotrade.attest_option_selection(
+            intent_id,
+            agent=payload.agent,
+            buying_power=payload.buying_power,
+            observed_at=payload.observed_at,
+            account_scope=payload.account_scope,
+            candidates=payload.candidates,
+        ).model_dump(mode="json")
+    except (ValueError, KeyError) as exc:
+        raise _autotrade_error(exc) from exc
+
+
+@app.post("/api/autotrade/intents/{intent_id}/simulation-receipt")
+async def record_autotrade_simulation(
+    intent_id: str, request: Request, payload: dict = Body(...)
+):
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
+    try:
+        return loop.autotrade.record_simulation(intent_id, payload).model_dump(
             mode="json"
         )
     except (ValueError, KeyError) as exc:
@@ -823,7 +1162,7 @@ async def claim_autotrade_intent(
 async def record_autotrade_receipt(
     intent_id: str, request: Request, payload: dict = Body(...)
 ):
-    _require_token(request, "AUTOTRADE_AGENT_TOKEN")
+    _require_token(request, "AUTOTRADE_CODEX_AGENT_TOKEN")
     try:
         return loop.autotrade.record_receipt(intent_id, payload).model_dump(mode="json")
     except (ValueError, KeyError) as exc:

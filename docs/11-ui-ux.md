@@ -1,6 +1,9 @@
 # 11 — UI / UX Specification
 
-A graphically rich, real-time trading workstation — not a form-and-modal web page. Design north star: **Bloomberg density × consumer-app clarity × the dark/gold discipline aesthetic** of the user's rule posters.
+A card- and alert-first real-time decision terminal—not a chart wall or a
+form-and-modal web page. Design north star: **professional market density ×
+consumer-app clarity × calm, rounded surfaces**. Charts are progressive detail;
+the first viewport answers what matters, why it matters, and what invalidates it.
 
 ## 1. Design System
 
@@ -14,10 +17,10 @@ A graphically rich, real-time trading workstation — not a form-and-modal web p
 ### Core Components
 | Component | Spec |
 |---|---|
-| **Alert Card** | Content contract in doc 09 §6; collapsed height ~160 px; confidence dial (radial, gold ring at 75+); vertical price-ladder mini-graphic showing entry zone/stop/TPs to scale with live price marker |
+| **Alert Card** | Content contract in doc 09 §6; readable without opening a chart; shows ticker/underlying, vehicle or option contract/expiry, entry, stop, all staged targets, max risk, validity, evidence status, and score. A compact score label replaces decorative radial gauges. |
 | **Trend Matrix chips** | Row of TF chips (M W D 4H 1H 15m 5m) each ▲▲/▲/►/▼/▼▼ with color; tap → mini popover explaining the state's components |
 | **Confidence breakdown** | Horizontal stacked bar of the 8 factors, hover for rubric detail |
-| **Mini-chart** | Lightweight-Charts candle panel with levels drawn; present on every card, 60 fps pan/zoom |
+| **Mini-chart** | Optional price context, collapsed by default; charts support a decision but never displace the alert plan. |
 | **Level ladder** | Vertical price axis widget with walls, ORB, VWAP, prior H/L pinned; used in 0DTE cockpit |
 | **Stat tiles** | KPI tiles with sparkline + delta chip (used across dashboard/log) |
 | **Ticker tape** | Top bar: SPX NDX VIX SMH ES/NQ futures + user positions, live |
@@ -33,35 +36,54 @@ A graphically rich, real-time trading workstation — not a form-and-modal web p
 ▁ Top bar: ticker tape · market clock/session state · macro-event countdown · data-health dot · cooldown badges
 ```
 
-### 2.1 Home / Command Center
-- **Single-pane daily view:** the welcome header is intentionally lightweight. One “Today at a glance” panel owns the daily bias, three-point game plan, freshness, and a concise macro headline feed; the same brief is not repeated in the right rail.
-- **Market pulse:** the index context row stays compact and emphasizes the configured decision symbols (SPX/SPY/QQQ where available) rather than duplicating the daily brief.
-- **Macro feed contract:** `/api/news` returns up to eight source-linked headlines with `HIGH`/`WATCH`/`MARKET` impact labels and a five-minute in-process cache. Feed outages render an explicit unavailable state and never alter ranking, signals, or execution.
-- **Detailed briefing route (future/archive):** the full rich briefing can retain the expanded bias meter, index cards, macro calendar, and ratings digest without crowding the landing view.
-- **Sector Heat Map widget:** Finviz-style treemap (internally computed; 1D/1W/1M toggle), cell click → sector drill-down with constituent RS ranks; "open full map on Finviz" link-out.
-- **Today row:** active alerts across modules (horizontal card scroll), P&L-today tile, budget-used gauges per module, cooldown/kill-switch status.
-- **Calibration strip:** claimed-vs-realized sparkline + "engine honesty" badge (RULE-C2, always visible).
-- **"No edge today" state** is designed, not empty: shows what was evaluated and why nothing passed (suppression tape) — reinforces RULE-M3.
+### 2.1 Today / Decision Home
+- **Decision hero:** active plans, held-back count, and next evaluation—not vanity
+  market statistics.
+- **Benchmark pulse:** SPX, SPY, and QQQ with freshness/source state.
+- **Macro pulse:** `/api/news` supplies up to eight cached, source-linked
+  headlines with `HIGH`/`WATCH`/`MARKET` labels. The feed is contextual only,
+  filters unsafe links, and renders an explicit unavailable state without
+  changing ranking, signals, or execution.
+- **Top 3 in focus:** deterministic configured-universe rank with technical,
+  financial, and overall research scores, coverage, confirmation, and latest
+  filing context.
+- **Curated radar:** eight compact candidates; explicit AI review can add
+  eligible, non-avoided names to the Research watchlist but cannot rerank or
+  trade.
+- **Strategy lanes:** 0DTE, Swing, and gated LEAPS research communicate which
+  evidence families are active without implying profitability.
+- **Rich signal cards:** complete trade plan before any chart. Opening the card
+  reveals invalidation, management, risks, and optional price context.
+- **"No ready signal" state:** shows what was evaluated and why candidates were
+  held back. Silence remains an intentional result.
 
 ### 2.2 Module Screens (shared template, tuned per module)
 Three-zone cockpit:
-1. **Chart rack** (left ⅔): TradingView Advanced Chart with alert overlays; TF switcher synced to trend matrix; 0DTE gets a multi-chart 2×2 rack option (SPX/NDX/SMH/TQQQ).
-2. **Alert stack** (right ⅓): module's active + recent alerts; sub-section tabs (Directional / Advanced-Income); each card expandable in place — no modals for reading (modals reserved solely for order-stage confirmation).
-3. **Bottom drawer:** module vitals — 0DTE: ORB table, expected move, walls, breadth pack; Swing: catalyst calendar, sector RS heatmap; LEAPS: collar dashboards (doc 06 §2 card), IVR table; HODL: quality×valuation quadrant scatter.
+1. **Alert stack:** module's active and held-back plans, newest first.
+2. **Selected decision:** entry, invalidation, targets, sizing, management,
+   historical evidence, data freshness, and event risk.
+3. **Optional context drawer:** chart and specialist tables. A chart rack may be
+   offered as a secondary expert view, never as the default home hierarchy.
 
 ### 2.3 Trade Log — views per doc 10 §3 (ledger/performance/calibration/discipline/journal as tabs).
 
 ### 2.4 Settings
 Account, per-user capital and risk limits, confidence threshold (raise-only),
-Telegram pairing (QR), Robinhood MCP connection + order-staging toggle (off by
-default), universe editor, alert sounds, and theme. Use the plain-language UI
-vocabulary in `docs/21-accounts-and-personal-settings.md`; keep research terms
-in methodology details only.
+Telegram pairing (QR), auto-trade policy (`SIMULATION` by default), read-only Codex MCP
+connection status, universe editor, alert sounds, and theme. MCP authentication
+and Robinhood credentials remain on the trusted Codex host and never enter the
+web app. Use the plain-language UI vocabulary in
+`docs/21-accounts-and-personal-settings.md`; keep research terms in methodology
+details only.
 
 ## 3. Interaction Principles
 
 - **5-second rule:** any alert comprehensible collapsed in ≤ 5 s (tested in usability pass).
-- **No dead modals:** progressive disclosure via expansion, drawers, popovers; modal only for irreversible actions (order staging), and that modal shows the full ticket + risk sentence + explicit confirm.
+- **No dead modals:** progressive disclosure via expansion, drawers, and
+  popovers. Manual staged-order actions show the full ticket, risk sentence, and
+  explicit confirmation. The separate policy dialog must make the difference
+  between `SIMULATION` and time-limited `LIVE` unmistakable; doc 27 remains
+  authoritative.
 - **Keyboard-first power use:** `g 0` (0DTE), `g s` (swings), `j/k` alert nav, `t` track, `c` chart, `/` command palette (jump to symbol, action search).
 - **Latency honesty:** every live number carries a staleness indicator when > 5 s old; degraded data grays out affected cards with reason.
 - **Mobile PWA:** responsive down to 390 px — alert feed + briefing + log first; chart rack collapses to single chart; cards optimized for one-thumb triage (swipe: track/pass).
@@ -70,7 +92,8 @@ in methodology details only.
 
 ## 4. Graphic Signature Moments (the "rich" part)
 
-- Confidence dial fills gold as it crosses 75 with a subtle glow — alerts feel earned.
+- Signal score is a compact text label paired with the evidence-status badge;
+  it must never resemble a guaranteed probability.
 - Trend alignment matrix as an at-a-glance "spine" on every context (cards, chart header, briefing).
 - The price-ladder graphic on each card mirrors a collar/PL diagram: risk visible spatially, not as text.
 - Daily briefing renders as a designed page (poster-like hierarchy echoing the user's rules posters: bold gold headers, card grid), not a wall of text.

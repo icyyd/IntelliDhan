@@ -27,7 +27,7 @@ from intellidhan_learning.paper import PaperExecutor, PaperTrade, performance_re
 from intellidhan_schemas import DataQuality, SessionState, Timeframe
 from intellidhan_schemas.signals import Alert, stable_plan_key
 
-from intellidhan_gateway.autotrade import AutotradeManager
+from intellidhan_gateway.autotrade import AutomationMode, AutotradeManager
 from intellidhan_gateway.terminal_store import TerminalStore
 from intellidhan_gateway.universe import load_live_symbols, security_records
 
@@ -179,7 +179,11 @@ class LiveLoop:
         self.last_briefing = self.store.latest_briefing()
         self.runner = EngineRunner(self.symbols)
         for trade in self.executor.active_trades():
-            self.runner.controls.register_open(trade.module, trade.symbol, trade.strategy)
+            controls = (
+                self.runner.shadow_controls if trade.research_only
+                else self.runner.controls
+            )
+            controls.register_open(trade.module, trade.symbol, trade.strategy)
         self.seen_bars = set()
 
         end = restart_at
@@ -521,7 +525,11 @@ class LiveLoop:
                 continue
             self.seen_bars.add(key)
             for settled in self.executor.on_bar(bar):
-                self.runner.controls.register_close(
+                controls = (
+                    self.runner.shadow_controls if settled.research_only
+                    else self.runner.controls
+                )
+                controls.register_close(
                     settled.module, settled.symbol, settled.strategy)
                 if replay:
                     # Replay is notification-silent, not durability-silent.
@@ -532,36 +540,84 @@ class LiveLoop:
                 else:
                     await self._notify_settlement(settled)
             setups = self.runner.on_bar_5m(bar)
+            shadow_setups = self.runner.pop_shadow_setups()
             if not allow_new_entries:
                 # The post-close pass updates state and settles open paper
                 # trades, but must not publish entries that expire overnight.
                 continue
             for setup in setups:
-                alert = self.composer.compose(setup)
-                if alert is None:
-                    continue
-                plan_key = alert.plan_key or stable_plan_key(
-                    alert.created_at, alert.symbol, alert.module, alert.strategy
-                )
-                is_new_alert = (
-                    alert.alert_id not in self._alert_ids
-                    and plan_key not in self._alert_plan_keys
-                )
-                self._alert_ids.add(alert.alert_id)
-                if is_new_alert:
-                    self.alerts.append(alert)
-                    self._alert_plan_keys.add(plan_key)
-                    if self.persistence_ready:
-                        self.store.upsert_alert(alert.model_dump(mode="json"))
-                trade = PaperTrade.from_alert(alert, setup)
-                if not self.executor.track(trade):
-                    continue
-                if self.persistence_ready:
-                    self.store.upsert_paper_trade(trade.model_dump(mode="json"))
-                self.runner.controls.register_open(setup.module, setup.symbol, setup.strategy)
-                if not replay:
-                    await self._deliver(alert)
+                await self._record_setup(setup, replay=replay, deliver=True)
+            for setup in shadow_setups:
+                await self._record_setup(setup, replay=replay, deliver=False)
         return result
+
+    async def _record_setup(self, setup, *, replay: bool, deliver: bool) -> None:
+        """Persist one setup and its paper plan; research plans stay silent."""
+        alert = self.composer.compose(setup)
+        if alert is None:
+            return
+        plan_key = alert.plan_key or stable_plan_key(
+            alert.created_at, alert.symbol, alert.module, alert.strategy
+        )
+        is_new_alert = (
+            alert.alert_id not in self._alert_ids
+            and plan_key not in self._alert_plan_keys
+        )
+        self._alert_ids.add(alert.alert_id)
+        if is_new_alert:
+            self.alerts.append(alert)
+            self._alert_plan_keys.add(plan_key)
+            if self.persistence_ready:
+                self.store.upsert_alert(alert.model_dump(mode="json"))
+        trade = PaperTrade.from_alert(alert, setup)
+        if not self.executor.track(trade):
+            return
+        if self.persistence_ready:
+            self.store.upsert_paper_trade(trade.model_dump(mode="json"))
+        controls = (
+            self.runner.shadow_controls if getattr(setup, "research_only", False)
+            else self.runner.controls
+        )
+        controls.register_open(setup.module, setup.symbol, setup.strategy)
+        if replay:
+            return
+        if (
+            deliver
+            and getattr(alert, "status", "ACTIVE") == "ACTIVE"
+            and not getattr(alert, "research_only", False)
+        ):
+            await self._deliver(alert)
+            return
+        # Research alerts enter the read-only simulation queue so Codex can
+        # attach real option quotes and lifecycle events. They remain blocked
+        # from live execution by the explicit calibration/research gates.
+        if self.autotrade.effective_mode() == AutomationMode.SIMULATION:
+            try:
+                intent = self.autotrade.on_alert(alert)
+                self.publish_ws({
+                    "type": "autotrade_intent",
+                    "data": intent.model_dump(mode="json"),
+                })
+            except Exception as exc:
+                print(f"[autotrade] simulation intent creation failed: {exc}")
+        self.publish_ws({"type": "shadow_signal", "data": alert.model_dump(mode="json")})
+
+    def _claim_send(self, key: str) -> bool:
+        """Cross-instance exactly-once gate for outbound Telegram.
+
+        Koyeb's rolling deploys briefly run two instances at once; each keeps its
+        own in-memory bar/plan dedup, so without a shared claim both would send
+        the same alert (the duplicate-Telegram bug). The first instance to claim
+        the key in the shared store sends; the rest skip. Fail OPEN: if the store
+        is unavailable we send anyway — a rare duplicate beats a missed alert,
+        and single-process/no-DB runs have their own in-memory dedup."""
+        if not self.persistence_ready:
+            return True
+        try:
+            return self.store.claim_delivery(key)
+        except Exception as exc:
+            print(f"[deliver] delivery claim failed, sending anyway: {exc}")
+            return True
 
     async def _notify_settlement(self, trade) -> None:
         """Stop/TP/flatten follow-ups (doc 05 §4 lifecycle, v1)."""
@@ -575,7 +631,10 @@ class LiveLoop:
                f"{trade.outcome.value.replace('_', ' ').title()} at {r} "
                f"(entry {trade.entry:.2f}, tranches exited {trade.tranches_exited}/3)\n"
                f"⚠️ Educational tool — not financial advice.")
-        await self.telegram.send(msg)
+        settle_key = trade.plan_key or stable_plan_key(
+            trade.created_at, trade.symbol, trade.module, trade.strategy)
+        if self._claim_send(f"settle:{settle_key}:{trade.outcome.value}"):
+            await self.telegram.send(msg)
         self.publish_ws({"type": "settlement", "data": trade.model_dump(mode="json")})
 
     async def _deliver(self, alert: Alert) -> None:
@@ -584,7 +643,10 @@ class LiveLoop:
             intent = self.autotrade.on_alert(alert)
         except Exception as exc:  # automation must fail closed without blocking alerts
             print(f"[autotrade] intent creation failed: {exc}")
-        await self.telegram.send(format_alert(alert))
+        alert_key = alert.plan_key or stable_plan_key(
+            alert.created_at, alert.symbol, alert.module, alert.strategy)
+        if self._claim_send(f"alert:{alert_key}"):
+            await self.telegram.send(format_alert(alert))
         self.publish_ws({"type": "alert", "data": alert.model_dump(mode="json")})
         if intent is not None:
             self.publish_ws(
@@ -614,7 +676,8 @@ class LiveLoop:
         self.last_briefing = briefing["web"]
         if self.persistence_ready:
             self.store.put_briefing(self.last_briefing)
-        await self.telegram.send(briefing["telegram"])
+        if self._claim_send(f"briefing:{day}"):
+            await self.telegram.send(briefing["telegram"])
         self._briefed_on = day
 
     async def run_forever(self) -> None:

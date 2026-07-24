@@ -427,7 +427,8 @@ def test_frontend_clears_personal_state_on_logout_401_and_ws_expiry():
     assert '"budgets-dialog","autotrade-dialog"' in clear_block
     assert '"bdSuppression","bdEvidence","bdPerformance"' in clear_block
     assert '"profile0dteInner","marketChart","chartLegend","dailyChart"' in clear_block
-    assert "window.location.reload()" in clear_block
+    assert "if(reload) window.location.reload()" in clear_block
+    assert 'else clearPersonalState("Sign in required.", false)' in source
     assert 'clearPersonalState("Signed out.")' in source
     assert 'r.status===401 && url!=="/api/auth/session"' in source
     assert 'event.code===4401' in source
@@ -443,7 +444,7 @@ def test_account_frontend_uses_accessible_forms_and_honest_capability_labels():
     assert '["ArrowLeft","ArrowRight","Home","End"]' in source
     assert "Alert sounds (coming soon)" in source
     assert "Initial password (12+ characters)" in source
-    assert "Shared automation policy" in source
+    assert "Two clear modes" in source
     assert "Changes affect every user and the connected Robinhood agent" in source
     assert "Play sound for new alerts" not in source
     assert "Temporary password" not in source

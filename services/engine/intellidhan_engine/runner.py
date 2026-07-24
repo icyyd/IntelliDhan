@@ -20,12 +20,14 @@ class EngineRunner:
         self.states = {s: SymbolState(s) for s in symbols}
         self.strategies = strategies if strategies is not None else REGISTRY
         self.controls = EngineControls()
+        self.shadow_controls = EngineControls()
         self.shadow = shadow          # SHADOW mode (doc 08 §4): bypass ONLY the
                                       # confidence gate to harvest calibration samples
         self.calibration = {st.key: CalibrationMap.load(st.key) for st in self.strategies}
         self.macro_by_day: dict[str, MacroContext] = {}
         self.setups: list[Setup] = []
         self.suppressed: list[SuppressedSetup] = []
+        self._shadow_setups: list[Setup] = []
         self._seq = 0
 
     def seed_daily(self, symbol: str, daily_bars: list[Bar]) -> None:
@@ -57,6 +59,11 @@ class EngineRunner:
         self.setups.extend(emitted)
         return emitted
 
+    def pop_shadow_setups(self) -> list[Setup]:
+        """Drain research setups that passed every gate except live eligibility."""
+        items, self._shadow_setups = self._shadow_setups, []
+        return items
+
     def _score_and_gate(self, state: SymbolState, sig: RawSignal) -> Setup | None:
         self._seq += 1
         setup_id = (f"stp_{state.ts().strftime('%Y%m%d_%H%M%S')}_"
@@ -71,7 +78,7 @@ class EngineRunner:
         # a strategy can be pulled from live/gated delivery while continuing
         # to harvest SHADOW research samples. Checked before the veto wall so
         # it's unconditional — no factor combination can override it.
-        if not sig.live_eligible and not self.shadow:
+        if not sig.live_eligible and not self.shadow and not sig.shadow_monitor:
             self.suppressed.append(
                 SuppressedSetup(
                     setup_id=setup_id, module=sig.module, strategy=sig.strategy,
@@ -82,6 +89,23 @@ class EngineRunner:
                     composite=comp, confidence=conf,
                 )
             )
+            return None
+
+        if not sig.live_eligible and not self.shadow and sig.shadow_monitor:
+            verdict = run_gates(state, sig, 1.0, self.shadow_controls)
+            if not verdict.passed:
+                self.suppressed.append(
+                    SuppressedSetup(
+                        setup_id=setup_id, module=sig.module, strategy=sig.strategy,
+                        symbol=state.symbol, ts=state.ts(), gate=verdict.gate,
+                        detail=f"SHADOW monitor: {verdict.detail}",
+                        composite=comp, confidence=conf,
+                    )
+                )
+                return None
+            setup = self._build_setup(state, sig, setup_id, factors, comp, conf, cal,
+                                      research_only=True)
+            self._shadow_setups.append(setup)
             return None
 
         gate_conf = 1.0 if self.shadow else conf
@@ -96,6 +120,15 @@ class EngineRunner:
                 )
             )
             return None
+        return self._build_setup(
+            state, sig, setup_id, factors, comp, conf, cal,
+            # Global SHADOW mode may bypass calibration confidence for research,
+            # but it can never erase a strategy's structural live prohibition.
+            research_only=not sig.live_eligible,
+        )
+
+    def _build_setup(self, state, sig, setup_id, factors, comp, conf, cal, *,
+                     research_only: bool) -> Setup:
         matrix = {tf.value: score for tf, score in state.mtf_matrix().items()}
         return Setup(
             setup_id=setup_id, module=sig.module, strategy=sig.strategy,
@@ -106,7 +139,8 @@ class EngineRunner:
             targets_underlying=[round(t, 4) for t in sig.targets],
             reward_risk=reward_risk(sig),
             explain=sig.explain + (
-                " [SHADOW mode — calibration harvesting]" if self.shadow
+                " [SHADOW research monitor — never executable]" if research_only
+                else " [SHADOW mode — calibration harvesting]" if self.shadow
                 else (
                     f" [validated {cal.evidence_status}: {len(cal.buckets)} buckets]"
                     if cal.has_validated_evidence
@@ -114,4 +148,5 @@ class EngineRunner:
                 )
             ),
             invalidation=sig.invalidation,
+            research_only=research_only,
         )

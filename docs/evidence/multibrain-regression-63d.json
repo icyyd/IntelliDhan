@@ -1,0 +1,282 @@
+{
+  "model_version": "technical-panel-regression-v1",
+  "research_type": "chronological pooled technical probability diagnostic",
+  "horizon_sessions": 63,
+  "symbols": [
+    "AAPL",
+    "AMD",
+    "AMZN",
+    "GOOGL",
+    "META",
+    "MSFT",
+    "NVDA",
+    "QQQ",
+    "SMH",
+    "SPY",
+    "TQQQ",
+    "TSLA"
+  ],
+  "trials_disclosed": 2,
+  "selection": {
+    "selected_on_development_only": "core",
+    "validation_start": "2024-01-12T05:00:00+00:00"
+  },
+  "development": {
+    "base": {
+      "samples": 216,
+      "brier_score": 0.24007,
+      "log_loss": 0.67559,
+      "directional_accuracy_pct": 63.89,
+      "calibration_error_pct": 9.67
+    },
+    "fixed_vote": {
+      "samples": 216,
+      "brier_score": 0.25174,
+      "log_loss": 0.70184,
+      "directional_accuracy_pct": 58.8,
+      "calibration_error_pct": 11.79
+    },
+    "core": {
+      "samples": 216,
+      "brier_score": 0.28002,
+      "log_loss": 0.78729,
+      "directional_accuracy_pct": 58.8,
+      "calibration_error_pct": 19.71
+    },
+    "risk_aware": {
+      "samples": 216,
+      "brier_score": 0.28991,
+      "log_loss": 0.81502,
+      "directional_accuracy_pct": 53.24,
+      "calibration_error_pct": 19.26
+    }
+  },
+  "validation": {
+    "base": {
+      "samples": 108,
+      "brier_score": 0.2127,
+      "log_loss": 0.61705,
+      "directional_accuracy_pct": 70.37,
+      "calibration_error_pct": 5.23
+    },
+    "fixed_vote": {
+      "samples": 108,
+      "brier_score": 0.21928,
+      "log_loss": 0.63146,
+      "directional_accuracy_pct": 70.37,
+      "calibration_error_pct": 4.89
+    },
+    "core": {
+      "samples": 108,
+      "brier_score": 0.22147,
+      "log_loss": 0.63713,
+      "directional_accuracy_pct": 70.37,
+      "calibration_error_pct": 10.65
+    }
+  },
+  "validation_brier_improvement_vs_fixed_vote_pct": -1.0,
+  "validation_brier_improvement_vs_base_pct": -4.12,
+  "per_symbol_validation": {
+    "AAPL": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.22675,
+        "log_loss": 0.64794,
+        "directional_accuracy_pct": 66.67,
+        "calibration_error_pct": 31.08
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.24074,
+        "log_loss": 0.67648,
+        "directional_accuracy_pct": 66.67,
+        "calibration_error_pct": 15.87
+      }
+    },
+    "AMD": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.27251,
+        "log_loss": 0.74541,
+        "directional_accuracy_pct": 55.56,
+        "calibration_error_pct": 11.17
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.26259,
+        "log_loss": 0.72145,
+        "directional_accuracy_pct": 55.56,
+        "calibration_error_pct": 9.23
+      }
+    },
+    "AMZN": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.22562,
+        "log_loss": 0.64389,
+        "directional_accuracy_pct": 66.67,
+        "calibration_error_pct": 2.01
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.2311,
+        "log_loss": 0.65587,
+        "directional_accuracy_pct": 66.67,
+        "calibration_error_pct": 0.96
+      }
+    },
+    "GOOGL": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.19784,
+        "log_loss": 0.5873,
+        "directional_accuracy_pct": 77.78,
+        "calibration_error_pct": 12.71
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.19529,
+        "log_loss": 0.58167,
+        "directional_accuracy_pct": 77.78,
+        "calibration_error_pct": 11.81
+      }
+    },
+    "META": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.24061,
+        "log_loss": 0.6764,
+        "directional_accuracy_pct": 66.67,
+        "calibration_error_pct": 2.71
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.22818,
+        "log_loss": 0.64931,
+        "directional_accuracy_pct": 66.67,
+        "calibration_error_pct": 0.89
+      }
+    },
+    "MSFT": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.25932,
+        "log_loss": 0.71361,
+        "directional_accuracy_pct": 55.56,
+        "calibration_error_pct": 8.95
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.26268,
+        "log_loss": 0.72086,
+        "directional_accuracy_pct": 55.56,
+        "calibration_error_pct": 10.22
+      }
+    },
+    "NVDA": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.19334,
+        "log_loss": 0.57687,
+        "directional_accuracy_pct": 77.78,
+        "calibration_error_pct": 13.03
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.19731,
+        "log_loss": 0.58635,
+        "directional_accuracy_pct": 77.78,
+        "calibration_error_pct": 11.81
+      }
+    },
+    "QQQ": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.15878,
+        "log_loss": 0.50579,
+        "directional_accuracy_pct": 88.89,
+        "calibration_error_pct": 24.11
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.15528,
+        "log_loss": 0.49791,
+        "directional_accuracy_pct": 88.89,
+        "calibration_error_pct": 22.92
+      }
+    },
+    "SMH": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.22699,
+        "log_loss": 0.64699,
+        "directional_accuracy_pct": 66.67,
+        "calibration_error_pct": 0.87
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.23523,
+        "log_loss": 0.66541,
+        "directional_accuracy_pct": 66.67,
+        "calibration_error_pct": 0.85
+      }
+    },
+    "SPY": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.15733,
+        "log_loss": 0.50266,
+        "directional_accuracy_pct": 88.89,
+        "calibration_error_pct": 24.02
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.15528,
+        "log_loss": 0.49791,
+        "directional_accuracy_pct": 88.89,
+        "calibration_error_pct": 22.92
+      }
+    },
+    "TQQQ": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.20959,
+        "log_loss": 0.61322,
+        "directional_accuracy_pct": 77.78,
+        "calibration_error_pct": 22.64
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.19529,
+        "log_loss": 0.58167,
+        "directional_accuracy_pct": 77.78,
+        "calibration_error_pct": 11.81
+      }
+    },
+    "TSLA": {
+      "selected": {
+        "samples": 9,
+        "brier_score": 0.28889,
+        "log_loss": 0.78552,
+        "directional_accuracy_pct": 55.56,
+        "calibration_error_pct": 17.81
+      },
+      "fixed_vote": {
+        "samples": 9,
+        "brier_score": 0.27242,
+        "log_loss": 0.74271,
+        "directional_accuracy_pct": 55.56,
+        "calibration_error_pct": 12.8
+      }
+    }
+  },
+  "symbols_improved": 5,
+  "promotion_status": "NO_BENCHMARK_EDGE",
+  "limitations": [
+    "The current ticker universe is survivorship-biased.",
+    "Current fundamentals, news, social data, and earnings estimates are excluded.",
+    "Classification quality is not a trading-return or profitability result.",
+    "Two feature sets were tried; selection risk is disclosed and validation is held later.",
+    "Promotion still requires a point-in-time universe and an untouched forward paper period."
+  ]
+}

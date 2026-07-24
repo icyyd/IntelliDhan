@@ -64,6 +64,11 @@ CREATE TABLE IF NOT EXISTS briefings (
     created_at TEXT NOT NULL,
     payload TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS daily_briefs (
+    briefing_id TEXT PRIMARY KEY,
+    fetched_at TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS watchlists (
     watchlist_id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -153,6 +158,18 @@ CREATE TABLE IF NOT EXISTS user_saved_screens (
     UNIQUE (user_id, name),
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+CREATE TABLE IF NOT EXISTS delivery_log (
+    delivery_key TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS autotrade_intent_events (
+    event_id TEXT PRIMARY KEY,
+    intent_id TEXT NOT NULL,
+    event_at TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_autotrade_events_intent_at
+    ON autotrade_intent_events(intent_id, event_at);
 """
 
 
@@ -258,6 +275,38 @@ class TerminalStore:
             "SELECT payload FROM runtime_settings WHERE setting_key=?", (key,)
         )
         return json.loads(rows[0]["payload"]) if rows else None
+
+    def append_autotrade_event(self, intent_id: str, payload: dict[str, Any]) -> None:
+        """Insert one immutable event; event_id makes replica retries idempotent."""
+        self._execute(
+            """INSERT INTO autotrade_intent_events
+               (event_id, intent_id, event_at, payload)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(event_id) DO NOTHING""",
+            (
+                payload["event_id"],
+                intent_id,
+                payload["at"],
+                json.dumps(payload),
+            ),
+        )
+
+    def list_autotrade_events(self, intent_id: str | None = None) -> list[dict[str, Any]]:
+        if intent_id is None:
+            rows = self._fetchall(
+                """SELECT intent_id, payload FROM autotrade_intent_events
+                   ORDER BY event_at, event_id"""
+            )
+        else:
+            rows = self._fetchall(
+                """SELECT intent_id, payload FROM autotrade_intent_events
+                   WHERE intent_id=? ORDER BY event_at, event_id""",
+                (intent_id,),
+            )
+        return [
+            {"intent_id": row["intent_id"], **json.loads(row["payload"])}
+            for row in rows
+        ]
 
     # Account records are deliberately separate from shared engine state.  This
     # keeps personal limits and research lists isolated without a destructive
@@ -706,6 +755,23 @@ class TerminalStore:
         )
         return json.loads(rows[0]["payload"]) if rows else None
 
+    def put_daily_brief(self, payload: dict[str, Any]) -> None:
+        """Persist the normalized external research brief, never raw Markdown."""
+        briefing_id = str(payload.get("report_date") or payload.get("generated_at") or _now()[:10])
+        self._execute(
+            """INSERT INTO daily_briefs (briefing_id, fetched_at, payload)
+               VALUES (?, ?, ?)
+               ON CONFLICT(briefing_id) DO UPDATE SET
+                 fetched_at=excluded.fetched_at, payload=excluded.payload""",
+            (briefing_id, _now(), json.dumps(payload)),
+        )
+
+    def latest_daily_brief(self) -> dict[str, Any] | None:
+        rows = self._fetchall(
+            "SELECT payload FROM daily_briefs ORDER BY fetched_at DESC LIMIT 1"
+        )
+        return json.loads(rows[0]["payload"]) if rows else None
+
     def create_watchlist(self, name: str) -> dict[str, Any]:
         name = name.strip()
         if not name or len(name) > 60:
@@ -788,6 +854,27 @@ class TerminalStore:
         for row in rows:
             row["filters"] = json.loads(row["filters"])
         return rows
+
+    def claim_delivery(self, delivery_key: str) -> bool:
+        """Atomically claim a one-time outbound delivery across ALL instances.
+
+        Returns True if this caller won the claim (it should send), False if the
+        key was already claimed (another instance — e.g. an overlapping rolling
+        deploy — or an earlier boot already sent it). The INSERT ... ON CONFLICT
+        DO NOTHING RETURNING is atomic in both SQLite (>=3.35) and PostgreSQL, so
+        exactly one concurrent caller ever gets a returned row.
+        """
+        self._ensure()
+        with self._connection() as connection:
+            rows = connection.execute(
+                self._sql(
+                    "INSERT INTO delivery_log (delivery_key, created_at) "
+                    "VALUES (?, ?) ON CONFLICT(delivery_key) DO NOTHING "
+                    "RETURNING delivery_key"
+                ),
+                (delivery_key, _now()),
+            ).fetchall()
+        return len(rows) == 1
 
     def readiness(self) -> dict[str, Any]:
         return {

@@ -17,6 +17,32 @@
    dollar risk derives from these. Set them to what you actually allocate.
 3. Confirm `.env` still has `POSTGRES_PASSWORD` (generated at setup).
 
+## Codex broker cutover (separate change window)
+
+Do not combine this procedure with an ordinary application deployment. The
+intent bridge is implemented, but execution remains `OFF` and no strategy is
+currently live-eligible.
+
+1. Confirm the persisted auto-trade policy is `OFF` before deployment.
+2. Create a new deployment secret named `AUTOTRADE_CODEX_AGENT_TOKEN`. Do not
+   reuse the retired `AUTOTRADE_AGENT_TOKEN` value or expose the replacement to
+   the retired runner. Remove the retired variable only after rollback review.
+3. Deploy the reviewed commit from `main`, then verify `/api/liveness` and the
+   authenticated intent-list endpoint. It must report contract `1.1` and
+   effective mode `OFF`; the retired bearer must be rejected.
+4. Authenticate Codex to Robinhood's official Trading MCP on the trusted host.
+   Verify the runtime-advertised tools and the dedicated Robinhood Agentic
+   account without placing an order. Other accounts remain read-only.
+5. Exercise the full intent, claim, review, receipt, and reconciliation loop in
+   IntelliDhan `SHADOW` mode and review the resulting audit evidence.
+6. Use `SUPERVISED` only after explicit approval for each intent. Enabling
+   unattended `ARMED` mode is a separate decision that requires explicit user
+   instruction after reviewing the policy, account, current MCP tools, risk
+   limits, strategy qualification, and shadow results.
+
+The authoritative execution loop and rollback rules are in
+[docs/27-codex-robinhood-execution.md](docs/27-codex-robinhood-execution.md).
+
 ## Every trading morning (one command, before 8:25 AM ET)
 
 ```bash
@@ -64,9 +90,10 @@ cd ~/Documents/IntelliDhan && ./scripts/start_live.sh
   This is the system being honest rather than shipping a number it can't
   yet stand behind.
 - Alerts (whenever a strategy re-qualifies) are **decision support**: entry
-  limit + no-chase zone, stop, tranche targets, size from your budget.
-  Execution is manual, by you, in your broker. There is no auto-trading, by
-  design (guardrail G1).
+  limit + no-chase zone, stop, tranche targets, size from your budget. Manual
+  execution remains the default. A guarded Codex-to-official-Robinhood-MCP
+  intent bridge exists, but it remains `OFF`, is not a shortcut around strategy
+  qualification, and cannot be activated by an ordinary deployment.
 - Not yet live (know the gaps): econ-calendar event lockouts (CPI/FOMC
   prints), options-contract suggestions on alerts (equity sizing only until
   the chain feed lands), 0DTE strategies (blocked pending calibration-grade

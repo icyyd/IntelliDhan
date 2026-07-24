@@ -14,7 +14,7 @@ IntelliDhan is currently strongest as a **personal technical signal cockpit**:
 it monitors a configured 12-symbol universe, computes multi-timeframe technical
 and auction state, evaluates five strategies, shows signal/suppression cards,
 persists operational and paper state, and exposes a guarded
-Claude-to-Robinhood intent bridge. The on-demand stock module adds transparent
+Codex-to-Robinhood intent bridge. The on-demand stock module adds transparent
 trend state, fixed-rule backtests, and a conservative forward-outcome layer.
 
 It is **not yet a one-stop stock-picking and analysis terminal**. The implemented
@@ -41,15 +41,15 @@ than imply that specified modules already exist.
 |---|---|---|---|
 | Market monitor | Yahoo daily/5m bars, 12 configured symbols, MTF state, levels, profile, bar quarantine, readiness | No provider routing, real-time entitlement, dynamic broad universe, or broad-market coverage | P0 |
 | Signal engine | Five technical strategies, veto wall, calibration maps, suppression audit; missing factors are excluded and weights renormalized | Zero demonstrably live-qualified strategies; production/research parity and versioned evidence promotion remain open | P0 |
-| Stock analysis | Arbitrary ticker, 3/6/12m momentum, SMA200, channel, yearly-high context, risk, backtest, v2 forward validation | No company, valuation, peer, earnings, revisions, ownership, catalyst, or news analysis | P1 |
+| Stock analysis | Arbitrary ticker, 3/6/12m momentum, SMA200, channel, yearly-high context, risk, backtest, v2 forward validation; configured-universe dossiers can include the current research-rank snapshot | No valuation, peers, estimates/revisions, ownership, transcript change, or complete catalyst analysis | P1 |
 | Discovery | Adjusted, settled-session technical EOD screener over the configured universe, explicit partial-scan failures, four presets, ranked evidence cards, saved screens, watchlists | No point-in-time broad universe, sector map, cohort-relative fundamentals, comparison, or catalyst ranking | P1 |
-| Fundamentals | Specified in docs only | No statements, normalized metrics, quality/growth/value pillars, estimates, filings, or source timestamps | P1 |
-| News and events | Template briefing and VIX macro state | No earnings/economic calendar, filings, headlines, transcript changes, analyst revisions, or event lockouts | P0/P1 |
+| Fundamentals | Current SEC EDGAR filing links and a five-metric absolute filing-quality screen with source coverage | No point-in-time snapshots, sector-relative normalization, valuation, estimates, restatement history, or return-model validation | P1 |
+| News and events | Daily briefing, SEC filings, and optional bounded Alpha Vantage news tone; optional capped Finnhub social context | No reliable earnings/economic calendar, transcript changes, analyst revisions, broad catalyst model, or event lockouts | P0/P1 |
 | Options | Yahoo selector exists but live composer sets `option_selector=None` | No live chains, spread/liquidity surface, IV history, expected move, payoff lab, or options P&L truth | P2 |
 | Portfolio | Capital budgets only | No holdings, lots, cash, realized/unrealized P&L, exposure, correlation, earnings concentration, or broker reconciliation | P1 |
 | Trade review | Durable paper records and aggregate performance | No taken/pass disposition, outcome evidence, calibration history, journal, exports, or confirmed post-deploy retention | P0/P1 |
 | Execution | Credential-free intent queue with allowlists, caps, approvals, receipts, and database-backed policy/intent support | No app-owned broker session by design; production durability is unconfirmed; no portfolio-aware pre-trade conflict check | P0/P2 |
-| Web app | Modern card-first tasks for signals, Discover, Analyze, 0DTE, and swings; responsive task navigation; saved research state | No URL routes, comparison, portfolio, decision journal, trade log, or complete workspace preferences | P1 |
+| Web app | Modern Today screen with benchmark pulse, fail-closed top-three focus rank, curated radar, rich signals, multi-feed dossier context, Discover, Analyze, 0DTE, and swings | No URL routes, comparison, portfolio, decision journal, trade log, or complete workspace preferences | P1 |
 | Operations | CI, Docker/Koyeb, readiness-aware health, tests, SQLite/PostgreSQL operational store | Production persistence/backups are not configured or verified; telemetry, alerting, migrations, and deployment smoke tests remain limited | P0 |
 
 ## 3. What “one-stop” should mean
@@ -394,9 +394,11 @@ review.
   package that are not implemented as documented.
 - Convert `docs/14-roadmap.md` from week estimates to capability/status gates.
 - Mark every spec feature `IMPLEMENTED`, `PARTIAL`, `RESEARCH`, or `PLANNED`.
-- Resolve the contradiction between the original “not an auto-trader” language
-  and the later `ARMED` intent mode by documenting exactly what IntelliDhan,
-  Claude, Robinhood MCP, and the user each authorize.
+- Keep the resolved execution-mode language in docs 00, 13, and 27 synchronized:
+  default `SIMULATION` with real-quote hypothetical trade journaling, and
+  separately authorized, time-limited `LIVE` execution through Codex and the
+  official Robinhood MCP. Research `SHADOW` remains an evidence label, not an
+  operator mode.
 - Keep one generated capability matrix as the product source of truth.
 
 ## 12. Prioritized delivery plan

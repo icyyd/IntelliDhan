@@ -4,7 +4,7 @@
 
 | # | Guardrail |
 |---|---|
-| G1 | **No autonomous execution.** The platform never places an order without a per-order, in-app human confirmation. Robinhood MCP write path is behind a settings toggle (default OFF) + per-order confirm modal showing full ticket and dollar risk. No batch approvals. |
+| G1 | **Fail-closed, agent-mediated execution.** `SIMULATION` is the default and can only observe real quotes plus journal hypothetical trades. Separately authorized `LIVE` is time-limited and may stage eligible long-option orders only through Codex and the official Robinhood MCP. It never bypasses strategy eligibility, data quality, allowlists, account verification, risk/price gates, pre-trade review and explicit broker confirmation, protection, idempotency, receipts, or the kill switch. |
 | G2 | **No naked short options.** The strategy schema cannot represent undefined-risk short positions (doc 08 §3). |
 | G3 | **Stops are mandatory.** Alert schema requires a stop; composer cannot publish without one (Discipline #2). |
 | G4 | **Daily kill switch.** Module halts new alerts at 100% daily-budget loss; platform-wide halt at configured account-level daily loss (default 3% of account). Reset requires next session + explicit re-arm. |

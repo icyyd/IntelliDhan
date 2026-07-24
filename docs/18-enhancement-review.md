@@ -14,7 +14,7 @@ This document consolidates the enhancement review into an implementation-oriente
 - what the current research supports;
 - what must be completed before confidence percentages can be treated as live trade-quality claims.
 
-This is a planning and acceptance-criteria document, not a statement that the listed enhancements are already implemented. Agents must preserve the platform's central principles: human-confirmed execution, transparent uncertainty, conservative risk, deterministic replay, and a first-class no-trade state.
+This is a planning and acceptance-criteria document, not a statement that the listed enhancements are already implemented. Agents must preserve the platform's central principles: human-governed, fail-closed execution under the mode-aware contract in doc 27; transparent uncertainty; conservative risk; deterministic replay; and a first-class no-trade state.
 
 ## 2. Executive Conclusion
 
@@ -376,7 +376,8 @@ Rules:
 - risk state is persistent and cannot be hidden behind navigation;
 - the bottom analysis drawer is collapsible;
 - alert expansion must not remove the chart from view;
-- order staging is the only flow that requires a modal.
+- manual order staging uses an explicit confirmation surface; automation-policy
+  changes use a separate high-friction policy dialog with mode consequences;
 
 ### 7.3 Information architecture
 
@@ -627,7 +628,9 @@ Guidelines:
 - card representations for wide evidence tables;
 - sticky plan summary;
 - track/pass gestures may be used;
-- order staging always requires explicit confirmation;
+- Simulation never places orders; separately authorized, time-limited `LIVE`
+  follows doc 27 and requires explicit confirmation of the broker review before
+  it may execute an eligible intent;
 - test at 375px, 390px, 768px, 1024px, and 1440px;
 - no unintended horizontal page scrolling.
 

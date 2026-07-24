@@ -88,15 +88,27 @@ Command:
   --years 5 --cost-bps 10 --top-n 3
 ```
 
-Data fetched on 2026-07-13: 12 current configured symbols, common adjusted-daily history from 2021-07-12 through 2026-07-13. The evaluation window is fixed before observing any selection and runs from the first scheduled execution on 2022-07-13 through 2026-07-13 (1,003 sessions), including 210 initial cash sessions. The fixed strategy rebalances every 21 sessions, chooses at most three eligible momentum leaders, charges 10 bps per one-way turnover, forms signals at a completed close, executes at the next close, and begins applying returns on the following session. The SPY benchmark is also entered at that execution close.
+Data refreshed on 2026-07-17: 12 current configured symbols, common
+adjusted-daily history from 2021-07-14 through 2026-07-17. The evaluation
+window is fixed before observing any selection and runs from the first scheduled
+execution on 2022-07-15 through 2026-07-17 (1,005 sessions), including the
+initial cash regime. The fixed strategy rebalances every 21 sessions, chooses at
+most three eligible momentum leaders, charges 10 bps per one-way turnover,
+forms signals at a completed close, executes at the next close, and begins
+applying returns on the following session. The SPY benchmark is also entered at
+that execution close.
 
 | Result | Smart momentum | SPY benchmark |
 |---|---:|---:|
-| Total return | 174.53% | 108.62% |
-| CAGR | 28.88% | 20.29% |
-| Annual volatility | 31.15% | 16.38% |
-| Sharpe | 0.970 | 1.210 |
-| Maximum drawdown | -38.95% | -18.76% |
+| Total return | 153.34% | 103.60% |
+| CAGR | 26.25% | 19.52% |
+| Annual volatility | 32.48% | 16.35% |
+| Sharpe | 0.880 | 1.172 |
+| Maximum drawdown | -43.41% | -18.76% |
+
+Average strategy exposure was 79.10%. The refresh reduced return and worsened
+drawdown versus the prior snapshot; it did not change the research-only
+conclusion.
 
 The exact ten-year command is not published as a result because repeated Yahoo adjusted-history requests intermittently fail strict OHLC validation on older corporate-action rows. The harness fails closed rather than repairing or dropping those bars. A reproducible ten-year result requires a validated adjusted-data source or a reviewed tolerance contract first.
 

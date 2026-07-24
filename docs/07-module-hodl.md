@@ -39,7 +39,13 @@ Output: **HODL-approved list** (~50–80 names) with Lynch category tags (stalwa
 | `HODL_CSP_ENTRY` | Delegates to Swing `CSP_WHEEL_ENTRY`: sell cash-secured puts at the Attractive-zone strike — get paid to place the bid |
 | `HODL_NEW_APPROVAL` | Name newly passes quality screen while in Fair zone → research card (not a buy alert) |
 
-**Sell/trim alerts** (rare by design, RULE-B4): thesis break (quality score drops > 20 pts or pillar failure two quarters), Table-pounding-inverse overvaluation (> 95th percentile of its own 10y valuation range) → trim advisory only, position > 25% of HODL portfolio → concentration trim, tax-lot aware via RH `get_equity_tax_lots`.
+**Sell/trim alerts** (rare by design, RULE-B4): thesis break (quality score drops
+> 20 pts or pillar failure two quarters), Table-pounding-inverse overvaluation
+(> 95th percentile of its own 10y valuation range) → trim advisory only,
+position > 25% of HODL portfolio → concentration trim. Tax-lot context is used
+only when Codex can obtain it through a runtime-advertised, read-only official
+MCP capability under doc 27; otherwise the alert states that coverage is
+missing and remains tax-lot agnostic.
 
 ## 4. Position & Portfolio View
 

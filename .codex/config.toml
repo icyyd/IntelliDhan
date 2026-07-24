@@ -1,0 +1,9 @@
+# Project-scoped, credential-free MCP declaration. Codex loads project config
+# only for trusted repositories. OAuth credentials remain in the local Codex
+# credential store and must never be committed here.
+[mcp_servers.robinhood-trading]
+url = "https://agent.robinhood.com/mcp/trading"
+auth = "oauth"
+enabled = true
+required = false
+default_tools_approval_mode = "writes"

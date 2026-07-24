@@ -86,4 +86,4 @@ rr_metric: POP_BASED
 
 ## 4. Adding a Strategy (governance)
 
-New strategies require: written thesis (edge source), ≥ 3y walk-forward backtest (or 12m for 0DTE) with per-bucket calibration table, replay-harness run on curated sessions, 30-day paper period in `SHADOW` mode (evaluated + logged, not alerted), then promotion. Same pipeline demotes underperformers automatically (doc 03 §4.3).
+New strategies require: written thesis (edge source), ≥ 3y walk-forward backtest (or 12m for 0DTE) with per-bucket calibration table, replay-harness run on curated sessions, and a 30-day `SHADOW` research period under operator `SIMULATION` (evaluated + logged, not alerted), then promotion. Same pipeline demotes underperformers automatically (doc 03 §4.3).

@@ -11,10 +11,16 @@
 #   INTELLIDHAN_OWNER_TOKEN # initial-admin/emergency code, random 24+ characters
 #   INTELLIDHAN_INVITE_CODE # optional separate code for invited account signup
 #   AUTOTRADE_CONTROL_TOKEN # required only for agent/operator control endpoints
-#   AUTOTRADE_AGENT_TOKEN   # required only for Claude intent claim/receipt endpoints
+#   AUTOTRADE_CODEX_AGENT_TOKEN # new Codex-only claim/receipt secret; do not reuse retired token
 #   OPENAI_API_KEY          # optional — in-app, closed-schema AI thesis
+#   ANTHROPIC_API_KEY       # optional — server-only Claude multi-brain research review
+#   CLAUDE_MULTIBRAIN_MODEL # optional — defaults to claude-sonnet-5
+#   INTELLIDHAN_SEC_USER_AGENT # required for SEC filing context; include contact email
+#   ALPHA_VANTAGE_API_KEY   # optional — current ticker news/sentiment context
+#   FINNHUB_API_KEY         # optional — capped social-attention context
 #   CHATGPT_WORKSPACE_AGENT_ID # optional — published agtch_ API channel identifier
 #   CHATGPT_WORKSPACE_AGENT_TOKEN # optional — Workspace Agents-scoped access token
+#   INTELLIDHAN_DAILY_BRIEF_GITHUB_TOKEN # fine-grained read-only token for private daily artifacts
 #   TELEGRAM_BOT_TOKEN     # optional — alerts print to Koyeb logs if unset
 #   TELEGRAM_CHAT_ID       # optional — required alongside the token above
 #
