@@ -2,7 +2,7 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-07-24 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** live-refresh module simplification and richer stock-pick research cards. The two-mode SPY/QQQ 9EMA auto-trader contract remains unchanged. `SIMULATION`
+**Last system pass:** five-pane Today workspace with a single trend read, highlights/news, macro calendar, premarket watch, and signal radar. The two-mode SPY/QQQ 9EMA auto-trader contract remains unchanged. `SIMULATION`
 uses real official-MCP option quotes and logs hypothetical entries/exits;
 time-limited `LIVE` stages long 0/1DTE orders only after evidence, health,
 capital, broker-review, and explicit confirmation gates. Selection prefers the
@@ -26,9 +26,12 @@ must not be presented as implemented.
 
 ## Current implementation
 
-- Card-first Today terminal with SPX/SPY/QQQ context, a deterministic top-three
-  focus list, curated radar, rich signal plans, Discover, Analyze, 0DTE, and
-  Swing tasks.
+- Five-pane, card-first Today terminal: current SPX/SPY/QQQ trend (Bullish,
+  Bearish, Chop, or Pending until validated data arrives), today’s brief and
+  headlines, macro events, a completed-bar trend watch (premarket fields when
+  a live feed is available), and a concise signal radar.
+  Discover, Analyze, 0DTE, and Swing remain separate tasks so the landing view
+  stays focused.
 - Module screens now keep the signal queue primary, expose compact live status
   strips, and collapse chart/profile context until requested. External research
   feeds and the daily brief refresh automatically every two minutes; stock-pick
@@ -39,9 +42,12 @@ must not be presented as implemented.
   controls, and compact action rows inside the viewport from 320px through
   desktop widths; controls compress or hide status-only chips before they can
   overlap or paint off-canvas.
-- Single daily pane with the brief and signal focus in the center, plus a cached
-  source-linked macro pulse in the right rail; repeated engine-focus copy is
-  hidden from the landing view.
+- The Today view is one responsive scan path with no duplicate right-rail
+  brief/news panels. Live state, daily brief, macro events, focus ranking, and
+  alerts continue to refresh automatically; long-form signal cards and detail
+  context remain available progressively when a user opens a setup.
+- Development checks pin Ruff 0.4.10 while the existing codebase is migrated
+  to newer lint rules, keeping CI results reproducible across contributors.
 - Production D4.2 owl-and-lotus assets, favicon, deterministic 1200×630 share artwork,
   agent-readable design tokens, and a responsive dark/light visual theme.
   External brand lettering is outlined for portable rendering; orange marks

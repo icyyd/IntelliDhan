@@ -21,7 +21,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4"]
+# Keep CI reproducible while the existing codebase is migrated to newer Ruff rules.
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff==0.4.10"]
 
 [tool.setuptools.package-dir]
 intellidhan_schemas = "shared-schemas/intellidhan_schemas"
