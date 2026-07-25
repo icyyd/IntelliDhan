@@ -1,21 +1,18 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-24 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-07-25 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** five-pane Today workspace with a single trend read, highlights/news, macro calendar, premarket watch, and signal radar. The two-mode SPY/QQQ 9EMA auto-trader contract remains unchanged. `SIMULATION`
-uses real official-MCP option quotes and logs hypothetical entries/exits;
-time-limited `LIVE` stages long 0/1DTE orders only after evidence, health,
-capital, broker-review, and explicit confirmation gates. Selection prefers the
-highest feasible absolute delta, then uses the maximum whole-contract size
-inside the 80% buying-power, per-order, and daily-risk thresholds. Historical
-evidence still fails promotion, so the strategy remains Simulation-only and no
-real order was placed. A safety re-review added bearish long-put support,
-claim-time quote/price/risk revalidation, sellout deadlines, mode-switch claim
-revocation, strict receipt schemas, and immutable full trade-journal events.
-Selections can be refreshed until entry, failed exits remain open exposure until
-broker-confirmed closure, and simulated quotes are bound to the selected option.
-Live v2 rejects static option plans; every option order must pass the dynamic
-quote, expiry, liquidity, sellout, sizing, and claim-time policy checks.
+**Last system pass:** strategy-plane evidence object (`StrategyEvidence` on Setup/Alert),
+net-expectancy gate for `pop_based` strategies when calibration meta declares
+negative edge after cost stress, and research-only `PULLBACK_CONTINUATION_MACD`
+shadow identity (H1 MACD histogram > 0) with its own `IN_SAMPLE_ONLY` calibration
+stub. Trend module gains `strategy_context.trend_strategy_suitability` notes for
+Swing/0DTE regime context only — never creates alerts or raises confidence.
+Live eligibility remains fail-closed; no strategy is promoted. See
+[docs/32-strategy-evidence-and-expectancy.md](docs/32-strategy-evidence-and-expectancy.md).
+The strategy-evidence pass is lint-clean under the pinned CI toolchain.
+Prior pass: five-pane Today workspace; SPY/QQQ 9EMA auto-trader remains
+Simulation-only behind evidence, health, capital, and confirmation gates.
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -97,6 +94,11 @@ must not be presented as implemented.
   and underlying paper trades; they cannot reach Telegram or Robinhood. The
   chronological 55-day study failed its sample/stability bar, so no profitability
   or probability claim is made.
+- Strategy evidence object on Setup/Alert (`evidence_status`, sample size,
+  intervals, expected net R after cost stress). `pop_based` live path may be
+  suppressed with `gate=expectancy` when declared net edge is negative.
+  `PULLBACK_CONTINUATION_MACD` is a separate shadow identity and must not reuse
+  the baseline 76.5% calibration map.
 - Authenticated `/api/trade-log` combines signal plans, underlying paper
   outcomes, real-quote option Simulation entries/exits with reasoning, and
   immutable intent history. Global broker events remain ADMIN/owner-only.
@@ -168,6 +170,7 @@ requires the same-commit README update.
 | 29 | [Brand System](docs/29-brand-system.md) | Approved D4.2 owl-and-lotus identity, SVG asset stack, palette, typography, usage rules, and product application |
 | 30 | [SPY/QQQ 9EMA 0DTE Auto-Trader](docs/30-ema9-0dte-shadow-autotrader.md) | Exact rules, historical evidence, real-quote Simulation journal, 0/1DTE selection/sizing, trend-break exits, and Live-promotion gates |
 | 31 | [Live Modules &amp; Research Cards](docs/31-live-modules-and-research-cards.md) | Auto-refresh cadence, simplified module hierarchy, and the stock-pick evidence/risk presentation contract |
+| 32 | [Strategy Evidence &amp; Expectancy](docs/32-strategy-evidence-and-expectancy.md) | StrategyEvidence schema, net-expectancy gate, MACD pullback shadow identity, trend suitability context |
 
 ## Core Product Tenets
 

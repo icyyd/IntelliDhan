@@ -1,0 +1,28 @@
+{
+  "strategy": "PULLBACK_CONTINUATION_MACD",
+  "buckets": {},
+  "meta": {
+    "evidence_status": "IN_SAMPLE_ONLY",
+    "live_eligible": false,
+    "probability_kind": "STRATEGY_BASE_RATE",
+    "evidence_note": "Research/shadow identity only (doc 18 §12.5–12.6). Requires positive H1 MACD histogram on the completed trigger bar. Do not reuse PULLBACK_CONTINUATION calibration. Forward-shadow evidence required before any promotion claim.",
+    "avg_r_pre_cost": null,
+    "profit_factor": null,
+    "cost_stress_r": 0.05,
+    "limitations": [
+      "Separate conditional population from PULLBACK_CONTINUATION",
+      "Confirmation-universe test n was small; bootstrap interval included zero",
+      "Production-path parity with direct-H1 research still required before live",
+      "Option costs not modeled"
+    ],
+    "params": {
+      "require_macd_histogram_positive": true,
+      "t_mults": [0.8, 1.6, 2.8],
+      "d_trend_min": 45,
+      "rsi_min": 52,
+      "stop_atr": 1.0
+    },
+    "analytics_version": "v1-shadow",
+    "source": "docs/18-enhancement-review.md §12"
+  }
+}

@@ -71,7 +71,7 @@ class EngineRunner:
         macro = self.macro_by_day.get(state.session_id or "")
         factors = score_factors(state, sig, macro)
         comp = composite(factors)
-        cal = self.calibration[sig.strategy]
+        cal = self.calibration.get(sig.strategy) or CalibrationMap.load(sig.strategy)
         conf = cal.confidence(comp)
 
         # Administrative eligibility block (independent of market/risk state):
@@ -108,6 +108,20 @@ class EngineRunner:
             self._shadow_setups.append(setup)
             return None
 
+        # doc 18 §5.5: POP-based strategies need non-negative net expectancy after
+        # cost stress when calibration meta declares it. Research/shadow still pass.
+        if sig.pop_based and not self.shadow:
+            ok, detail = cal.passes_expectancy_gate(research_only=not sig.live_eligible)
+            if not ok:
+                self.suppressed.append(
+                    SuppressedSetup(
+                        setup_id=setup_id, module=sig.module, strategy=sig.strategy,
+                        symbol=state.symbol, ts=state.ts(), gate="expectancy",
+                        detail=detail, composite=comp, confidence=conf,
+                    )
+                )
+                return None
+
         gate_conf = 1.0 if self.shadow else conf
         verdict: Verdict = run_gates(state, sig, gate_conf, self.controls)
         if not verdict.passed:
@@ -130,6 +144,7 @@ class EngineRunner:
     def _build_setup(self, state, sig, setup_id, factors, comp, conf, cal, *,
                      research_only: bool) -> Setup:
         matrix = {tf.value: score for tf, score in state.mtf_matrix().items()}
+        evidence = cal.build_evidence(comp)
         return Setup(
             setup_id=setup_id, module=sig.module, strategy=sig.strategy,
             symbol=state.symbol, direction=sig.direction, trigger_tf=sig.trigger_tf,
@@ -149,4 +164,5 @@ class EngineRunner:
             ),
             invalidation=sig.invalidation,
             research_only=research_only,
+            evidence=evidence,
         )

@@ -479,6 +479,44 @@ class PullbackContinuation:
         )
 
 
+class PullbackContinuationMacd(PullbackContinuation):
+    """Research/shadow variant: baseline pullback plus H1 MACD histogram > 0.
+
+    Frozen from docs/18-enhancement-review.md §12.5–12.6. Separate strategy
+    identity so it never reuses PULLBACK_CONTINUATION calibration. Not live
+    eligible; requires its own forward-shadow evidence before any promotion.
+    """
+
+    key = "PULLBACK_CONTINUATION_MACD"
+
+    def evaluate(self, state: SymbolState) -> RawSignal | None:
+        base = super().evaluate(state)
+        if base is None:
+            return None
+        ind = state.indicators(Timeframe.H1)
+        if ind is None or ind.macd_histogram is None or ind.macd_histogram <= 0:
+            return None
+        return RawSignal(
+            strategy=self.key,
+            module=base.module,
+            direction=base.direction,
+            trigger_tf=base.trigger_tf,
+            entry=base.entry,
+            stop=base.stop,
+            targets=list(base.targets),
+            f2_quality=round(min(base.f2_quality + 5.0, 100.0), 1),
+            pop_based=True,
+            live_eligible=False,
+            shadow_monitor=True,
+            explain=(
+                base.explain
+                + f" H1 MACD histogram positive ({ind.macd_histogram:+.4f}) — momentum "
+                "resumption filter (research/shadow identity)."
+            ),
+            invalidation=base.invalidation,
+        )
+
+
 class DailyBreakout:
     """Daily base breakout with volume + 2-daily-close confirmation (doc 05)."""
 
@@ -525,5 +563,12 @@ class DailyBreakout:
         )
 
 
-REGISTRY = [OrbBreakout(), Ema9TrendPullback(), Ema9MtfZeroDte(), VwapReclaim(),
-            PullbackContinuation(), DailyBreakout()]
+REGISTRY = [
+    OrbBreakout(),
+    Ema9TrendPullback(),
+    Ema9MtfZeroDte(),
+    VwapReclaim(),
+    PullbackContinuation(),
+    PullbackContinuationMacd(),
+    DailyBreakout(),
+]

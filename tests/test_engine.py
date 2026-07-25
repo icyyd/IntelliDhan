@@ -57,6 +57,7 @@ def test_full_fixture_run_emits_and_suppresses():
             assert setup.stop_underlying != setup.entry_underlying
             assert len(setup.targets_underlying) == 3
             assert setup.explain and setup.invalidation
+            assert setup.evidence is not None
             assert "SHADOW" in setup.explain  # uncalibrated honesty stamp
     # the wall must be doing real work: evaluations happened, most were suppressed
     assert len(runner.suppressed) > 0
@@ -65,7 +66,8 @@ def test_full_fixture_run_emits_and_suppresses():
     gates = {s.gate for s in runner.suppressed}
     assert gates <= {"warmup", "lockout", "extension", "reward_risk",
                      "cooldown", "concurrency", "confidence", "risk_geometry",
-                     "one_timeframing", "profile_shape"}
+                     "one_timeframing", "profile_shape", "duplicate", "correlation",
+                     "disabled", "expectancy"}
     # sub-threshold setups carry their scores for calibration learning (doc 03 §1)
     conf_suppressed = [s for s in runner.suppressed if s.gate == "confidence"]
     assert all(s.composite is not None for s in conf_suppressed)

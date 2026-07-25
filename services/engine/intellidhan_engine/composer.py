@@ -199,6 +199,12 @@ class Composer:
             management.append("Hard flatten by 15:55 ET")
         thesis = f"{setup.explain} {complement_line(setup.confidence)}"
         risks = [self._evidence_risk_line(setup.strategy)]
+        if setup.evidence and setup.evidence.expected_net_r is not None:
+            risks.append(
+                f"Declared expected net R after {setup.evidence.cost_stress_r}R cost stress: "
+                f"{setup.evidence.expected_net_r:+.4f}R "
+                f"(status={setup.evidence.evidence_status.value})."
+            )
         return Alert(
             alert_id=alert_id, plan_key=stable_plan_key(
                 setup.ts, setup.symbol, setup.module, setup.strategy
@@ -217,6 +223,7 @@ class Composer:
             valid_until=setup.ts + VALIDITY[setup.module],
             status="SHADOW" if setup.research_only else "ACTIVE",
             research_only=setup.research_only,
+            evidence=setup.evidence,
         )
 
     @staticmethod
