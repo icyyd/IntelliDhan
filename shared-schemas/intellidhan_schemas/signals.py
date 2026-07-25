@@ -22,6 +22,40 @@ class Direction(str, Enum):
     SHORT = "SHORT"
 
 
+class EvidenceStatus(str, Enum):
+    """Honest evidence vocabulary (doc 18 §5.3) — never overload confidence."""
+
+    UNRESEARCHED = "UNRESEARCHED"
+    IN_SAMPLE_ONLY = "IN_SAMPLE_ONLY"
+    HISTORICAL_OOS = "HISTORICAL_OOS"
+    FORWARD_PAPER = "FORWARD_PAPER"
+    LIVE_LIMITED = "LIVE_LIMITED"
+    LIVE_VALIDATED = "LIVE_VALIDATED"
+    DEMOTED = "DEMOTED"
+    DISABLED = "DISABLED"
+    UNVALIDATED = "UNVALIDATED"
+
+
+class StrategyEvidence(BaseModel):
+    """Separated accuracy concepts for UI and gates (doc 18 §5.3)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    evidence_status: EvidenceStatus = EvidenceStatus.UNVALIDATED
+    probability_kind: str = "STRATEGY_BASE_RATE"
+    point_estimate: float | None = None
+    interval_95: tuple[float, float] | None = None
+    sample_size: int | None = None
+    profit_factor: float | None = None
+    avg_r_pre_cost: float | None = None
+    avg_r_net_cost: float | None = None
+    cost_stress_r: float = 0.05
+    expected_net_r: float | None = None
+    calibration_version: str | None = None
+    limitations: list[str] = []
+    note: str | None = None
+
+
 def stable_plan_key(created_at: datetime, symbol: str, module: Module, strategy: str) -> str:
     """Natural identity for one strategy plan, stable across process restarts.
 
@@ -77,6 +111,7 @@ class Setup(BaseModel):
     # Research strategies can be monitored and paper-tracked in production,
     # but can never be promoted into the live delivery/execution path.
     research_only: bool = False
+    evidence: StrategyEvidence | None = None
 
 
 class SuppressedSetup(BaseModel):
@@ -154,3 +189,4 @@ class Alert(BaseModel):
     valid_until: datetime
     status: str = "ACTIVE"
     research_only: bool = False
+    evidence: StrategyEvidence | None = None
