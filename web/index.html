@@ -1365,10 +1365,48 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
 .bottom-drawer{max-width:760px; margin-left:auto; margin-right:auto}
 .bd-body{padding-top:2px}
 
+/* ── Modern terminal refinement ───────────────────────────────────────
+   Keep one quiet command bar, one action per candidate, and progressive
+   disclosure for secondary evidence. The market state never sits beneath
+   another sticky layer. */
+.sr-only{position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important}
+.topbar{gap:8px; overflow:visible}
+.topbar .spacer{min-width:10px}
+.topbar-status{display:flex; align-items:center; gap:6px; min-width:0}
+.refresh-status{display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:6px 9px; border:1px solid var(--border); border-radius:12px; background:var(--tint-c); color:var(--text-faint); font-size:9.5px; white-space:nowrap}
+.refresh-status .icon{width:13px; height:13px; color:var(--cyan)}
+.refresh-status.refreshing .icon{animation:refresh-turn 900ms linear infinite}
+.refresh-status.failed{color:var(--red)}
+@keyframes refresh-turn{to{transform:rotate(360deg)}}
+.mobile-desk-control{display:flex; flex:1 0 auto; min-width:78px}
+.mobile-desk-control select{width:100%; min-height:36px; padding:8px 25px 8px 10px; border:0; border-radius:13px; background:transparent; color:var(--text-faint); cursor:pointer; font:700 10.5px var(--sans); text-align:center}
+.mobile-desk-control:has(select:not([data-empty="true"])){border-radius:13px; background:var(--cyan)}
+.mobile-desk-control:has(select:not([data-empty="true"])) select{color:var(--on-accent)}
+.focus-card-actions.single{justify-content:flex-end}
+.focus-card-actions.single button{flex:0 1 auto; min-width:128px; padding-inline:12px; color:var(--cyan)}
+.focus-card-actions.single .icon{width:13px; height:13px}
+.bottom-drawer{display:block}
+.bottom-drawer-summary{display:flex; align-items:center; gap:12px; min-height:58px; padding:10px 16px; cursor:pointer; list-style:none}
+.bottom-drawer-summary::-webkit-details-marker{display:none}
+.bottom-drawer-summary>span{min-width:0; flex:1}
+.bottom-drawer-summary b{display:block; font-size:12px}
+.bottom-drawer-summary small{display:block; margin-top:2px; color:var(--text-faint); font-size:9.5px}
+.bottom-drawer-summary>svg{color:var(--text-faint); transition:transform 180ms ease}
+.bottom-drawer[open] .bottom-drawer-summary>svg{transform:rotate(90deg)}
+.bottom-drawer-content{border-top:1px solid var(--border-soft)}
+.account-link{display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:11px; width:100%; min-height:56px; padding:11px 13px; border:1px solid var(--border); border-radius:15px; background:var(--tint-c); color:var(--text); text-align:left; cursor:pointer}
+.account-link:hover{border-color:rgba(229,111,45,.44)}
+.account-link>svg:first-child{color:var(--cyan)}
+.account-link span b,.account-link span small{display:block}
+.account-link span b{font-size:11.5px}
+.account-link span small{margin-top:2px; color:var(--text-faint); font-size:9.5px}
+.account-link>svg:last-child{color:var(--text-faint)}
+
 @media (max-width:1180px){
   .shell{grid-template-columns:70px minmax(0,1fr)}
   .decision-rail{grid-column:2; display:grid; grid-template-columns:repeat(2,minmax(0,1fr))}
   .terminal-hero{grid-template-columns:minmax(0,1fr) minmax(310px,.9fr)}
+  .session-chip{display:none}
 }
 @media (max-width:900px){
   .shell{grid-template-columns:1fr; padding:0 12px 16px}
@@ -1377,6 +1415,12 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   .terminal-hero{grid-template-columns:1fr}
   .terminal-hero .home-search-card{padding-top:15px; border-top:1px solid rgba(255,255,255,.10)}
   .curated-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topbar{top:8px}
+}
+@media (max-width:720px){
+  .refresh-status{position:absolute!important; width:1px!important; height:1px!important; min-height:0!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important}
+  .focus-heading{display:block}
+  .focus-actions{justify-content:space-between; margin-top:10px}
 }
 @media (max-width:600px){
   .terminal-hero{padding:18px}
@@ -1389,6 +1433,8 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   .anchor-foot{overflow:hidden; text-overflow:ellipsis}
   .focus-main{padding:14px}
   .curated-list{grid-template-columns:1fr}
+  .topbar-status .chip{max-width:82px; overflow:hidden; text-overflow:ellipsis}
+  .bottom-drawer-summary small{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 }
 
 /* Responsive collision guard: controls must wrap or compress before they
@@ -1549,22 +1595,23 @@ body.signals-home .legacy-signal-board{display:none}
     <img class="brand-mark brand-mark-light" src="/assets/brand/intellidhan-mark.svg" alt="" width="34" height="34">
     <span class="brand-wordmark">Intelli<b>Dhan</b></span>
   </a>
-  <div class="tape" id="tape"></div>
+  <div class="tape" id="tape" hidden aria-hidden="true"></div>
   <div class="spacer"></div>
   <button class="cmdk-btn" onclick="openPalette()" aria-label="Open command palette"><svg class="icon"><use href="#i-search"/></svg> <span class="cmdk-btn-label">Jump to…</span> <kbd>⌘K</kbd></button>
-  <span class="chip" id="dataHealth" role="status"><span class="dot"></span> Connecting…</span>
-  <span class="chip" id="session" role="status">—</span>
+  <div class="topbar-status" aria-label="Market data status">
+    <span class="refresh-status" id="refreshStatus" role="status" aria-live="polite" aria-atomic="true" title="Market data and analysis refresh automatically every two minutes"><svg class="icon"><use href="#i-clock"/></svg><span id="refreshStatusText">Auto-refresh · 2m</span></span>
+    <span class="chip" id="dataHealth" role="status"><span class="dot"></span> Connecting…</span>
+    <span class="chip session-chip" id="session" role="status" hidden>—</span>
+  </div>
   <button class="icon-btn" id="themeToggle" aria-label="Switch to light theme" title="Theme"><svg class="icon"><use href="#i-sun"/></svg></button>
   <button class="icon-btn owner-state" id="ownerButton" onclick="openOwnerDialog()" aria-label="Sign in" title="Account"><svg class="icon"><use href="#i-user"/></svg></button>
-  <button class="icon-btn" onclick="openBudgets()" aria-label="Open capital and risk limits" title="Capital &amp; risk limits"><svg class="icon"><use href="#i-gear"/></svg></button>
 </header>
 
 <nav class="mobile-nav" aria-label="Primary tasks">
   <button class="mobile-nav-item active" data-view="signals" aria-pressed="true">Today</button>
   <button class="mobile-nav-item" data-view="discover" aria-pressed="false">Discover</button>
   <button class="mobile-nav-item" data-view="analysis" aria-pressed="false">Analyze</button>
-  <button class="mobile-nav-item" data-view="0dte" aria-pressed="false">0DTE</button>
-  <button class="mobile-nav-item" data-view="swings" aria-pressed="false">Swings</button>
+  <label class="mobile-desk-control"><span class="sr-only">Strategy desk</span><select id="mobileDeskSelect" data-empty="true" aria-label="Open a strategy desk"><option value="" disabled>Desks</option><option value="0dte">0DTE</option><option value="swings">Swings</option></select></label>
 </nav>
 
 <div class="shell">
@@ -1899,24 +1946,27 @@ body.signals-home .legacy-signal-board{display:none}
 
     <section class="panel">
       <button class="drawer-toggle" id="drawerToggle" aria-expanded="false">
-        <svg class="icon"><use href="#i-chevron-right"/></svg> Key levels, price balance &amp; trend strength
+        <svg class="icon"><use href="#i-chevron-right"/></svg> Market detail
       </button>
       <div class="drawer-body" id="drawerBody"><div id="drawerInner"></div></div>
     </section>
   </aside>
 </div>
 
-<footer class="bottom-drawer">
-  <div class="bd-tabs" role="tablist">
-    <button class="bd-tab active" data-tab="evidence">Historical reliability</button>
-    <button class="bd-tab" data-tab="performance">Paper Performance</button>
+<details class="bottom-drawer">
+  <summary class="bottom-drawer-summary"><span><b>Evidence &amp; paper results</b><small>Historical reliability, caveats, and simulated outcomes</small></span><svg class="icon"><use href="#i-chevron-right"/></svg></summary>
+  <div class="bottom-drawer-content">
+    <div class="bd-tabs" role="tablist">
+      <button class="bd-tab active" data-tab="evidence">Historical reliability</button>
+      <button class="bd-tab" data-tab="performance">Paper performance</button>
+    </div>
+    <div class="bd-body">
+      <div class="bd-panel" id="bdSuppression" hidden></div>
+      <div class="bd-panel active" id="bdEvidence"></div>
+      <div class="bd-panel" id="bdPerformance"></div>
+    </div>
   </div>
-  <div class="bd-body">
-    <div class="bd-panel" id="bdSuppression" hidden></div>
-    <div class="bd-panel active" id="bdEvidence"></div>
-    <div class="bd-panel" id="bdPerformance"></div>
-  </div>
-</footer>
+</details>
 
 <footer class="disclaimer">Educational tool — not financial advice. Options and equities involve substantial risk of loss. Probabilities are historical estimates with wide uncertainty on small samples, not guarantees of future performance.</footer>
 
@@ -1989,6 +2039,7 @@ body.signals-home .legacy-signal-board{display:none}
         </div>
         <div class="owner-actions"><button class="bd-save" type="button" onclick="savePreferences()">Save preferences</button></div>
       </div>
+      <button class="account-link" type="button" onclick="document.getElementById('owner-dialog').close();openBudgets()"><svg class="icon"><use href="#i-gear"/></svg><span><b>Capital &amp; risk limits</b><small>Review personal limits and sizing ceilings</small></span><svg class="icon"><use href="#i-chevron-right"/></svg></button>
       <details class="account-admin" id="accountAdminCreate" hidden>
         <summary>Add another account</summary>
         <form class="account-form" style="margin-top:12px" onsubmit="adminCreateAccount();return false">
@@ -2035,6 +2086,8 @@ const ICON = {STRONG_UP:"i-up",UP:"i-up",NEUTRAL:"i-minus",DOWN:"i-down",STRONG_
 const tfOrder = ["M","W","D","4H","1H","15m","5m"];
 let lastState = null, calibration = {}, briefing = null, macroNews = null, dailyBrief = null, dailyBriefRenderKey = null;
 let focusData = null, focusIntelligence = {}, focusAIResults = {}, focusRefreshInFlight = false;
+const AUTO_REFRESH_MS = 120000;
+let workspaceRefreshInFlight = null, workspaceRefreshScope = null, stateRefreshInFlight = null, lastWorkspaceRefreshAt = 0;
 let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
@@ -2169,12 +2222,19 @@ async function fetchJSON(url, options){
 
 async function refresh(){
   if(!ownerAuthenticated){ setHealth("auth"); return; }
-  try{
-    lastState = await fetchJSON("/api/state");
-    renderAll();
-  }catch(e){
-    setHealth(e.status===401?"auth":"down");
-  }
+  if(stateRefreshInFlight) return stateRefreshInFlight;
+  stateRefreshInFlight=(async()=>{
+    try{
+      lastState = await fetchJSON("/api/state");
+      renderAll();
+      return true;
+    }catch(e){
+      setHealth(e.status===401?"auth":"down");
+      return false;
+    }
+  })();
+  try{ return await stateRefreshInFlight; }
+  finally{ stateRefreshInFlight=null; }
 }
 async function refreshCalibration(){
   try{
@@ -2183,10 +2243,11 @@ async function refreshCalibration(){
     if(lastState){
       renderContext(lastState); renderMatrix(lastState); renderTracking(lastState);
     }
-  }catch(e){}
+    return true;
+  }catch(e){ return false; }
 }
 async function refreshBriefing(){
-  if(!ownerAuthenticated){ briefing=null; macroNews=null; renderBriefing(); renderMacroNews(); return; }
+  if(!ownerAuthenticated){ briefing=null; macroNews=null; renderBriefing(); renderMacroNews(); return true; }
   try{
     const [briefResult, newsResult] = await Promise.allSettled([fetchJSON("/api/briefing"), fetchJSON("/api/news")]);
     const b=briefResult.status==="fulfilled"?briefResult.value:null;
@@ -2195,18 +2256,67 @@ async function refreshBriefing(){
     macroNews = feed && Array.isArray(feed.items) ? feed : null;
     renderBriefing();
     renderMacroNews();
-  }catch(e){}
+    return true;
+  }catch(e){ return false; }
 }
 async function refreshDailyBrief(){
-  if(!ownerAuthenticated){ dailyBrief=null; renderDailyBrief(); return; }
+  if(!ownerAuthenticated){ dailyBrief=null; renderDailyBrief(); return true; }
   if(!dailyBrief){
     const panel=document.getElementById("dailySetup");
     panel.hidden=false; panel.setAttribute("aria-busy","true");
     panel.innerHTML=`<div class="daily-loading" role="status">Loading today's analysis and setup…</div>`;
   }
-  try{ dailyBrief=await fetchJSON("/api/daily-brief"); }
-  catch(error){ dailyBrief={status:"UNAVAILABLE",headline:"Today's setup is not available yet.",notice:error.message,setups:[],market:[],risks:[]}; }
-  renderDailyBrief();
+  try{
+    dailyBrief=await fetchJSON("/api/daily-brief");
+    renderDailyBrief();
+    return true;
+  }catch(error){
+    dailyBrief={status:"UNAVAILABLE",headline:"Today's setup is not available yet.",notice:error.message,setups:[],market:[],risks:[]};
+    renderDailyBrief();
+    return false;
+  }
+}
+
+function updateRefreshStatus(mode="idle"){
+  const container=document.getElementById("refreshStatus"), label=document.getElementById("refreshStatusText");
+  if(!container||!label) return;
+  container.classList.toggle("refreshing",mode==="refreshing");
+  container.classList.toggle("failed",mode==="failed");
+  if(mode==="refreshing"){ label.textContent="Refreshing analysis…"; return; }
+  if(mode==="failed"){ label.textContent="Refresh delayed"; return; }
+  if(!ownerAuthenticated){ label.textContent="Auto-refresh · 2m"; return; }
+  if(!lastWorkspaceRefreshAt){ label.textContent="Auto-refresh · 2m"; return; }
+  const elapsed=Date.now()-lastWorkspaceRefreshAt;
+  const next=Math.max(0,AUTO_REFRESH_MS-elapsed);
+  const nextMinutes=Math.max(1,Math.ceil(next/60000));
+  label.textContent=`Updated ${fmtAge(new Date(lastWorkspaceRefreshAt).toISOString())} · next ${nextMinutes}m`;
+}
+
+async function refreshWorkspace(){
+  const requestedScope=ownerAuthenticated?"authenticated":"anonymous";
+  if(workspaceRefreshInFlight){
+    if(requestedScope==="authenticated"&&workspaceRefreshScope!=="authenticated"){
+      await workspaceRefreshInFlight;
+      return refreshWorkspace();
+    }
+    return workspaceRefreshInFlight;
+  }
+  updateRefreshStatus("refreshing");
+  workspaceRefreshScope=requestedScope;
+  const batch=(async()=>{
+    const tasks=[refreshCalibration()];
+    if(requestedScope==="authenticated") tasks.push(refresh(),refreshBriefing(),refreshDailyBrief(),refreshFocus(),refreshAutotrade());
+    const results=await Promise.all(tasks);
+    if(results.some(result=>result===false)){ updateRefreshStatus("failed"); return false; }
+    lastWorkspaceRefreshAt=Date.now();
+    updateRefreshStatus();
+    return true;
+  })();
+  workspaceRefreshInFlight=batch;
+  try{ return await batch; }
+  finally{
+    if(workspaceRefreshInFlight===batch){ workspaceRefreshInFlight=null; workspaceRefreshScope=null; }
+  }
 }
 
 function focusMetric(item,label){
@@ -2269,7 +2379,7 @@ function renderFocus(){
       <div class="pillar-row">${focusMetric(technical,"Technical")}${focusMetric(fundamental,"Financial")}${focusMetric(overall,"Overall")}</div>
       <div class="focus-rule"><b>Confirm:</b> ${esc(play.confirmation||"No active confirmation.")} ${filing?`<br><b>Latest filing:</b> ${esc(filing.form)} · ${esc(filing.filed_at)}`:""}${overall.coverage_weight!=null?`<br><b>Score coverage:</b> ${Math.round(overall.coverage_weight*100)}% of configured inputs`:''}</div>
       ${focusThesisHTML(row,play,intel)}
-      <div class="focus-card-actions"><button type="button" data-focus-analyze="${esc(row.symbol)}">Analyze</button><button type="button" data-focus-ai="${esc(row.symbol)}" ${play.eligible?"":"disabled"}>AI review</button><button type="button" data-focus-watch="${esc(row.symbol)}">Watch</button></div>
+      <div class="focus-card-actions single"><button type="button" data-focus-analyze="${esc(row.symbol)}">Open analysis <svg class="icon"><use href="#i-chevron-right"/></svg></button></div>
       ${ai?`<div class="focus-ai-result"><b>${esc(ai.verdict||"RESEARCH")}</b> · ${esc(ai.headline||ai.message||"AI evidence review complete.")}</div>`:""}
     </article>`;
   }).join(""):`<div class="empty"><b>${focusData.complete?"No focus list is available.":"Focus rank held back."}</b>${focusData.complete?"No configured names are available.":"A complete configured-universe scan is required before the terminal ranks three names."}</div>`;
@@ -2286,15 +2396,13 @@ function renderFocus(){
     focusFeedPill("Social",focusSourceStatus("Finnhub")),
   ].join("");
   grid.querySelectorAll("[data-focus-analyze]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.focusAnalyze)));
-  grid.querySelectorAll("[data-focus-watch]").forEach(button=>button.addEventListener("click",()=>addToResearch(button.dataset.focusWatch)));
-  grid.querySelectorAll("[data-focus-ai]").forEach(button=>button.addEventListener("click",()=>reviewFocusNameWithAI(button)));
   curated.querySelectorAll("[data-curated-symbol]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.curatedSymbol)));
   const refreshStatus=document.getElementById("focusRefreshStatus");
   if(refreshStatus&&focusData.generated_at){ refreshStatus.classList.remove("loading"); refreshStatus.innerHTML=`<span class="dot live"></span>Scan checked · ${esc(fmtAge(focusData.generated_at))}`; }
   renderTodayPanes();
 }
 async function refreshFocus(force=false){
-  if(!ownerAuthenticated){ focusData=null; return; }
+  if(!ownerAuthenticated){ focusData=null; return true; }
   if(focusRefreshInFlight) return;
   focusRefreshInFlight=true;
   const status=document.getElementById("focusRefreshStatus");
@@ -2303,14 +2411,18 @@ async function refreshFocus(force=false){
     focusData=await fetchJSON(`/api/focus${force?"?refresh=true":""}`);
     if(force) focusIntelligence={};
     renderFocus();
-    await Promise.all((focusData.focus||[]).map(async row=>{
+    const intelligenceResults=await Promise.all((focusData.focus||[]).map(async row=>{
+      let available=true;
       try{ focusIntelligence[row.symbol]=await fetchJSON(`/api/intelligence/${encodeURIComponent(row.symbol)}${force?"?refresh=true":""}`); }
-      catch(error){ focusIntelligence[row.symbol]={overall:{tier:"UNRATED",score:null},sources:[],error:error.message}; }
+      catch(error){ available=false; focusIntelligence[row.symbol]={overall:{tier:"UNRATED",score:null},sources:[],error:error.message}; }
       renderFocus();
+      return available;
     }));
+    return intelligenceResults.every(Boolean);
   }catch(error){
     document.getElementById("focusGrid").innerHTML=`<div class="empty"><b>Focus feeds are unavailable.</b>${esc(error.message)}</div>`;
     if(status){ status.classList.remove("loading"); status.innerHTML='<span class="dot down"></span>Focus feed unavailable'; }
+    return false;
   }finally{
     focusRefreshInFlight=false;
   }
@@ -2346,7 +2458,7 @@ async function curateFocusWithAI(){
     button.textContent=`${saved} saved to Research`;
   }finally{
     button.disabled=false;
-    setTimeout(()=>{ button.innerHTML='<svg class="icon"><use href="#i-bookmark"/></svg>Run AI curation'; },1800);
+    setTimeout(()=>{ button.innerHTML='<svg class="icon"><use href="#i-bookmark"/></svg>Curate with AI'; },1800);
   }
 }
 
@@ -2367,6 +2479,7 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   lastState=null; briefing=null; macroNews=null; dailyBrief=null; dailyBriefRenderKey=null; focusData=null; focusIntelligence={}; focusAIResults={}; focusRefreshInFlight=false; watchlistsCache=[]; savedScreensCache=[];
   symbolOrder=[]; selectedSymbol=null; selectedAlertId=null; selectedSwingSymbol=null;
   currentDossier=null; selectionTouched=false;
+  lastWorkspaceRefreshAt=0; updateRefreshStatus();
   if(typeof autotradeCache!=="undefined") autotradeCache=null;
   if(typeof budgetsCache!=="undefined"){ budgetsCache=null; budgetsStatus="idle"; budgetsError=""; }
   if(typeof wsConnection!=="undefined"&&wsConnection){
@@ -2385,6 +2498,7 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   document.getElementById("tape").replaceChildren();
   document.getElementById("symCount").textContent="—";
   document.getElementById("session").textContent="—";
+  document.getElementById("session").hidden=true;
   document.getElementById("briefPanel").hidden=true;
   document.getElementById("briefBody").replaceChildren();
   document.getElementById("macroNews").replaceChildren();
@@ -2427,6 +2541,7 @@ function renderAll(){
   document.getElementById("symCount").textContent = symbolOrder.length + " symbols";
 
   const sess = document.getElementById("session");
+  sess.hidden=false;
   sess.innerHTML = `<span class="dot ${s.session==='RTH'?'rth':''}"></span> ${s.session}`;
 
   const pausedSymbols=Object.entries(s.readiness?.symbols||{}).filter(([,state])=>state.actionable===false);
@@ -3132,11 +3247,19 @@ function switchView(view){
   ["signals","0dte","swings","discover","analysis"].forEach(v=>{
     document.getElementById("view-"+v).hidden = v !== view;
   });
+  const deskSelect=document.getElementById("mobileDeskSelect");
+  if(deskSelect){
+    deskSelect.value=["0dte","swings"].includes(view)?view:"";
+    deskSelect.dataset.empty=String(!deskSelect.value);
+  }
   if(view==="discover"&&!discoverLoaded) runDiscovery();
   if(view==="signals"&&ownerAuthenticated&&!focusData) refreshFocus();
 }
 document.querySelectorAll("[data-view]").forEach(b=>
   b.addEventListener("click", ()=>switchView(b.dataset.view)));
+document.getElementById("mobileDeskSelect").addEventListener("change",event=>{
+  if(event.target.value) switchView(event.target.value);
+});
 
 function wireQtabPair(aId, bId, aPanel, bPanel){
   const wire=(onId,offId,onPanel,offPanel)=>document.getElementById(onId).addEventListener("click",()=>{
@@ -3223,7 +3346,7 @@ async function openOwnerDialog(){
 async function completeAccountSignIn(message){
   await refreshOwnerSession();
   connectWS();
-  await Promise.all([refresh(),refreshBriefing(),refreshDailyBrief(),refreshFocus(),refreshAutotrade()]);
+  await refreshWorkspace();
   const status=document.getElementById("ownerStatus");
   status.textContent=message; status.className="bd-status ok";
 }
@@ -4009,6 +4132,9 @@ function renderPaletteResults(q){
       closePalette(); switchView("analysis");
       requestAnimationFrame(()=>document.getElementById("analysisSymbol").focus());
     }},
+    {label:"Open 0DTE desk", type:"Action", action:()=>{ closePalette(); switchView("0dte"); }},
+    {label:"Open swing desk", type:"Action", action:()=>{ closePalette(); switchView("swings"); }},
+    {label:"Refresh market analysis", type:"Action", action:()=>{ closePalette(); refreshWorkspace(); }},
     {label:ownerAuthenticated?"Account":"Sign in", type:"Action", action:()=>{ closePalette(); openOwnerDialog(); }},
     {label:"Capital & risk limits", type:"Action", action:()=>{ closePalette(); openBudgets(); }},
   ];
@@ -4033,7 +4159,7 @@ document.addEventListener("keydown", e=>{
 });
 
 // ── Agent-mediated auto-trade policy ─────────────────────────────────
-let autotradeCache=null;
+let autotradeCache=null, autotradeRefreshInFlight=null;
 function renderAutotrade(data){
   autotradeCache=data;
   const mode=data.effective_mode||"SIMULATION";
@@ -4046,12 +4172,21 @@ function renderAutotrade(data){
   document.getElementById("autotradeExpiry").textContent=until
     ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "Always";
 }
-async function refreshAutotrade(){
-  if(!ownerAuthenticated){ autotradeCache=null; return; }
-  try{
-    const [state,log]=await Promise.all([fetchJSON("/api/autotrade"),fetchJSON("/api/trade-log?limit=8")]);
-    renderAutotrade(state); renderAutotradeJournal(log.automation_trades||[]);
-  }catch(e){}
+async function refreshAutotrade({force=false}={}){
+  if(!ownerAuthenticated){ autotradeCache=null; return true; }
+  if(autotradeRefreshInFlight){
+    const prior=autotradeRefreshInFlight;
+    if(!force) return prior;
+    await prior;
+    if(autotradeRefreshInFlight&&autotradeRefreshInFlight!==prior) return autotradeRefreshInFlight;
+  }
+  const request=(async()=>{
+    try{ renderAutotrade(await fetchJSON("/api/autotrade")); return true; }
+    catch(e){ return false; }
+  })();
+  autotradeRefreshInFlight=request;
+  try{ return await request; }
+  finally{ if(autotradeRefreshInFlight===request) autotradeRefreshInFlight=null; }
 }
 function renderAutotradeJournal(rows){
   const el=document.getElementById("autoTradeJournal");
@@ -4063,6 +4198,14 @@ function renderAutotradeJournal(rows){
     return `<div class="auto-journal-row"><b>${esc(row.event||"UPDATE")}</b><span>${esc(row.reason||"Reason unavailable")}</span><small>${price}${esc(pnl)}</small></div>`;
   }).join("");
 }
+async function refreshAutotradeJournal(){
+  if(!ownerAuthenticated) return true;
+  try{
+    const log=await fetchJSON("/api/trade-log?limit=8");
+    renderAutotradeJournal(log.automation_trades||[]);
+    return true;
+  }catch(e){ return false; }
+}
 function listValue(values){ return (values||[]).join(", "); }
 function parseList(value){ return [...new Set(value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean))]; }
 async function openAutotrade(){
@@ -4072,7 +4215,7 @@ async function openAutotrade(){
   const status=document.getElementById("autotrade-status");
   status.textContent=""; status.className="bd-status";
   dlg.showModal();
-  await refreshAutotrade();
+  await Promise.all([refreshAutotrade(),refreshAutotradeJournal()]);
   const p=autotradeCache?.policy||{};
   document.getElementById("autoMode").value=p.mode||"SIMULATION";
   document.getElementById("autoConfidence").value=Math.round((p.min_confidence||.75)*100);
@@ -4101,7 +4244,7 @@ async function saveAutotrade(){
   status.textContent="Saving…"; status.className="bd-status";
   try{
     await autotradeRequest("/api/autotrade/policy","PUT",payload);
-    await refreshAutotrade();
+    await refreshAutotrade({force:true});
     status.textContent=mode==="LIVE"?"Live window staged. Eligible orders still require broker review and confirmation.":"Simulation is watching real prices.";
     status.className="bd-status ok";
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; if(e.status===401) openOwnerDialog(); }
@@ -4112,7 +4255,7 @@ async function disarmAutotrade(){
   try{
     await autotradeRequest("/api/autotrade/disarm","POST");
     document.getElementById("autoMode").value="SIMULATION";
-    await refreshAutotrade();
+    await refreshAutotrade({force:true});
     status.textContent="Simulation active. No real orders can be claimed.";
     status.className="bd-status ok";
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; if(e.status===401) openOwnerDialog(); }
@@ -4215,18 +4358,17 @@ window.addEventListener("resize",()=>{
 });
 
 loadDiscoveryPresets();
-refreshCalibration();
 refreshOwnerSession().then(session=>{
-  if(session.authenticated){ connectWS(); refresh(); refreshBriefing(); refreshDailyBrief(); refreshFocus(); refreshAutotrade(); }
+  if(session.authenticated) connectWS();
   else clearPersonalState("Sign in required.", false);
+  refreshWorkspace();
 });
-setInterval(refresh, 15000);
-setInterval(refreshCalibration, 60000);
-setInterval(refreshBriefing, 60000);
-// Streaming state stays fast; slower external research rolls every two minutes.
-setInterval(refreshDailyBrief, 120000);
-setInterval(refreshFocus, 120000);
+setInterval(refreshWorkspace, AUTO_REFRESH_MS);
+setInterval(updateRefreshStatus, 15000);
 setInterval(refreshAutotrade, 15000);
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"&&Date.now()-lastWorkspaceRefreshAt>=AUTO_REFRESH_MS) refreshWorkspace();
+});
 </script>
 </body>
 </html>

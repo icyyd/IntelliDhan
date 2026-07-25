@@ -635,3 +635,40 @@ For each coherent work unit:
   lockup, and social sizes.
 - PR status is recorded at handoff. No merge or deployment is authorized by
   this pass.
+
+## 2026-07-21 — modern terminal UI and two-minute refresh
+
+- PR `#15` was independently approved, green, and merged without deleting its
+  source branch. `origin/main` advanced to `2ce39a5`.
+- UI work continues on `codex/robinhood-ui-refresh` in isolated worktree
+  `/Users/dhanvin/Documents/IntelliDhan-ui-refresh`. The primary worktree's
+  unrelated in-progress changes remain untouched.
+- First-party Robinhood Legend, watchlist/card, widget, and alert documentation
+  informed the hierarchy: one command surface, context close to the selected
+  symbol, card-first scanning, and progressive disclosure for secondary tools.
+  IntelliDhan does not copy Robinhood branding or order-entry behavior.
+- Removed the visual ticker-tape duplicate and top-bar risk button; grouped
+  mobile 0DTE/Swing access under one Desks selector; reduced Top 3 cards to one
+  visible action; and collapsed evidence/paper results by default.
+- Added a visible two-minute single-flight refresh batch for market state,
+  calibration, briefs, focus research, and automation state. WebSocket updates
+  and the 15-second automation-status safety poll remain unchanged.
+- Strategy logic, evidence thresholds, source scoring, authentication,
+  persistence, capital policy, and Robinhood execution behavior are unchanged.
+- Browser verification covered dark/light desktop plus 375, 768, 1024, and
+  1440px widths: no horizontal overflow, no console errors, and the mobile
+  Desks selector opened both strategy views without colliding with navigation.
+- Initial verification: `297 passed, 6 deselected` in the full suite; all Ruff checks,
+  JavaScript syntax validation, and `git diff --check` passed.
+- Independent review identified stale-success reporting, authentication-scope,
+  post-mutation automation-read, mobile Desks placeholder, and live-region
+  edge cases. The follow-up makes refresh tasks return explicit health, queues
+  an authenticated batch after anonymous work, forces authoritative automation
+  reads after policy changes, disables the selected-desk placeholder, and adds
+  polite freshness announcements plus regression coverage.
+- Follow-up verification: `300 passed, 6 deselected`; focused refresh/UI checks,
+  Ruff, JavaScript syntax validation, and `git diff --check` all pass. Both CI
+  lanes passed again at follow-up head `4e29bc5`, and independent re-review
+  approved the refresh, authentication, automation, mobile-nav, and live-region
+  corrections. PR `#16` remains draft, mergeable, and awaiting user approval;
+  no merge or deployment is authorized for this branch yet.

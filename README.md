@@ -2,17 +2,14 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-07-25 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** strategy-plane evidence object (`StrategyEvidence` on Setup/Alert),
-net-expectancy gate for `pop_based` strategies when calibration meta declares
-negative edge after cost stress, and research-only `PULLBACK_CONTINUATION_MACD`
-shadow identity (H1 MACD histogram > 0) with its own `IN_SAMPLE_ONLY` calibration
-stub. Trend module gains `strategy_context.trend_strategy_suitability` notes for
-Swing/0DTE regime context only — never creates alerts or raises confidence.
-Live eligibility remains fail-closed; no strategy is promoted. See
-[docs/32-strategy-evidence-and-expectancy.md](docs/32-strategy-evidence-and-expectancy.md).
-The strategy-evidence pass is lint-clean under the pinned CI toolchain.
-Prior pass: five-pane Today workspace; SPY/QQQ 9EMA auto-trader remains
-Simulation-only behind evidence, health, capital, and confirmation gates.
+**Last system pass:** five-pane, signals-first Today workspace with strategy-plane
+evidence objects, net-expectancy gating, responsive overlap guards, simplified
+navigation, and a visible two-minute single-flight refresh cycle for market data
+and analysis. Real-time state and the faster automation safety poll remain
+intact; failed or partial batches retain their last-good freshness and post-policy
+reads cannot reuse stale polls. Live eligibility remains fail-closed and the
+SPY/QQQ 9EMA auto-trader remains Simulation-only behind evidence, health,
+capital, and confirmation gates.
 
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
@@ -45,6 +42,9 @@ must not be presented as implemented.
   context remain available progressively when a user opens a setup.
 - Development checks pin Ruff 0.4.10 while the existing codebase is migrated
   to newer lint rules, keeping CI results reproducible across contributors.
+- Robinhood-informed interaction hierarchy with one global command surface,
+  progressive disclosure for secondary evidence, fewer visible actions, and
+  automatic two-minute market/analysis refresh with freshness feedback.
 - Production D4.2 owl-and-lotus assets, favicon, deterministic 1200×630 share artwork,
   agent-readable design tokens, and a responsive dark/light visual theme.
   External brand lettering is outlined for portable rendering; orange marks
@@ -171,6 +171,7 @@ requires the same-commit README update.
 | 30 | [SPY/QQQ 9EMA 0DTE Auto-Trader](docs/30-ema9-0dte-shadow-autotrader.md) | Exact rules, historical evidence, real-quote Simulation journal, 0/1DTE selection/sizing, trend-break exits, and Live-promotion gates |
 | 31 | [Live Modules &amp; Research Cards](docs/31-live-modules-and-research-cards.md) | Auto-refresh cadence, simplified module hierarchy, and the stock-pick evidence/risk presentation contract |
 | 32 | [Strategy Evidence &amp; Expectancy](docs/32-strategy-evidence-and-expectancy.md) | StrategyEvidence schema, net-expectancy gate, MACD pullback shadow identity, trend suitability context |
+| 33 | [Modern Terminal UI](docs/30-modern-terminal-ui.md) | Robinhood-informed hierarchy, reduced actions, responsive overlap rules, and the two-minute single-flight refresh contract |
 
 ## Core Product Tenets
 
