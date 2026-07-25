@@ -11,6 +11,22 @@ reads cannot reuse stale polls. Live eligibility remains fail-closed and the
 SPY/QQQ 9EMA auto-trader remains Simulation-only behind evidence, health,
 capital, and confirmation gates.
 
+The Opening Range Reversal video rules are captured as a separate,
+underlying-only research backtest (`ORB_REVERSAL_15M`) with a point-in-time
+15-minute range, daily-ATR manipulation gate, 5-minute reversal confirmation,
+prior-day level experiment, costs, and walk-forward tuning. Its short Yahoo
+window is diagnostic only; daily context uses the same raw price basis as the
+intraday bars, and it is not live-eligible or an options-performance claim.
+See [Opening Range Reversal Backtest](docs/32-opening-range-reversal-backtest.md).
+The latest permutation study found promising shadow candidates, but none has
+enough untouched sessions to replace the control configuration. The exact
+1,152-variant study is reproducible with
+`scripts/opening_range_reversal_permutations.py`. The improved settings are
+available only as the explicit `shadow_candidate` research profile; `control`
+remains the default and live eligibility is unchanged. The five-year SPY/SPX
+tuning plan and data-source handoff are documented in
+[ORR Five-Year Fine-Tuning Model](docs/33-orr-five-year-fine-tuning-model.md).
+
 IntelliDhan is a working personal stock-picking and signal terminal. Today it
 provides a configured-universe market monitor, research-stage 0DTE/Swing signal
 engine, durable alert/paper audit state, a compact technical screener, saved
@@ -173,6 +189,8 @@ requires the same-commit README update.
 | 31 | [Live Modules &amp; Research Cards](docs/31-live-modules-and-research-cards.md) | Auto-refresh cadence, simplified module hierarchy, and the stock-pick evidence/risk presentation contract |
 | 32 | [Strategy Evidence &amp; Expectancy](docs/32-strategy-evidence-and-expectancy.md) | StrategyEvidence schema, net-expectancy gate, MACD pullback shadow identity, trend suitability context |
 | 33 | [Modern Terminal UI](docs/30-modern-terminal-ui.md) | Robinhood-informed hierarchy, reduced actions, responsive overlap rules, and the two-minute single-flight refresh contract |
+| 34 | [Opening Range Reversal Backtest](docs/32-opening-range-reversal-backtest.md) | Deterministic 15m opening-range reversal rules, ATR manipulation gate, prior-day level experiment, slippage-aware walk-forward diagnostics |
+| 35 | [ORR Five-Year Fine-Tuning Model](docs/33-orr-five-year-fine-tuning-model.md) | SPY/SPX point-in-time data contract, interpretable meta-labeler, purged walk-forward tuning, robustness score, and promotion gates |
 
 ## Core Product Tenets
 
