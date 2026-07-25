@@ -1405,6 +1405,118 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   .mobile-nav{gap:3px; overflow:hidden; padding:4px}
   .mobile-nav-item{flex:1 1 0; min-width:0; padding:8px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 }
+
+/* ── Five-pane Today view ─────────────────────────────────────────────
+   One scan path: trend → context → calendar → watch → action. Keep every
+   card bounded so live updates cannot create the overlapping text seen in
+   the older multi-rail home layout. */
+body.signals-home .shell{grid-template-columns:70px minmax(0,1fr)}
+body.signals-home .decision-rail{display:none}
+.today-grid{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-template-areas:
+  "trend trend trend trend highlights highlights highlights highlights events events events events"
+  "movers movers movers movers movers signals signals signals signals signals signals signals";
+  gap:14px; min-width:0}
+.today-pane{min-width:0; overflow:hidden; padding:17px; border:1px solid var(--border); border-radius:24px; background:var(--panel-gradient); box-shadow:var(--shadow-card)}
+.today-trend-pane{grid-area:trend; background:linear-gradient(145deg,rgba(29,49,77,.94),rgba(14,24,42,.98))}
+.today-highlights-pane{grid-area:highlights}
+.today-events-pane{grid-area:events}
+.today-movers-pane{grid-area:movers}
+.today-signals-pane{grid-area:signals}
+.today-pane-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; min-width:0; margin-bottom:13px}
+.today-pane-head>div{min-width:0}
+.today-eyebrow{display:block; color:var(--cyan); font-size:9px; font-weight:850; letter-spacing:.12em; line-height:1.2; text-transform:uppercase}
+.today-pane h2{margin:4px 0 0; overflow:hidden; color:var(--text); font-size:17px; letter-spacing:-.025em; text-overflow:ellipsis; white-space:nowrap}
+.today-trend-pane h2{color:#F7F9FF}
+.today-pane-tag,.today-live{display:inline-flex; align-items:center; gap:6px; flex:none; min-height:26px; padding:5px 8px; border:1px solid var(--border-soft); border-radius:99px; color:var(--text-faint); font-size:9px; font-weight:750; white-space:nowrap}
+.today-live{border-color:rgba(94,234,212,.20); color:var(--teal)}
+.today-live .dot{width:6px; height:6px}
+.today-pane-actions{display:flex; align-items:center; justify-content:flex-end; gap:7px; min-width:0; flex-wrap:wrap}
+.today-link{min-height:28px; padding:5px 8px; border:1px solid var(--border-soft); border-radius:9px; background:rgba(145,164,255,.06); color:var(--cyan); cursor:pointer; font:700 9.5px var(--sans); white-space:nowrap}
+.today-link:hover{border-color:rgba(145,164,255,.42); background:rgba(145,164,255,.11)}
+.today-link:focus-visible{outline:2px solid var(--cyan); outline-offset:2px}
+.today-trend-content{min-height:88px; display:flex; align-items:center}
+.today-loading{padding:14px 0; color:var(--text-faint); font-size:11px; line-height:1.5}
+.today-trend-status{display:flex; align-items:center; gap:12px; min-width:0}
+.today-trend-orb{display:grid; place-items:center; width:70px; height:70px; flex:none; border-radius:22px; font:850 11px var(--mono); letter-spacing:.04em; text-align:center}
+.today-trend-orb.bullish{color:#5EEAD4; background:rgba(94,234,212,.12); box-shadow:inset 0 0 0 1px rgba(94,234,212,.25)}
+.today-trend-orb.bearish{color:#F87171; background:rgba(248,113,113,.12); box-shadow:inset 0 0 0 1px rgba(248,113,113,.25)}
+.today-trend-orb.chop{color:#F6C86B; background:rgba(246,200,107,.12); box-shadow:inset 0 0 0 1px rgba(246,200,107,.25)}
+.today-trend-copy{min-width:0}
+.today-trend-copy strong{display:block; color:#F7F9FF; font-size:21px; letter-spacing:-.035em}
+.today-trend-copy p{max-width:300px; margin:4px 0 0; overflow:hidden; color:#B7C0D8; font-size:10.5px; line-height:1.45; text-overflow:ellipsis}
+.today-trend-meta{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px}
+.today-trend-meta span{padding:4px 6px; border-radius:7px; background:rgba(255,255,255,.06); color:#B7C0D8; font:9px var(--mono)}
+.today-subhead{display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin:5px 0 7px; color:#DDE5F5; font-size:10px; font-weight:800; letter-spacing:.05em; text-transform:uppercase}
+.today-subhead small{color:#92A0BA; font-size:9px; font-weight:500; letter-spacing:0; text-transform:none}
+.today-anchor-strip{border-color:rgba(255,255,255,.10); border-radius:16px; background:rgba(4,9,20,.22); box-shadow:none}
+.today-anchor-strip .anchor-card{min-height:62px; padding:9px 11px}
+.today-anchor-strip .anchor-symbol{font-size:13px; color:#F7F9FF}
+.today-anchor-strip .anchor-price{font-size:14px; color:#F7F9FF}
+.today-anchor-strip .anchor-foot{font-size:8px; color:#92A0BA}
+.today-pane-foot{display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; margin-top:12px; padding-top:10px; border-top:1px solid var(--border-soft); color:var(--text-faint); font-size:9px; line-height:1.35}
+.today-pane-foot>span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.today-pane-note{margin:-5px 0 12px; color:var(--text-faint); font-size:10px; line-height:1.45}
+.today-pane-content{min-width:0}
+.today-highlight-lead{margin:0 0 12px; color:var(--text-dim); font-size:11px; line-height:1.5}
+.today-highlight-lead strong{color:var(--text)}
+.today-highlight-list{display:flex; flex-direction:column; gap:7px}
+.today-highlight-item{display:grid; grid-template-columns:auto minmax(0,1fr); gap:7px; min-width:0; padding:8px 9px; border-radius:12px; background:rgba(145,164,255,.055)}
+.today-highlight-item .dot{margin-top:4px; width:6px; height:6px; background:var(--cyan)}
+.today-highlight-item a{display:block; overflow:hidden; color:var(--text-dim); font-size:10px; line-height:1.35; text-decoration:none; text-overflow:ellipsis; white-space:nowrap}
+.today-highlight-item a:hover{color:var(--cyan)}
+.today-highlight-item small{display:block; margin-top:3px; overflow:hidden; color:var(--text-faint); font-size:8.5px; text-overflow:ellipsis; white-space:nowrap}
+.today-event-list{display:flex; flex-direction:column; gap:7px}
+.today-event{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:8px; align-items:center; min-width:0; padding:9px; border-left:2px solid var(--gold); border-radius:10px; background:rgba(246,200,107,.065)}
+.today-event time{color:var(--gold); font:750 9px var(--mono); white-space:nowrap}
+.today-event b{overflow:hidden; color:var(--text); font-size:10px; text-overflow:ellipsis; white-space:nowrap}
+.today-event small{overflow:hidden; color:var(--text-faint); font-size:8.5px; text-align:right; text-overflow:ellipsis; white-space:nowrap}
+.today-mover-list{display:flex; flex-direction:column; gap:6px}
+.today-mover{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:9px; align-items:center; min-width:0; padding:9px 10px; border:1px solid transparent; border-radius:12px; background:rgba(255,255,255,.035); color:var(--text); cursor:pointer; text-align:left}
+.today-mover:hover{border-color:var(--border); background:rgba(145,164,255,.07)}
+.today-mover-rank{color:var(--text-faint); font:10px var(--mono)}
+.today-mover-main{min-width:0}
+.today-mover-main b{display:block; font:800 12px var(--mono)}
+.today-mover-main small{display:block; overflow:hidden; color:var(--text-faint); font-size:9px; text-overflow:ellipsis; white-space:nowrap}
+.today-mover-metrics{display:flex; align-items:center; justify-content:flex-end; gap:5px; min-width:0; max-width:100%; overflow:hidden; flex:none}
+.today-mover-metrics span{max-width:86px; overflow:hidden; padding:4px 5px; border-radius:7px; background:rgba(145,164,255,.08); color:var(--text-dim); font:9px var(--mono); text-overflow:ellipsis; white-space:nowrap}
+.today-mover-score{color:var(--cyan)!important}
+.today-signal-list{display:flex; flex-direction:column; gap:7px}
+.today-signal{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:9px; align-items:center; min-width:0; padding:10px; border-left:3px solid var(--cyan); border-radius:12px; background:rgba(94,234,212,.055); cursor:pointer}
+.today-signal:hover{background:rgba(94,234,212,.10)}
+.today-signal.held{border-left-color:var(--gold); background:rgba(246,200,107,.055)}
+.today-signal-symbol{font:850 13px var(--mono)}
+.today-signal-copy{min-width:0}
+.today-signal-copy b{display:block; overflow:hidden; font-size:10.5px; text-overflow:ellipsis; white-space:nowrap}
+.today-signal-copy small{display:block; margin-top:3px; overflow:hidden; color:var(--text-faint); font-size:9px; line-height:1.35; text-overflow:ellipsis; white-space:nowrap}
+.today-signal-score{font:800 12px var(--mono); color:var(--cyan); text-align:right}
+.today-signal-score small{display:block; color:var(--text-faint); font:8px var(--sans); text-transform:uppercase}
+.today-legacy{display:none!important}
+body.signals-home .legacy-signal-board{display:none}
+.today-data-quality{margin-top:12px; padding:9px 10px; border-radius:13px}
+.today-data-quality .stat-bubble{width:24px; height:24px}
+.today-data-quality p{font-size:9px}
+
+@media (max-width:1180px){
+  .today-grid{grid-template-areas:"trend trend trend trend highlights highlights highlights highlights events events events events" "movers movers movers movers movers movers signals signals signals signals signals signals"}
+}
+@media (max-width:900px){
+  body.signals-home .shell{grid-template-columns:1fr}
+  .today-grid{grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-areas:"trend trend" "highlights events" "movers movers" "signals signals"}
+}
+@media (max-width:600px){
+  .today-grid{grid-template-columns:1fr; grid-template-areas:"trend" "highlights" "events" "movers" "signals"; gap:10px}
+  .today-pane{padding:14px; border-radius:20px}
+  .today-pane-head{margin-bottom:10px}
+  .today-pane h2{font-size:16px}
+  .today-trend-status{gap:9px}
+  .today-trend-orb{width:58px; height:58px; border-radius:18px; font-size:9px}
+  .today-trend-copy strong{font-size:18px}
+  .today-anchor-strip .anchor-card{padding:8px 7px}
+  .today-anchor-strip .anchor-role{display:none}
+  .today-anchor-strip .anchor-foot{font-size:7.5px}
+  .today-pane-actions{gap:5px}
+  .today-mover-metrics span:nth-child(2){display:none}
+}
 </style>
 <link rel="stylesheet" href="/assets/brand/intellidhan-theme.css">
 <script>try{if(localStorage.getItem("id-theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
@@ -1494,43 +1606,57 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
       </div>
     </section>
 
-    <section class="anchor-strip" id="focusAnchors" aria-label="SPX, SPY and QQQ market pulse">
-      <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPX</span><span class="anchor-role">Broad market</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading current context</div></div>
-      <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPY</span><span class="anchor-role">Liquidity proxy</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading current context</div></div>
-      <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">QQQ</span><span class="anchor-role">Growth leadership</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading current context</div></div>
+    <section class="today-grid" aria-label="Today's market overview">
+      <article class="today-pane today-trend-pane" aria-labelledby="todayTrendTitle">
+        <div class="today-pane-head"><div><span class="today-eyebrow">Market pulse</span><h2 id="todayTrendTitle">Current trend</h2></div><span class="today-live" id="focusRefreshStatus" role="status" aria-live="polite"><span class="dot live"></span>Updating</span></div>
+        <div id="todayTrend" class="today-trend-content"><div class="today-loading">Reading SPX, SPY and QQQ…</div></div>
+        <div class="today-subhead"><span>Benchmarks</span><small>Daily · hourly · 5m</small></div>
+        <section class="anchor-strip today-anchor-strip" id="focusAnchors" aria-label="SPX, SPY and QQQ market pulse">
+          <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPX</span><span class="anchor-role">Broad market</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading</div></div>
+          <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">SPY</span><span class="anchor-role">Liquidity proxy</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading</div></div>
+          <div class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">QQQ</span><span class="anchor-role">Growth leadership</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot"></span>Loading</div></div>
+        </section>
+        <div class="today-pane-foot"><span>Auto-refreshes every 2 minutes</span><button class="today-link" type="button" onclick="openAutotrade()">Review auto-trader</button></div>
+        <section class="data-quality-notice today-data-quality" id="dataQualityNotice" role="status" aria-live="polite" hidden>
+          <span class="stat-bubble"><svg class="icon"><use href="#i-alert"/></svg></span>
+          <div><b id="dataQualityTitle">Market data paused</b><p id="dataQualityDetail"></p><div class="data-quality-symbols" id="dataQualitySymbols"></div></div>
+        </section>
+      </article>
+
+      <article class="today-pane today-highlights-pane" aria-labelledby="todayHighlightsTitle">
+        <div class="today-pane-head"><div><span class="today-eyebrow">What matters now</span><h2 id="todayHighlightsTitle">Today’s highlights</h2></div><div class="today-pane-actions"><span class="today-pane-tag" id="todayBriefStatus">Brief pending</span><span class="today-pane-tag">Brief + news</span></div></div>
+        <div id="todayHighlights" class="today-pane-content"><div class="today-loading">Loading the daily brief…</div></div>
+      </article>
+
+      <article class="today-pane today-events-pane" aria-labelledby="todayEventsTitle">
+        <div class="today-pane-head"><div><span class="today-eyebrow">Calendar risk</span><h2 id="todayEventsTitle">Macro events</h2></div><span class="today-pane-tag">CPI · PPI · Fed</span></div>
+        <div id="todayEvents" class="today-pane-content"><div class="today-loading">Loading economic events…</div></div>
+      </article>
+
+      <article class="today-pane today-movers-pane" aria-labelledby="todayMoversTitle">
+        <div class="today-pane-head"><div><span class="today-eyebrow">Discovery scan</span><h2 id="todayMoversTitle">Premarket watch · daily proxy</h2></div><span class="today-live"><span class="dot live"></span>Completed-bar scan</span></div>
+        <p class="today-pane-note">Names with unusual volume, trend alignment and a supported play. This uses the latest completed scan until live premarket data is available; open interest is shown when the options feed provides it.</p>
+        <div id="todayMovers" class="today-pane-content"><div class="today-loading">Building the watchlist…</div></div>
+        <div class="today-pane-foot"><span id="todayMoversMeta">Daily proxy until the premarket feed is available.</span><button class="today-link" type="button" data-view="discover">Open Discover</button></div>
+      </article>
+
+      <article class="today-pane today-signals-pane" aria-labelledby="todaySignalsTitle">
+        <div class="today-pane-head"><div><span class="today-eyebrow">Action queue</span><h2 id="todaySignalsTitle">Signal radar</h2></div><div class="today-pane-actions"><span class="today-live" id="todaySignalStatus"><span class="dot live"></span>Live</span><button class="today-link" id="curateFocusButton" type="button" onclick="curateFocusWithAI()">AI review</button></div></div>
+        <p class="today-pane-note">Top actionable alerts first; research-only names stay clearly labeled.</p>
+        <div id="todaySignals" class="today-signal-list" aria-live="polite"><div class="today-loading">Waiting for current signals…</div></div>
+      </article>
     </section>
 
-    <section class="daily-setup" id="dailySetup" aria-labelledby="dailySetupTitle" hidden>
-      <div class="daily-loading">Loading today's analysis and setup…</div>
-    </section>
+    <div class="today-legacy" hidden aria-hidden="true">
+      <section class="daily-setup" id="dailySetup" aria-labelledby="dailySetupTitle" hidden><div class="daily-loading">Loading today's analysis and setup…</div></section>
+      <div class="focus-grid" id="focusGrid"><div class="empty">Building the current focus list…</div></div>
+      <details class="curated-panel"><summary>Curated radar</summary><div class="curated-list" id="curatedFocusList"><div class="empty">Loading candidates…</div></div></details>
+      <div id="focusFeedStatus"></div>
+      <section class="panel" id="briefPanel" hidden><div id="briefBody"></div></section>
+      <div id="macroNews"><div class="empty">Loading headlines…</div></div><span id="macroFeedState">Loading</span>
+    </div>
 
-    <section class="focus-shell" aria-label="Current focus and curated watchlist">
-      <div class="focus-main">
-        <div class="focus-heading">
-          <div class="focus-heading-copy"><h2>Top 3 in focus</h2><p>Deterministic setup rank first; filings, news and social context enrich—but never override—the market evidence.</p></div>
-          <div class="focus-actions">
-            <span class="focus-live-status" id="focusRefreshStatus" role="status" aria-live="polite"><span class="dot live"></span>Auto-updating · —</span>
-            <button class="focus-button primary" id="curateFocusButton" type="button" onclick="curateFocusWithAI()"><svg class="icon"><use href="#i-bookmark"/></svg>Run AI curation</button>
-          </div>
-        </div>
-        <div class="focus-grid" id="focusGrid" aria-live="polite"><div class="empty">Building the current focus list…</div></div>
-        <details class="curated-panel">
-          <summary><span><b id="curatedTitle">Curated radar</b><small>Expand the wider research watchlist</small></span><svg class="icon"><use href="#i-chevron-right"/></svg></summary>
-          <div class="curated-body">
-            <p>Current research candidates across the configured universe. Open a name for the complete dossier.</p>
-            <div class="curated-list" id="curatedFocusList"><div class="empty">Loading candidates…</div></div>
-            <div class="feed-stack" id="focusFeedStatus" aria-label="Research feed status"></div>
-          </div>
-        </details>
-      </div>
-    </section>
-
-    <section class="data-quality-notice" id="dataQualityNotice" role="status" aria-live="polite" hidden>
-      <span class="stat-bubble"><svg class="icon"><use href="#i-alert"/></svg></span>
-      <div><b id="dataQualityTitle">Market data paused</b><p id="dataQualityDetail"></p><div class="data-quality-symbols" id="dataQualitySymbols"></div></div>
-    </section>
-
-    <section class="panel signal-board" aria-labelledby="signalBoardTitle">
+    <section class="panel signal-board legacy-signal-board" aria-labelledby="signalBoardTitle">
       <div class="section-heading">
         <div class="section-heading-copy">
           <h2 id="signalBoardTitle">Your signal cards</h2>
@@ -1756,16 +1882,6 @@ dialog#owner-dialog::backdrop{background:rgba(4,8,16,.72); backdrop-filter:blur(
   </main>
 
   <aside class="decision-rail" aria-label="Daily context">
-    <section class="panel" id="briefPanel" hidden>
-      <div class="panel-head"><h2>Engine focus</h2></div>
-      <div id="briefBody"></div>
-    </section>
-
-    <section class="panel macro-feed-panel" aria-labelledby="macroFeedTitle">
-      <div class="macro-feed-head"><div><h2 id="macroFeedTitle">Macro pulse</h2><p>Relevant headlines for today’s context.</p></div><span class="feed-state" id="macroFeedState">Loading</span></div>
-      <div id="macroNews" aria-live="polite"><div class="empty">Loading headlines…</div></div>
-    </section>
-
     <section class="panel autotrade-panel" aria-labelledby="autotradeTitle">
       <div class="panel-head"><h2 id="autotradeTitle">Auto-trader</h2><span class="auto-mode simulation" id="autotradeMode">SIMULATION</span></div>
       <div class="auto-stats">
@@ -2175,6 +2291,7 @@ function renderFocus(){
   curated.querySelectorAll("[data-curated-symbol]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.curatedSymbol)));
   const refreshStatus=document.getElementById("focusRefreshStatus");
   if(refreshStatus&&focusData.generated_at){ refreshStatus.classList.remove("loading"); refreshStatus.innerHTML=`<span class="dot live"></span>Scan checked · ${esc(fmtAge(focusData.generated_at))}`; }
+  renderTodayPanes();
 }
 async function refreshFocus(force=false){
   if(!ownerAuthenticated){ focusData=null; return; }
@@ -2350,6 +2467,7 @@ function renderAll(){
   renderRisk(s);
   render0dteView(s);
   renderSwingView(s);
+  renderTodayPanes();
 }
 
 function renderOverview(s){
@@ -2552,21 +2670,88 @@ function renderMatrix(s){
   document.querySelectorAll(".sym-row[data-symbol]").forEach(row=>row.addEventListener("click",()=>selectSymbol(row.dataset.symbol)));
 }
 
+function trendVote(value){
+  return value==="STRONG_UP"?2:value==="UP"?1:value==="STRONG_DOWN"?-2:value==="DOWN"?-1:0;
+}
+function trendWord(value){
+  return value==="STRONG_UP"?"Strong up":value==="UP"?"Up":value==="STRONG_DOWN"?"Strong down":value==="DOWN"?"Down":"Chop";
+}
+function renderTodayPanes(){
+  const trendHost=document.getElementById("todayTrend"), highlightsHost=document.getElementById("todayHighlights"), eventsHost=document.getElementById("todayEvents"), moversHost=document.getElementById("todayMovers"), signalsHost=document.getElementById("todaySignals");
+  if(!trendHost||!highlightsHost||!eventsHost||!moversHost||!signalsHost) return;
+
+  const benchmarkSymbols=["SPX","SPY","QQQ"], timeframes=["D","1H","5m"];
+  const trendRows=benchmarkSymbols.map(symbol=>{
+    const data=lastState?.symbols?.[symbol], matrix=data?.matrix||{}, quality=symbolDataQuality(lastState,symbol);
+    const blocked=quality?.actionable===false||["QUARANTINED","WAITING","STALE"].includes(quality?.status);
+    const states=blocked?[]:timeframes.map(tf=>matrix[tf]).filter(Boolean);
+    const vote=states.reduce((sum,state)=>sum+trendVote(state),0);
+    return {symbol, states, vote, data, blocked};
+  });
+  const votes=trendRows.flatMap(row=>row.states.map(trendVote));
+  const total=votes.reduce((sum,value)=>sum+value,0), maxVotes=Math.max(votes.length*2,1), normalized=total/maxVotes;
+  const feedPaused=lastState?.readiness?.ok===false;
+  const trend=votes.length&&!feedPaused?(normalized>=.24?"BULLISH":normalized<=-.24?"BEARISH":"CHOP"):"PENDING";
+  const trendClass=trend==="PENDING"?"chop":trend.toLowerCase();
+  const confidence=votes.length?Math.round(Math.abs(total)/maxVotes*100):null;
+  const read=feedPaused?"Trend is paused until market data passes validation.":trend==="BULLISH"?"Buyers are leading across the benchmark stack.":trend==="BEARISH"?"Sellers are leading across the benchmark stack.":trend==="CHOP"?"Timeframes are mixed; wait for confirmation instead of forcing a trade.":"Waiting for validated SPX, SPY and QQQ trend data.";
+  const benchmarkDetail=trendRows.map(row=>`${row.symbol} ${row.states.length?trendWord(row.states[0]):"pending"}`).join(" · ");
+  trendHost.innerHTML=`<div class="today-trend-status"><span class="today-trend-orb ${trendClass}">${trend}</span><div class="today-trend-copy"><strong>${trend[0]+trend.slice(1).toLowerCase()}</strong><p>${esc(read)}</p><div class="today-trend-meta"><span>${feedPaused?"Data paused":confidence==null?"Confidence pending":`${confidence}% alignment`}</span><span>${esc(benchmarkDetail||"Benchmark matrix pending")}</span><span>${briefing?.bias?`Desk bias · ${esc(plainBriefingText(briefing.bias))}`:"Awaiting validated feed"}</span></div></div></div>`;
+
+  const summary=(dailyBrief?.summary||[]).filter(Boolean);
+  const headline=dailyBrief?.headline||"No daily brief is available yet.";
+  const briefLine=summary[0]||dailyBrief?.notice||"The latest market brief will appear here as soon as the report feed is ready.";
+  const briefStatus=String(dailyBrief?.status||"UNAVAILABLE").toUpperCase(), briefFreshness=dailyBrief?.freshness_label||(briefStatus==="CURRENT"?"Current brief":briefStatus==="STALE"?"Stale brief":"Brief unavailable");
+  const briefGenerated=dailyBrief?.generated_at?new Date(dailyBrief.generated_at).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"}):"time unavailable";
+  const briefStatusHost=document.getElementById("todayBriefStatus");
+  if(briefStatusHost) briefStatusHost.textContent=`${briefFreshness} · ${briefGenerated}`;
+  const newsItems=(macroNews?.items||[]).slice(0,3);
+  highlightsHost.innerHTML=`<p class="today-highlight-lead"><strong>${esc(headline)}</strong><br>${esc(briefLine)}</p>${newsItems.length?`<div class="today-highlight-list">${newsItems.map(item=>`<div class="today-highlight-item"><span class="dot"></span><div><a href="${esc(item.link||"#")}" target="_blank" rel="noopener noreferrer">${esc(item.title||"Market headline")}</a><small>${esc(item.source||"Market feed")}${item.published_at?` · ${esc(fmtNewsTime(item.published_at))}`:""}</small></div></div>`).join("")}</div>`:`<div class="today-empty">News feed is unavailable; the brief will retry automatically.</div>`}`;
+
+  const events=(dailyBrief?.economic_events||[]).slice(0,6);
+  eventsHost.innerHTML=events.length?`<div class="today-event-list">${events.map(event=>{
+    const time=event.time_et||event.time||"Time pending", title=event.event||event.name||"Macro release", detail=event.forecast_vs_previous||event.forecast||event.previous||event.impact||"Watch volatility";
+    return `<div class="today-event"><time>${esc(time)}</time><b>${esc(title)}</b><small>${esc(detail)}</small></div>`;
+  }).join("")}</div>`:`<div class="today-empty"><b>No macro releases loaded.</b><br>Check the calendar before trading a headline-sensitive session.</div>`;
+
+  const movers=(focusData?.curated_watchlist||[]).slice(0,6);
+  moversHost.innerHTML=movers.length?`<div class="today-mover-list">${movers.map((row,index)=>{
+    const play=row.best_play||{}, rvol=finiteNumber(row.volume_ratio_5d_to_prior_20d), oi=finiteNumber(row.open_interest??row.options_open_interest??row.oi), trendLabel=String(play.status||"WATCH").replaceAll("_"," ");
+    return `<button class="today-mover" type="button" data-today-mover="${esc(row.symbol)}"><span class="today-mover-rank">${index+1}</span><span class="today-mover-main"><b>${esc(row.symbol)}</b><small>${esc(play.label||trendLabel||"Research watch")}</small></span><span class="today-mover-metrics"><span>${rvol==null?"RVOL —":`RVOL ${rvol.toFixed(2)}×`}</span><span>${oi==null?"OI —":`OI ${Math.round(oi).toLocaleString()}`}</span><span class="today-mover-score">${play.eligible?Math.round(play.score||0):"—"}</span></span></button>`;
+  }).join("")}</div>`:`<div class="today-empty"><b>No screened movers yet.</b><br>A complete universe scan is required before names are ranked.</div>`;
+  const moverMeta=document.getElementById("todayMoversMeta");
+  if(moverMeta) moverMeta.textContent=focusData?.generated_at?`Completed-bar scan · ${fmtAge(focusData.generated_at)} · OI when available` : "Daily completed-bar proxy until the premarket feed is available.";
+
+  const alerts=lastState&&!feedPaused?orderedAlerts(lastState).slice(0,3):[];
+  const fallback=(focusData?.focus||[]).slice(0,3);
+  signalsHost.innerHTML=alerts.length?alerts.map(alert=>{
+    const pct=finiteNumber(alert.confidence), confidence=pct==null?"—":`${Math.round((pct<=1?pct*100:pct))}%`;
+    return `<button class="today-signal" type="button" data-today-alert="${esc(alert.alert_id)}"><span class="today-signal-symbol">${esc(alert.symbol)}</span><span class="today-signal-copy"><b>${esc(alert.strategy||alert.status||"Active signal")}</b><small>${esc(alert.thesis||alert.invalidation||"Review the complete plan before acting.")}</small></span><span class="today-signal-score">${confidence}<small>confidence</small></span></button>`;
+  }).join(""):`<div class="today-empty"><b>No active signals right now.</b><br>${fallback.length?"Top research names are shown below while the engine waits for confirmation.":"The engine is waiting for current, validated data."}</div>${fallback.length?`<div class="today-signal-list">${fallback.map((row,index)=>{const play=row.best_play||{}, rvol=finiteNumber(row.volume_ratio_5d_to_prior_20d); return `<button class="today-signal held" type="button" data-today-mover="${esc(row.symbol)}"><span class="today-signal-symbol">${esc(row.symbol)}</span><span class="today-signal-copy"><b>${esc(play.label||"Research watch")}</b><small>${esc(play.confirmation||"No active confirmation")}${rvol==null?"":` · RVOL ${rvol.toFixed(2)}×`}</small></span><span class="today-signal-score">${play.eligible?Math.round(play.score||0):"—"}<small>rank</small></span></button>`;}).join("")}</div>`:""}`;
+  const signalStatus=document.getElementById("todaySignalStatus");
+  if(signalStatus) signalStatus.innerHTML=`<span class="dot ${alerts.length?"live":"warn"}"></span>${alerts.length?`${alerts.length} active`:"Waiting"}`;
+  moversHost.querySelectorAll("[data-today-mover]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.todayMover)));
+  signalsHost.querySelectorAll("[data-today-mover]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.todayMover)));
+  signalsHost.querySelectorAll("[data-today-alert]").forEach(button=>button.addEventListener("click",()=>selectAlert(button.dataset.todayAlert)));
+}
+
 function renderBriefing(){
   const panel = document.getElementById("briefPanel");
-  if(!briefing){ panel.hidden = true; return; }
+  if(!briefing){ panel.hidden = true; renderTodayPanes(); return; }
   panel.hidden = false;
   const biasColor = briefing.bias === "RISK-ON" ? "var(--teal)" : briefing.bias === "RISK-OFF" ? "var(--red)" : "var(--text-dim)";
   document.getElementById("briefBody").innerHTML = `
     <div class="brief-bias"><b style="color:${biasColor}">${briefing.bias}</b><span class="num" style="color:var(--text-faint)">D-trend ${briefing.bias_score>0?'+':''}${briefing.bias_score}</span></div>
     <ul class="brief-plan">${(briefing.game_plan||[]).map(p=>`<li>${esc(plainBriefingText(p))}</li>`).join("")}</ul>
     <div style="margin-top:8px;color:var(--gold);font-size:11.5px">${esc(briefing.discipline_card||"")}</div>`;
+  renderTodayPanes();
 }
 function renderMacroNews(){
   const output=document.getElementById("macroNews"), state=document.getElementById("macroFeedState");
   if(!macroNews || !macroNews.items?.length){
     state.textContent="Unavailable"; state.className="feed-state warn";
     output.innerHTML=`<div class="empty"><b>Headlines are unavailable</b>The feed will retry automatically. News never creates a signal.</div>`;
+    renderTodayPanes();
     return;
   }
   state.textContent=macroNews.as_of?`Updated ${fmtAge(macroNews.as_of)}`:"Cached";
@@ -2577,13 +2762,14 @@ function renderMacroNews(){
       <span class="macro-item-title">${esc(item.title)}</span>
       ${item.summary?`<span class="macro-item-summary">${esc(item.summary)}</span>`:""}
     </a>`).join("");
+  renderTodayPanes();
 }
 function renderDailyBrief(){
   const panel=document.getElementById("dailySetup");
   const heroSummary=document.getElementById("deskSummary");
-  if(!ownerAuthenticated||!dailyBrief){ panel.hidden=true; panel.replaceChildren(); dailyBriefRenderKey=null; heroSummary.textContent="Start with today's brief, then search any ticker for the levels and evidence that can change the thesis."; return; }
+  if(!ownerAuthenticated||!dailyBrief){ panel.hidden=true; panel.replaceChildren(); dailyBriefRenderKey=null; heroSummary.textContent="Start with today's brief, then search any ticker for the levels and evidence that can change the thesis."; renderTodayPanes(); return; }
   const nextRenderKey=JSON.stringify(dailyBrief);
-  if(!panel.hidden&&dailyBriefRenderKey===nextRenderKey) return;
+  if(!panel.hidden&&dailyBriefRenderKey===nextRenderKey){ renderTodayPanes(); return; }
   dailyBriefRenderKey=nextRenderKey;
   panel.hidden=false; panel.removeAttribute("aria-busy");
   const status=String(dailyBrief.status||"UNAVAILABLE").toUpperCase();
@@ -2626,6 +2812,7 @@ function renderDailyBrief(){
     </div>
     <div class="daily-risk-strip"><div><h3>Main risk to respect</h3><p>${esc(risk)}</p></div><div><h3>Data check</h3><small>${esc(limitation)}</small></div></div>`;
   panel.querySelectorAll("[data-daily-symbol]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.dailySymbol)));
+  renderTodayPanes();
 }
 function plainBriefingText(value){
   return String(value||"").replaceAll("calibrated","historically validated").replaceAll("calibration","historical reliability").replaceAll("auction","market balance");
@@ -2932,9 +3119,11 @@ document.getElementById("qtabSuppressed").addEventListener("click", ()=>{
 
 // ── Module views (0DTE / Swings) ─────────────────────────────────────
 let activeView = "signals", selectedSwingSymbol = null;
+document.body.classList.add("signals-home");
 function switchView(view){
   activeView = view;
   document.body.classList.toggle("analysis-view",view==="analysis"||view==="discover");
+  document.body.classList.toggle("signals-home",view==="signals");
   document.querySelectorAll("[data-view]").forEach(b=>{
     const on = b.dataset.view === view;
     b.classList.toggle("active", on);
