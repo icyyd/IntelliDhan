@@ -1,7 +1,5 @@
 """Strategy evidence object, expectancy helpers, and MACD pullback shadow."""
 
-from datetime import datetime, timedelta, timezone
-
 from intellidhan_analytics.strategy_context import trend_strategy_suitability
 from intellidhan_engine.calibration import (
     CalibrationMap,

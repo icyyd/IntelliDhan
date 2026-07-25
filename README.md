@@ -10,6 +10,7 @@ stub. Trend module gains `strategy_context.trend_strategy_suitability` notes for
 Swing/0DTE regime context only — never creates alerts or raises confidence.
 Live eligibility remains fail-closed; no strategy is promoted. See
 [docs/32-strategy-evidence-and-expectancy.md](docs/32-strategy-evidence-and-expectancy.md).
+The strategy-evidence pass is lint-clean under the pinned CI toolchain.
 Prior pass: five-pane Today workspace; SPY/QQQ 9EMA auto-trader remains
 Simulation-only behind evidence, health, capital, and confirmation gates.
 

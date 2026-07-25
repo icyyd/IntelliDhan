@@ -20,7 +20,6 @@ def trend_strategy_suitability(
     label = consensus_label.upper()
     bullish = label in {"STRONG_UPTREND", "UPTREND"}
     bearish = label in {"STRONG_DOWNTREND", "DOWNTREND"}
-    mixed = not bullish and not bearish
 
     swing = {
         "stance": "FAVORABLE" if bullish else "DEFENSIVE" if bearish else "NEUTRAL",
