@@ -35,7 +35,8 @@ must not be presented as implemented.
 - Responsive collision guards keep the header, mobile task bar, sign-in/account
   controls, and compact action rows inside the viewport from 320px through
   desktop widths; controls compress or hide status-only chips before they can
-  overlap or paint off-canvas.
+  overlap or paint off-canvas, while SPX/SPY/QQQ feed copy uses a shrink-safe
+  text wrapper so the status dot never covers the first character.
 - The Today view is one responsive scan path with no duplicate right-rail
   brief/news panels. Live state, daily brief, macro events, focus ranking, and
   alerts continue to refresh automatically; long-form signal cards and detail
