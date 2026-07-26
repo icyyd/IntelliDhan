@@ -35,6 +35,8 @@ def test_visible_brief_shows_freshness_and_generation_time():
 
 
 def test_today_refreshes_existing_live_data_paths():
-    assert "setInterval(refreshDailyBrief, 120000);" in SOURCE
-    assert "setInterval(refreshFocus, 120000);" in SOURCE
+    assert "const AUTO_REFRESH_MS = 120000;" in SOURCE
+    assert "setInterval(refreshWorkspace, AUTO_REFRESH_MS);" in SOURCE
+    assert "refreshDailyBrief()" in SOURCE
+    assert "refreshFocus()" in SOURCE
     assert "renderTodayPanes();" in SOURCE
