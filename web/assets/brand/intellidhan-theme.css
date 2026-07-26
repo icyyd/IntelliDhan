@@ -1,3 +1,6 @@
+/* Import layout simplicity after this file is linked; tokens below stay authoritative. */
+@import url("/assets/ux-simplicity.css");
+
 /* IntelliDhan brand layer — D4.2 owl-and-lotus identity with restrained orange. */
 :root{
   --brand-midnight:#071B36;

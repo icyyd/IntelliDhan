@@ -10,6 +10,9 @@ intact; failed or partial batches retain their last-good freshness and post-poli
 reads cannot reuse stale polls. Live eligibility remains fail-closed and the
 SPY/QQQ 9EMA auto-trader remains Simulation-only behind evidence, health,
 capital, and confirmation gates.
+The signal radar remains the primary Today surface while market pulse,
+highlights, macro events, and the premarket watch provide secondary context;
+selected setups provide progressive depth without rendering duplicate alerts.
 
 The Opening Range Reversal video rules are captured as a separate,
 underlying-only research backtest (`ORB_REVERSAL_15M`) with a point-in-time
@@ -36,13 +39,12 @@ must not be presented as implemented.
 
 ## Current implementation
 
-- Five-pane, card-first Today terminal: current SPX/SPY/QQQ trend (Bullish,
-  Bearish, Chop, or Pending until validated data arrives), today’s brief and
-  headlines, macro events, a completed-bar trend watch (premarket fields when
-  a live feed is available), and a concise signal radar.
-  Discover, Analyze, 0DTE, and Swing remain separate tasks so the landing view
-  stays focused.
-- Module screens now keep the signal queue primary, expose compact live status
+- Signals-first Today terminal: signal radar leads the page; SPX/SPY/QQQ trend,
+  brief/headlines, macro events, and the completed-bar watch sit below as
+  context. Selecting a radar card opens the complete plan while the legacy board
+  stays hidden to avoid duplicate alerts. Discover, Analyze, 0DTE, and Swing
+  remain separate tasks.
+- Module screens keep the signal queue primary, expose compact live status
   strips, and collapse chart/profile context until requested. External research
   feeds and the daily brief refresh automatically every two minutes; stock-pick
   cards expose a compact business case, evidence, analyst-target context when
@@ -54,7 +56,7 @@ must not be presented as implemented.
   overlap or paint off-canvas, while SPX/SPY/QQQ feed copy uses a shrink-safe
   text wrapper so the status dot never covers the first character.
 - The Today view is one responsive scan path with no duplicate right-rail
-  brief/news panels. Live state, daily brief, macro events, focus ranking, and
+  decision rail. Live state, daily brief, macro events, focus ranking, and
   alerts continue to refresh automatically; long-form signal cards and detail
   context remain available progressively when a user opens a setup.
 - Development checks pin Ruff 0.4.10 while the existing codebase is migrated
@@ -87,7 +89,7 @@ must not be presented as implemented.
 - Optional, signed-in Claude review of the immutable multi-brain dossier packet.
   Claude uses server-side structured output without tools, browsing, MCP, or
   automation or personal sizing state; user capital budgets and reference
-  quantities are excluded. It can surface conflicts, risks, and diligence
+  directories are excluded. It can surface conflicts, risks, and diligence
   questions, but cannot change deterministic specialist scores, posture, rank,
   sizing, or execution. Configure only the deployment secret
   `ANTHROPIC_API_KEY`; never paste the key into the browser or repository.
@@ -191,6 +193,7 @@ requires the same-commit README update.
 | 33 | [Modern Terminal UI](docs/30-modern-terminal-ui.md) | Robinhood-informed hierarchy, reduced actions, responsive overlap rules, and the two-minute single-flight refresh contract |
 | 34 | [Opening Range Reversal Backtest](docs/32-opening-range-reversal-backtest.md) | Deterministic 15m opening-range reversal rules, ATR manipulation gate, prior-day level experiment, slippage-aware walk-forward diagnostics |
 | 35 | [ORR Five-Year Fine-Tuning Model](docs/33-orr-five-year-fine-tuning-model.md) | SPY/SPX point-in-time data contract, interpretable meta-labeler, purged walk-forward tuning, robustness score, and promotion gates |
+| 36 | [UX Signals-First Simplicity](docs/32-ux-signals-first-simplicity.md) | Signals-first Today hierarchy, density reduction, progressive disclosure; logo/colors unchanged |
 
 ## Core Product Tenets
 
