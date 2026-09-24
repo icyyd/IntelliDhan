@@ -2,7 +2,20 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-09-24 · **Status:** Research beta; live profitability unvalidated
 
-**Last system pass:** added a private, durable local Simulation runtime with
+**Last system pass:** introduced a beginner-first signal desk at `/`, with three
+tasks: Signals, Stock analyst, and My journal. Trend, buy/sell/hold research views,
+and the next safe step are separate. Today, 2–5-session Swing, and LEAPS explain
+their actual evidence coverage; missing or unvalidated evidence means wait.
+Price units, freshness, invalidation, and risks stay visible without leading
+with charts or confidence percentages. Existing tools remain at `/advanced`.
+Automatic two-minute refresh is visibility-aware; background dossier refresh
+does not invoke a paid Claude review. See [beginner signal desk](docs/36-beginner-signal-desk.md)
+for architecture, course-review scope, validation gaps, and follow-up contracts.
+Verification: 605 tests passed (six opt-in network tests excluded), pinned lint
+and JavaScript checks passed, and mobile/desktop browser QA found no horizontal
+overflow in the tested workflows. Strategy profitability remains unvalidated.
+
+**Local runtime pass:** added a private, durable local Simulation runtime with
 generated local credentials, loopback-only access, account setup, and verified
 SQLite backups. Cloud credentials are not inherited. Research-only 9EMA signals
 can now enter Simulation without weakening Live confidence/calibration gates.
@@ -52,7 +65,12 @@ must not be presented as implemented.
 
 ## Current implementation
 
-- Signals-first Today terminal: signal radar leads the page; SPX/SPY/QQQ trend,
+- Beginner signal desk is the default home. Signals are filtered by holding
+  horizon; Stock analyst separates the business case, risks, daily trend, and
+  available horizon evidence. Journal is read-only and distinguishes underlying
+  paper models from option observations. Playbooks are educational, not execution
+  policy. The isolated CSS/JS shell avoids the legacy terminal's override cascade.
+- Retained advanced Today terminal: signal radar leads the page; SPX/SPY/QQQ trend,
   brief/headlines, macro events, and the completed-bar watch sit below as
   context. Selecting a radar card opens the complete plan while the legacy board
   stays hidden to avoid duplicate alerts. Discover, Analyze, 0DTE, and Swing
@@ -244,6 +262,7 @@ requires the same-commit README update.
 | 37 | [Beta Reliability &amp; Strategy Readiness](docs/34-beta-reliability-and-strategy-readiness.md) | Free-tier limits, outage recovery, reduced polling/AI spend, horizon safeguards, and remaining live blockers |
 | 38 | [September Beta Validation](docs/research/2026-09-24-beta-validation.md) | Frozen later-period SPY/QQQ results, cost sensitivity, session-block intervals, and daily benchmark comparison |
 | 39 | [Local Research Desk](docs/35-local-research-desk.md) | Private durable local setup, backups, evidence boundaries, remaining broker/data prerequisites, and forward-validation plan |
+| 40 | [Beginner Signal Desk](docs/36-beginner-signal-desk.md) | Three-task UI, explicit decision semantics, course research, horizon gaps, and additive display-only APIs |
 
 ## Core Product Tenets
 

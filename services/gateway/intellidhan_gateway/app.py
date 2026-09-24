@@ -45,8 +45,10 @@ from intellidhan_gateway.autotrade import AUTOTRADE_CONTRACT_VERSION, OptionCand
 from intellidhan_gateway.claude_research import ClaudeResearchReviewer
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.daily_brief import DailyBriefService
+from intellidhan_gateway.decision_summary import summarize_dossier, summarize_signal
 from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.macro_news import MacroNewsService
+from intellidhan_gateway.playbooks import build_playbook_catalog
 from intellidhan_gateway.research_feeds import ResearchFeedService
 from intellidhan_gateway.research_consensus import (
     build_research_consensus,
@@ -152,7 +154,7 @@ async def persistence_cooldown(request: Request, call_next):
     # endpoints cannot use stale in-memory state while persistence is down.
     local_logout = request.method == "DELETE" and request.url.path == "/api/auth/session"
     if not local_logout and request.url.path.startswith("/api/") and request.url.path not in {
-        "/api/health", "/api/liveness", "/api/calibration",
+        "/api/health", "/api/liveness", "/api/calibration", "/api/playbooks",
     }:
         store = loop.store
         if store.last_error and store.retry_after_seconds:
@@ -482,7 +484,27 @@ async def liveness():
 @app.get("/api/state")
 async def state(request: Request):
     _require_personal(request)
-    return JSONResponse(jsonable_encoder(loop.snapshot()))
+    snapshot = loop.snapshot()
+    now = datetime.now(timezone.utc)
+    evidence = {
+        key: {"meta": value.meta, "buckets": value.buckets}
+        for key, value in loop.runner.calibration.items()
+    }
+    snapshot["signal_desk"] = {
+        "version": 1,
+        "generated_at": now.isoformat(),
+        "signals": [
+            summarize_signal(alert, health=snapshot["readiness"], calibration=evidence, now=now)
+            for alert in snapshot["alerts"]
+        ],
+    }
+    return JSONResponse(jsonable_encoder(snapshot))
+
+
+@app.get("/api/playbooks")
+async def playbooks():
+    """Educational catalog only; neither signals nor execution authorization."""
+    return build_playbook_catalog()
 
 
 @app.get("/api/calibration")
@@ -823,6 +845,7 @@ async def stock_dossier(
     years: int = Query(10, ge=2, le=15),
     risk_budget: float | None = Query(None, gt=0, le=1_000_000),
     include_backtest: bool = True,
+    include_review: bool = True,
     cost_bps: float = Query(10.0, ge=0, le=100),
 ):
     rate_limiter.check(_client_key(request, "dossier"), limit=30, window_seconds=60)
@@ -884,24 +907,30 @@ async def stock_dossier(
     filings = intelligence.get("filings", {}) if intelligence else {}
     if intelligence and intelligence.get("status") != "UNAVAILABLE":
         multi_brain = build_research_consensus(analysis, intelligence)
-        try:
-            multi_brain["claude_review"] = await asyncio.wait_for(
-                claude_research_reviewer.review(
-                    normalized,
-                    analysis,
-                    intelligence,
-                    multi_brain,
-                ),
-                timeout=25,
-            )
-        except Exception:
+        if not include_review:
             multi_brain["claude_review"] = claude_research_reviewer.status(
-                "UNAVAILABLE",
-                "Claude research review is temporarily unavailable; deterministic research is unchanged.",
+                "NOT_REQUESTED",
+                "Automatic refresh updates deterministic research without requesting a paid AI review.",
             )
+        else:
+            try:
+                multi_brain["claude_review"] = await asyncio.wait_for(
+                    claude_research_reviewer.review(
+                        normalized,
+                        analysis,
+                        intelligence,
+                        multi_brain,
+                    ),
+                    timeout=25,
+                )
+            except Exception:
+                multi_brain["claude_review"] = claude_research_reviewer.status(
+                    "UNAVAILABLE",
+                    "Claude research review is temporarily unavailable; deterministic research is unchanged.",
+                )
         intelligence["multi_brain"] = multi_brain
     company = intelligence.get("company", {}) if intelligence else {}
-    return {
+    dossier = {
         "security": loop.store.get_security(normalized) or {
             "symbol": normalized,
             "name": company.get("name") or normalized,
@@ -926,6 +955,8 @@ async def stock_dossier(
             "social": research_pillars.get("social", {}).get("status", "NOT_CONNECTED"),
         },
     }
+    dossier["decision"] = summarize_dossier(dossier, now=datetime.now(timezone.utc))
+    return dossier
 
 
 @app.get("/api/watchlists")
@@ -1293,4 +1324,10 @@ async def ws(websocket: WebSocket):
 
 @app.get("/")
 async def index():
+    return FileResponse(WEB_DIR / "desk.html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/advanced")
+async def advanced_workspace():
+    """Retained expert workspace; the beginner desk does not remove tools."""
     return FileResponse(WEB_DIR / "index.html")

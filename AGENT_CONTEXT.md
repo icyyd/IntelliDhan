@@ -1,5 +1,60 @@
 # IntelliDhan Agent Context
 
+## 2026-09-24 — Beginner signal/analyst refactor
+
+- User requested a plain-language signal generator and stock analyst for 0DTE,
+  2–5-day Swing, and LEAPS, informed by three Money Talk Rashad resources in an
+  external browser. Continued isolated `codex/beta-reliability-strategy-gates`
+  / draft PR #26; original shared dirty checkout remains untouched. No merge,
+  deployment, strategy promotion, new real account, or trading action authorized.
+- Reviewed external Chrome course indexes, written simplified-stop and paper
+  lessons, selected video-caption passages (0DTE, LEAPS, strike selection), and
+  embedded TradeFormIQ UI. This was targeted, not all 80 general lessons or a
+  complete/current entry-rule transcription. Doc 36 records precise scope,
+  references, implementation decisions, and testable follow-up contracts.
+- New default shell: `web/desk.html`, isolated `desk.js`/`desk.css`; three tasks
+  Signals / Stock analyst / My journal. Old tools retained at `/advanced`.
+  Navy/orange owl-lotus brand, responsive card hierarchy, details-on-demand,
+  source timestamps, no trading controls. Uses accessible focus/text labels and
+  progressive disclosure from the UI/UX skill, not its generic template palette.
+- Added typed pure decision summaries: trend, descriptive buy/sell/hold/wait,
+  next step, horizon coverage, source/packet age distinction, explicit stock vs
+  option units, execution_authorized=false. Independent review tightened
+  alert-specific sample/calibration/expectancy checks; an unrelated sufficient
+  bucket cannot label a weak alert reviewable. Missing/stale evidence means wait.
+- `/api/state.signal_desk` and `/api/dossier/{symbol}.decision` are additive.
+  `include_review=false` skips paid Claude for background dossier refresh;
+  explicit analysis retains multi-brain/advisory review. `/api/playbooks` is a
+  public educational catalog, including unsupported credit spreads, available
+  even during DB cooldown. It cannot change policy or produce broker intents.
+- Browser controller refreshes every two minutes while visible, handles 401
+  versus 503, honors retry cooldowns, aborts stale searches, clears private data
+  on verified logout/expiry, queues navigation refreshes, preserves open details,
+  and uses HttpOnly account sessions. Watchlist writes stay user-initiated.
+- Current strategy boundaries remain: Swing has no uniform 2–5-session exit;
+  LEAPS has no registered entry/exit strategy; daily forecast is 21/63 sessions;
+  source-course spreads are not supported by the long-option executor. Audit
+  found fixed eight-hour Swing entry expiry can preclude the next-day fill; doc 36 schedules
+  a separate causal lifecycle change, not a display-layer permission bypass.
+- Fixed two existing wall-clock-dependent paper test fixtures to known regular
+  session timestamps, with fill time before exit bar; kept every assertion.
+  Intermediate full regression: 591 passed / 6 network tests deselected. Later UI
+  source-age and navigation tests were added; record final validation below.
+- Backed up local SQLite before restarting port 8321. New default page verified there;
+  user still needs local account setup, no password fabricated. Isolated
+  `scripts/preview_signal_desk.py` on port 8322 provides explicitly DEMO synthetic
+  data for filled-screen visual QA, no real stack/database/provider imports,
+  all mutations blocked. Stop the temporary preview at the end of QA. Keep the
+  actual port 8321 runtime in local-only Simulation; do not conflate preview results
+  with market observations or performance.
+- Final local verification: 605 passed, 6 opt-in network tests deselected; pinned
+  Ruff 0.4.10, JavaScript parsing, and diff checks passed. Independent reviewers
+  cleared both backend and frontend readiness/source-age fixes plus the preview
+  boundaries. Responsive DOM bounds showed no horizontal overflow at 320, 375,
+  768, 1024, or 1440px; actual SPY public analysis rendered WAIT with explicit
+  stale/missing coverage. Local health remained READY. No live-strategy efficacy
+  claim follows from these software tests. Check the new PR CI after pushing.
+
 ## 2026-09-24 — Private local research runtime
 
 - User chose local operation. Continue the existing cohesive branch
