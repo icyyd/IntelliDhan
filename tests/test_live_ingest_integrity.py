@@ -236,7 +236,7 @@ async def test_restart_replay_is_time_safe_persists_settlement_and_restores_cont
 
     remains_active = make_trade(entry=150.0)
     remains_active.alert_id = "alr_restart_active"
-    remains_active.created_at = now - timedelta(days=10)
+    remains_active.created_at = now - timedelta(minutes=15)
     remains_active.valid_until = now + timedelta(hours=1)
     store.upsert_paper_trade(settles_after_fill.model_dump(mode="json"))
     store.upsert_paper_trade(remains_active.model_dump(mode="json"))
@@ -331,7 +331,7 @@ async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(
 
     # Push the matching legacy alert just outside the normal newest-250 view.
     for index in range(250):
-        newer = composer.compose(setup_at(created + timedelta(minutes=5 * (index + 1))))
+        newer = composer.compose(setup_at(created + timedelta(seconds=index + 1)))
         store.upsert_alert(newer.model_dump(mode="json"))
     assert len(store.list_alerts()) == 250
     assert len(store.list_alerts(limit=None)) == 251

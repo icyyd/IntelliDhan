@@ -1,5 +1,64 @@
 # IntelliDhan Agent Context
 
+## 2026-09-24 — Private local research runtime
+
+- User chose local operation. Continue the existing cohesive branch
+  `codex/beta-reliability-strategy-gates` in
+  `/Users/dhanvin/Documents/IntelliDhan-beta-optimize`, draft PR #26. Latest
+  fetched main is still `26dd83f`; no other open PR was present. Original dirty
+  `/Users/dhanvin/Documents/IntelliDhan` checkout remains untouched.
+- Added `scripts/local_runtime.py`: start/run/status/stop/create-admin/backup;
+  uses private persistent storage outside Git, isolated credentials and source
+  paths, loopback binding, verified process identity, and SQLite online backups.
+  It drops inherited cloud/provider credentials and prevents `.env` loading.
+  Local-only mode is enforced server-side; Live cannot be selected/activated.
+- Local server was started at `http://127.0.0.1:8321` using the existing original
+  checkout's dependency venv with worktree-specific PYTHONPATH. Private data:
+  `~/Library/Application Support/IntelliDhan/local`. No passwords/tokens were
+  displayed or committed. Cloud accounts/history were not imported; user must
+  run `create-admin` in their terminal and sign in. No account was fabricated.
+- Actual smoke: liveness, health, auth session, authenticated state/status/trade
+  log returned 200; health READY, durable SQLite restored, current SPY/QQQ Yahoo
+  bars observed. Local-only=true, effective mode SIMULATION, no option fills.
+  Verified online backup and graceful immediate stop/start with retained state.
+  TIME_WAIT initially caused a false occupied-port error; SO_REUSEADDR (not
+  REUSEPORT) fixed it, with a regression that an active listener still blocks.
+  UI rendered in the in-app browser; signed-in UI was not tested with a newly
+  created personal account. No auto-login/service/keep-awake was installed.
+- Fixed research 9EMA admission deadlock (confidence capped at 0.74 vs 0.75
+  minimum) only for its Simulation path. Live threshold/calibration unchanged.
+  Fresh option Simulation entry now rechecks actual debit and original/current
+  capital ceilings. Daily premium usage and open-position limits are tracked
+  separately from Live, using actual entry debit/date, including closed trades.
+  No implicit resizing or policy-cap increase. Independent review also fixed
+  Simulation risk leaking into Live's admission reservation sum.
+- Underlying paper cutoff is session close minus five minutes (including
+  half-days). Missing trustworthy cutoff bars leave open trades UNRESOLVED_DATA
+  without invented return; pending trades expire unfilled. UI shows unknown
+  outcomes and the underlying-model/option-performance distinction. This does
+  not validate actual v2 full-position option exits or broker protection.
+- Verification: 507 tests passed, 6 live-network integration tests deselected;
+  Ruff, both inline JS parse checks, JS behavior tests, and diff check passed.
+  One existing Starlette/httpx deprecation warning remains. Separate independent
+  agents reviewed launcher, local-only gates, admission, paper cutoffs, risk
+  accounting, and docs. Check PR CI after this checkpoint.
+- Actual strategy remains HISTORICAL_RESEARCH, live_eligible=false, no qualified
+  MTF winner. September tests are known/negative, not a fresh holdout. Do not
+  conflate raw EMA or underlying tranche returns with MTF option profitability.
+  Swing replay's causal fills/costs/gaps/splits and LEAPS data remain blockers.
+  Optional Yahoo-option Composer is not connected to LiveLoop; its premium-zone
+  mapping must be fixed before dynamic intent use, not bypassed with larger caps.
+- No official Robinhood MCP tools were available in this agent session. CLI
+  shows an OAuth-configured `robinhood` alias and a project `robinhood-trading`
+  alias requiring login; neither proves current account/tool access here.
+  User must authenticate/reconnect and tools must be discovered before quotes.
+  Starting the app does not start a quote collector. No real orders, calibration
+  promotion, cloud decommission, merge, or deployment were performed.
+- Next: local admin setup, verified official MCP read-only quote access, then a
+  frozen forward Simulation study of the actual MTF+v2 lifecycle including
+  bid/ask costs, gaps, all skips, and uncertainty. See doc 35. Preserve explicit
+  promotion, mode activation, pre-trade review and per-order confirmation gates.
+
 ## 2026-09-24 — Beta cost, recovery, and strategy evidence
 
 - Worktree `/Users/dhanvin/Documents/IntelliDhan-beta-optimize`, branch

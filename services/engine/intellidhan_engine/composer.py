@@ -17,7 +17,7 @@ import yaml
 
 from intellidhan_engine.calibration import CalibrationMap
 from intellidhan_engine.voice import complement_line, lint
-from intellidhan_ingestor.market_clock import MarketClock
+from intellidhan_ingestor.market_clock import ET, MarketClock
 from intellidhan_schemas.option_policy import eligible_option_expiry
 from intellidhan_schemas.signals import (
     Action,
@@ -97,6 +97,12 @@ class Composer:
         self.drawdown_multiplier = 1.0  # behavior plane will drive this (doc 17 §5)
 
     def compose(self, setup: Setup) -> Alert | None:
+        if setup.module == Module.ZDTE:
+            if setup.ts.tzinfo is None:
+                return None
+            close = MarketClock().option_expiry_close(setup.ts.astimezone(ET).date().isoformat())
+            if close is None or setup.ts >= close - timedelta(minutes=5):
+                return None
         plan_key = stable_plan_key(setup.ts, setup.symbol, setup.module, setup.strategy)
         alert_id = plan_key.replace("pln_", "alr_", 1).lower()
         risk_budget = (self.budgets.capital(setup.module) * self.budgets.risk_cap(setup.module)
@@ -209,8 +215,13 @@ class Composer:
             f"Trim {TRANCHES[1]:.0%} at T2 ({setup.targets_underlying[1]:.2f})",
             "Runner trails the trigger-TF 9EMA",
         ]
+        valid_until = setup.ts + VALIDITY[setup.module]
         if setup.module == Module.ZDTE:
-            management.append("Hard flatten by 15:55 ET")
+            close = MarketClock().option_expiry_close(setup.ts.astimezone(ET).date().isoformat())
+            # compose() already rejected sessions without calendar coverage.
+            flatten_at = close - timedelta(minutes=5)
+            valid_until = min(valid_until, flatten_at)
+            management.append(f"Hard flatten by {flatten_at.strftime('%H:%M')} ET")
         thesis = f"{setup.explain} {complement_line(setup.confidence)}"
         risks = [self._evidence_risk_line(setup.strategy)]
         research_only = setup.research_only or any(leg.research_only for leg in legs)
@@ -246,7 +257,7 @@ class Composer:
             trend_matrix={k: _state_word(v) for k, v in setup.mtf_matrix.items()},
             thesis=thesis, invalidation=setup.invalidation, management=management,
             risks=risks,
-            valid_until=setup.ts + VALIDITY[setup.module],
+            valid_until=valid_until,
             status="SHADOW" if research_only else "ACTIVE",
             research_only=research_only,
             evidence=setup.evidence,

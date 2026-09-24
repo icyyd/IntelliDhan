@@ -1933,9 +1933,9 @@ body.signals-home .legacy-signal-board{display:none}
     <section class="panel autotrade-panel" aria-labelledby="autotradeTitle">
       <div class="panel-head"><h2 id="autotradeTitle">Auto-trader</h2><span class="auto-mode simulation" id="autotradeMode">SIMULATION</span></div>
       <div class="auto-stats">
-        <span><b id="autotradeReady">0</b><small>Ready</small></span>
+        <span><b id="autotradeReady">0</b><small>Live-ready</small></span>
         <span><b id="autotradeApproval">0</b><small>Open trades</small></span>
-        <span><b id="autotradeExpiry">Always</b><small>Live until</small></span>
+        <span><b id="autotradeExpiry">Not enabled</b><small>Live until</small></span>
       </div>
       <button class="auto-configure" id="autotradeConfigure" type="button" onclick="openAutotrade()"><svg class="icon"><use href="#i-gear"/></svg> Review settings</button>
     </section>
@@ -2066,7 +2066,7 @@ body.signals-home .legacy-signal-board{display:none}
     <div class="auto-agent auto-wide"><span class="stat-bubble"><svg class="icon"><use href="#i-user"/></svg></span><span><b>Two clear modes</b><small>Simulation watches real quotes without orders. Live stages real long-option orders through the official Robinhood connection. Changes affect every user and the connected Robinhood agent.</small></span></div>
     <label class="auto-field"><span>Mode</span><select id="autoMode"><option>SIMULATION</option><option>LIVE</option></select></label>
     <label class="auto-field"><span>Live for minutes</span><input type="number" id="autoMinutes" min="1" max="480" value="30"></label>
-    <label class="auto-field"><span>Minimum confidence (%)</span><input type="number" id="autoConfidence" min="50" max="95" value="75"></label>
+    <label class="auto-field"><span>Live confidence minimum (%)</span><input type="number" id="autoConfidence" min="50" max="95" value="75"><small>Research 9EMA Simulation may remain below this threshold; its score is not a calibrated win rate.</small></label>
     <label class="auto-field"><span>Max risk / order ($)</span><input type="number" id="autoOrderRisk" min="1" value="250"></label>
     <label class="auto-field"><span>Max daily risk ($)</span><input type="number" id="autoDailyRisk" min="1" value="500"></label>
     <label class="auto-field"><span>Max open intents</span><input type="number" id="autoOpenIntents" min="1" max="20" value="1"></label>
@@ -2569,7 +2569,7 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   document.getElementById("autotradeMode").className="auto-mode simulation";
   document.getElementById("autotradeReady").textContent="0";
   document.getElementById("autotradeApproval").textContent="0";
-  document.getElementById("autotradeExpiry").textContent="Always";
+  document.getElementById("autotradeExpiry").textContent="Not enabled";
   document.getElementById("budgets-body").textContent="Sign in to load your capital limits.";
   document.getElementById("budgets-status").textContent="";
   document.getElementById("autoMode").value="SIMULATION";
@@ -3091,7 +3091,7 @@ function renderAlertCard(a){
         <span class="ac-sym">${esc(a.symbol)}</span><span class="ac-live">$${fmtPx(a.underlying_price)}</span>
         <span class="ac-strat">${esc(a.strategy.replace(/_/g,' '))} · ${esc(a.module)}</span>
       </div>
-      <div class="signal-score-pill" aria-label="${confidence}% historical reliability score"><b>${confidence}%</b><small>${ev.blocked?'research score':'signal score'}</small></div>
+      <div class="signal-score-pill" aria-label="${confidence}% ${a.research_only||ev.blocked?'research score; not a calibrated win probability':'signal score; see historical evidence and its limitations'}"><b>${confidence}%</b><small>${a.research_only||ev.blocked?'research score':'signal score'}</small></div>
     </div>
     ${characterChip(a.strategy, ev)}
     <div class="ac-thesis">${esc(a.thesis)}</div>
@@ -3184,13 +3184,17 @@ function renderSuppressionTape(s){
 
 function renderPerformance(s){
   const p = s.performance || {};
-  document.getElementById("bdPerformance").innerHTML = p.decided ? `
+  const unresolved=Number(p.unresolved_data)||0;
+  const summary=p.decided ? `
     <div class="stat-row">
       <div class="stat"><div class="v num">${p.decided}</div><div class="k">decided</div></div>
       <div class="stat"><div class="v num">${(p.win_rate*100).toFixed(0)}%</div><div class="k">win rate</div></div>
       <div class="stat"><div class="v num">${p.avg_r>0?"+":""}${p.avg_r}</div><div class="k">avg R</div></div>
       <div class="stat"><div class="v num">${p.profit_factor??"—"}</div><div class="k">profit factor</div></div>
-    </div>` : `<div class="empty">No settled paper trades yet.</div>`;
+    </div>` : `<div class="empty">No scored paper trades yet.</div>`;
+  document.getElementById("bdPerformance").innerHTML=summary+
+    (unresolved?`<div class="empty"><b>${unresolved} not scored</b> · Missing reliable exit observations. Outcome unknown; excluded from scored results.</div>`:"")+
+    `<div class="empty">Underlying paper model only: fees and option spreads are not included. This is not verified option profitability.</div>`;
 }
 
 function renderRisk(s){
@@ -4266,11 +4270,15 @@ function renderAutotrade(data){
   const badge=document.getElementById("autotradeMode");
   badge.textContent=mode;
   badge.className="auto-mode "+mode.toLowerCase();
+  const modeControl=document.getElementById("autoMode");
+  const liveOption=Array.from(modeControl.options).find(option=>option.value==="LIVE");
+  if(liveOption) liveOption.disabled=Boolean(data.local_only);
+  modeControl.title=data.local_only?"Local research profile: real orders are disabled.":"";
   document.getElementById("autotradeReady").textContent=data.ready||0;
   document.getElementById("autotradeApproval").textContent=data.open_trades||0;
   const until=data.policy?.live_until;
-  document.getElementById("autotradeExpiry").textContent=until
-    ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "Always";
+  document.getElementById("autotradeExpiry").textContent=mode==="LIVE"&&until
+    ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "Not enabled";
 }
 async function refreshAutotrade({force=false}={}){
   if(!ownerAuthenticated){ autotradeCache=null; return true; }
@@ -4317,6 +4325,7 @@ async function openAutotrade(){
   dlg.showModal();
   await Promise.all([refreshAutotrade(),refreshAutotradeJournal()]);
   const p=autotradeCache?.policy||{};
+  if(autotradeCache?.local_only) status.textContent="Local research profile · Simulation only. Real option quotes still require a connected broker agent.";
   document.getElementById("autoMode").value=p.mode||"SIMULATION";
   document.getElementById("autoConfidence").value=Math.round((p.min_confidence||.75)*100);
   document.getElementById("autoOrderRisk").value=p.max_dollar_risk_per_order||250;
@@ -4345,7 +4354,7 @@ async function saveAutotrade(){
   try{
     await autotradeRequest("/api/autotrade/policy","PUT",payload);
     await refreshAutotrade({force:true});
-    status.textContent=mode==="LIVE"?"Live window staged. Eligible orders still require broker review and confirmation.":"Simulation is watching real prices.";
+    status.textContent=mode==="LIVE"?"Live window staged. Eligible orders still require broker review and confirmation.":"Simulation enabled. Option entries and exits are recorded only when the connected agent supplies valid real quotes.";
     status.className="bd-status ok";
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; if(e.status===401) openOwnerDialog(); }
 }

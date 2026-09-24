@@ -101,7 +101,7 @@ def test_expiry_policy_respects_early_close_holiday_and_calendar_horizon():
     alert = Composer(Budgets(), FixedSelector(leg(expiry="2026-11-27"))).compose(
         setup().model_copy(update={"ts": after_early_close}),
     )
-    assert alert.vehicle == Vehicle.EQUITY
+    assert alert is None
 
 
 def install_chain(monkeypatch, rows, expiry="2026-07-10"):

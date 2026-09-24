@@ -146,6 +146,8 @@ async def store_unavailable(_request: Request, exc: StoreUnavailable):
 
 @app.middleware("http")
 async def persistence_cooldown(request: Request, call_next):
+    if not _local_request_allowed(request):
+        return JSONResponse({"detail": "Local runtime requires a same-origin loopback request."}, status_code=403)
     # Account requests cannot be mistaken for an empty store, and execution
     # endpoints cannot use stale in-memory state while persistence is down.
     local_logout = request.method == "DELETE" and request.url.path == "/api/auth/session"
@@ -162,6 +164,17 @@ async def persistence_cooldown(request: Request, call_next):
                 ),
             )
     return await call_next(request)
+
+
+def _local_request_allowed(connection: Request | WebSocket) -> bool:
+    """Reject DNS rebinding/cross-origin requests against the local profile."""
+    if not loop.autotrade.local_only:
+        return True
+    if connection.url.hostname not in {"127.0.0.1", "localhost"}:
+        return False
+    origin = connection.headers.get("origin")
+    scheme = "https" if connection.url.scheme in {"https", "wss"} else "http"
+    return origin is None or origin == f"{scheme}://{connection.headers.get('host', '')}"
 
 
 def _require_token(request: Request, env_name: str, *, control: bool = False) -> None:
@@ -1213,6 +1226,9 @@ async def record_autotrade_receipt(
 
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
+    if not _local_request_allowed(websocket):
+        await websocket.close(code=1008, reason="same-origin loopback required")
+        return
     try:
         principal = await asyncio.to_thread(websocket_principal, websocket, loop.store)
     except StoreUnavailable:

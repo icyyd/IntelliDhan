@@ -35,6 +35,8 @@ def _load_dotenv() -> None:
     """Load repo .env into the environment (existing vars win) so Telegram
     credentials and DB passwords work without shell exports. Runs at module
     import — before any LiveLoop/TelegramSender is constructed."""
+    if os.getenv("INTELLIDHAN_LOCAL_ONLY", "").lower() in {"1", "true", "yes"}:
+        return  # the local launcher owns its isolated, allowlisted environment
     env = Path(__file__).resolve().parents[3] / ".env"
     if not env.exists():
         return

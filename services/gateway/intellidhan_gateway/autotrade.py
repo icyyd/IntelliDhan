@@ -9,6 +9,7 @@ process.
 from __future__ import annotations
 
 import json
+import math
 import os
 from datetime import date, datetime, timedelta, timezone
 from enum import Enum
@@ -225,12 +226,13 @@ class AutotradeManager:
 
     def __init__(
         self,
-        policy_path: str | Path = "config/autotrade.yaml",
+        policy_path: str | Path | None = None,
         state_path: str | Path | None = None,
         state_store: SettingsStore | None = None,
         symbol_gate: Callable[[str], str | None] | None = None,
     ) -> None:
-        self.policy_path = Path(policy_path)
+        self.local_only = os.getenv("INTELLIDHAN_LOCAL_ONLY", "").lower() in {"1", "true", "yes"}
+        self.policy_path = Path(policy_path or os.getenv("AUTOTRADE_POLICY_PATH", "config/autotrade.yaml"))
         self.state_path = Path(
             state_path or os.getenv("AUTOTRADE_STATE_PATH", "data/autotrade_state.json")
         )
@@ -244,6 +246,11 @@ class AutotradeManager:
             self._persist_policy()
         if claims_migrated:
             self._persist_state()
+        if self.local_only:
+            self._disable_live_authority(
+                "local research runtime only permits Simulation; placement authority revoked",
+                now=datetime.now(timezone.utc),
+            )
 
     def _normalize_loaded_policy(self, payload: Any) -> dict[str, Any]:
         """Move any pre-v2 execution policy to the safe Codex baseline.
@@ -263,6 +270,14 @@ class AutotradeManager:
             clean["mode"] = AutomationMode.SIMULATION.value
             clean["live_until"] = None
             clean.pop("armed_until", None)
+            clean["revision"] = int(clean.get("revision") or 0) + 1
+            clean["updated_at"] = datetime.now(timezone.utc)
+            self._policy_migrated = True
+        if self.local_only and (
+            clean.get("mode") != AutomationMode.SIMULATION.value or clean.get("live_until")
+        ):
+            clean["mode"] = AutomationMode.SIMULATION.value
+            clean["live_until"] = None
             clean["revision"] = int(clean.get("revision") or 0) + 1
             clean["updated_at"] = datetime.now(timezone.utc)
             self._policy_migrated = True
@@ -444,6 +459,8 @@ class AutotradeManager:
             )
 
     def effective_mode(self, now: datetime | None = None) -> AutomationMode:
+        if self.local_only:
+            return AutomationMode.SIMULATION
         now = now or datetime.now(timezone.utc)
         if self.policy.mode == AutomationMode.LIVE:
             if self.policy.live_until is None or self.policy.live_until <= now:
@@ -467,6 +484,8 @@ class AutotradeManager:
         base["updated_at"] = now
         requested_mode = AutomationMode(base["mode"])
         if requested_mode == AutomationMode.LIVE:
+            if self.local_only:
+                raise ValueError("This local research runtime only permits SIMULATION.")
             if live_for_minutes is None or not 1 <= int(live_for_minutes) <= 480:
                 raise ValueError("LIVE mode requires live_for_minutes between 1 and 480")
             base["live_until"] = now + timedelta(minutes=int(live_for_minutes))
@@ -585,7 +604,16 @@ class AutotradeManager:
             reasons.append("strategy not allowlisted")
         if policy.allowed_modules and alert.module.value.upper() not in policy.allowed_modules:
             reasons.append("module not allowlisted")
-        if alert.confidence < policy.min_confidence:
+        # The unvalidated 9EMA monitor is deliberately capped below the live
+        # confidence floor. Let it collect Simulation evidence without raising
+        # that confidence or bypassing any of the other eligibility checks.
+        simulation_research_monitor = (
+            not live
+            and alert.research_only
+            and alert.strategy.upper() == "EMA9_MTF_0DTE"
+            and alert.module.value == "0DTE"
+        )
+        if alert.confidence < policy.min_confidence and not simulation_research_monitor:
             reasons.append("confidence below automation minimum")
         if alert.dollar_risk > policy.max_dollar_risk_per_order:
             reasons.append("per-order risk cap exceeded")
@@ -623,7 +651,8 @@ class AutotradeManager:
         day = now.astimezone(ET).date()
         reserved = sum(
             item.dollar_risk for item in self.intents.values()
-            if item.created_at.astimezone(ET).date() == day
+            if item.mode == AutomationMode.LIVE
+            and item.created_at.astimezone(ET).date() == day
             and item.status in {
                 IntentStatus.AWAITING_APPROVAL,
                 IntentStatus.READY,
@@ -778,11 +807,20 @@ class AutotradeManager:
         ]
         if not parsed:
             raise ValueError("at least one option candidate is required")
+        if intent.mode == AutomationMode.SIMULATION:
+            self._check_simulation_concurrency(intent.intent_id)
+            daily_remaining = self._remaining_simulation_daily_risk(
+                now, exclude_intent_id=intent.intent_id,
+            )
+        else:
+            daily_remaining = self._remaining_daily_risk(
+                now, exclude_intent_id=intent.intent_id,
+            )
         capital_ceiling = round(
             min(
                 buying_power * self.policy.max_available_capital_fraction,
                 self.policy.max_dollar_risk_per_order,
-                self._remaining_daily_risk(now, exclude_intent_id=intent.intent_id),
+                daily_remaining,
             ),
             2,
         )
@@ -933,6 +971,74 @@ class AutotradeManager:
             }
         )
         return max(0.0, self.policy.max_daily_dollar_risk - used)
+
+    def _check_simulation_concurrency(self, exclude_intent_id: str) -> None:
+        # Unfilled SHADOW plans are research candidates, not capital exposure.
+        opened = sum(
+            item.intent_id != exclude_intent_id
+            and item.mode == AutomationMode.SIMULATION
+            and item.status == IntentStatus.EXECUTED
+            for item in self.intents.values()
+        )
+        if opened >= self.policy.max_open_intents:
+            raise ValueError("simulation open-position cap reached")
+
+    def _remaining_simulation_daily_risk(
+        self, now: datetime, *, exclude_intent_id: str | None = None,
+    ) -> float:
+        """Reserve actual simulated entry debit for its entry day, even after exit.
+
+        Simulation observations never consume or release Live risk capacity.
+        Missing entry evidence on an imported filled intent fails closed rather
+        than assigning zero risk to unknown historical exposure.
+        """
+        used = 0.0
+        for item in self.intents.values():
+            if item.intent_id == exclude_intent_id or item.mode != AutomationMode.SIMULATION:
+                continue
+            entries = [row for row in item.trade_events if row.get("event") == "ENTRY"]
+            if not entries and item.status in {IntentStatus.EXECUTED, IntentStatus.CLOSED}:
+                raise ValueError("simulation entry history is missing; verify the trade journal")
+            for entry in entries:
+                try:
+                    observed = datetime.fromisoformat(str(entry["observed_at"]))
+                    debit = float(entry["option_price"]) * int(entry["quantity"]) * 100
+                    if observed.tzinfo is None or not math.isfinite(debit) or debit <= 0:
+                        raise ValueError
+                except (KeyError, TypeError, ValueError, OverflowError) as exc:
+                    raise ValueError("simulation entry history is invalid; verify the trade journal") from exc
+                if observed.astimezone(ET).date() == now.astimezone(ET).date():
+                    used += round(debit, 2)
+        return max(0.0, self.policy.max_daily_dollar_risk - used)
+
+    def _check_simulation_entry_capital(
+        self, intent: ExecutionIntent, ask_price: float, now: datetime,
+    ) -> None:
+        self._check_simulation_concurrency(intent.intent_id)
+        selected = intent.option_selection or {}
+        try:
+            quantity = selected["quantity"]
+            buying_power = float(selected["buying_power"])
+            selected_ceiling = float(selected["capital_ceiling"])
+            observed = datetime.fromisoformat(str(selected["observed_at"]))
+            if type(quantity) is not int or quantity <= 0 or observed.tzinfo is None:
+                raise ValueError
+            if not all(math.isfinite(value) and value > 0 for value in (buying_power, selected_ceiling, ask_price)):
+                raise ValueError
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("simulation capital evidence is invalid; select again before entry") from exc
+        age = (now - observed.astimezone(timezone.utc)).total_seconds()
+        if not -5 <= age <= CAPITAL_REVIEW_MAX_AGE_SECONDS:
+            raise ValueError("simulation buying-power observation is stale; select again before entry")
+        actual_debit = round(ask_price * quantity * 100, 2)
+        ceiling = min(
+            selected_ceiling,
+            buying_power * self.policy.max_available_capital_fraction,
+            self.policy.max_dollar_risk_per_order,
+            self._remaining_simulation_daily_risk(now, exclude_intent_id=intent.intent_id),
+        )
+        if not math.isfinite(actual_debit) or actual_debit > ceiling + 1e-9:
+            raise ValueError("simulation entry debit exceeds the current capital or daily risk cap; select again before entry")
 
     def approve(self, intent_id: str) -> ExecutionIntent:
         """Retained only for imported v1 intents awaiting approval."""
@@ -1411,6 +1517,7 @@ class AutotradeManager:
                 raise ValueError("simulation entry open interest is below the liquidity floor")
             if not float(zone_low) <= parsed.underlying_price <= float(zone_high):
                 raise ValueError("underlying price is outside the approved entry zone")
+            self._check_simulation_entry_capital(intent, parsed.ask_price, now)
         option_price = parsed.ask_price if event == "ENTRY" else parsed.bid_price
         clean = {
             "event": event,
@@ -1542,6 +1649,7 @@ class AutotradeManager:
         return {
             "contract_version": AUTOTRADE_CONTRACT_VERSION,
             "effective_mode": self.effective_mode().value,
+            "local_only": self.local_only,
             "policy": self.policy.model_dump(mode="json"),
             "counts": counts,
             "ready": counts.get(IntentStatus.READY.value, 0),

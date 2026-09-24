@@ -2,22 +2,28 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-09-24 · **Status:** Research beta; live profitability unvalidated
 
-**Last system pass:** reduced beta polling/AI overhead, database-outage recovery,
-session-preserving 503 responses, and horizon-specific option research plans
-with full-premium risk sizing. Visible Today data refreshes every two minutes;
-hidden tabs suspend polling and WebSockets, and the faster automation/journal
-poll is limited to the open automation dialog. The backend's market loop and
-execution checks are unchanged in cadence. Readiness and cached signal actions
-fail closed during storage outages; no strategy was promoted to Live.
+**Last system pass:** added a private, durable local Simulation runtime with
+generated local credentials, loopback-only access, account setup, and verified
+SQLite backups. Cloud credentials are not inherited. Research-only 9EMA signals
+can now enter Simulation without weakening Live confidence/calibration gates.
+Fresh simulated entries recheck premium debit, current capital limits, daily
+usage, and open-position count without silently resizing a selected contract.
+Underlying paper exits respect shortened sessions; missing exit observations
+are shown as unscored, never invented wins or losses. The earlier beta outage
+recovery and lower-overhead refresh work remains in this branch. No strategy
+was promoted to Live and no real orders were placed.
 
 Fresh frozen-parameter SPY/QQQ tests on 42 completed sessions through September 23
 were negative after costs for both ORR profiles and the 30m EMA crossover.
 See [beta validation evidence](docs/research/2026-09-24-beta-validation.md).
 Koyeb's free PostgreSQL tier provides only five active hours per month;
 these optimizations **do not make continuous trading reliable on that quota**
-or restore a quota-exhausted database. Keep this stack for limited research beta
-use, subject to its remaining allowance. Hosting/billing and execution mode
-were not changed. See [beta limits and recovery](docs/34-beta-reliability-and-strategy-readiness.md).
+or restore a quota-exhausted database. The local research profile removes that
+hosting dependency without replacing or importing the cloud database. Koyeb
+hosting/billing and cloud execution mode were not changed. Local operation still
+depends on this computer, internet, provider limits, and validated evidence; it
+does not establish profitability. See [local research desk](docs/35-local-research-desk.md)
+and [beta limits and recovery](docs/34-beta-reliability-and-strategy-readiness.md).
 
 The Opening Range Reversal video rules are captured as a separate,
 underlying-only research backtest (`ORB_REVERSAL_15M`) with a point-in-time
@@ -84,6 +90,10 @@ must not be presented as implemented.
 - SQLite local operational state or PostgreSQL via `DATABASE_URL`; production
   deployments require PostgreSQL or a mounted persistent volume, enforced by a
   readiness gate when `INTELLIDHAN_REQUIRE_DURABLE_STATE=true`.
+- Private local launcher with durable accounts/journals outside Git, no cloud
+  `.env` loading, host/origin checks, Simulation-only server enforcement, safe
+  start/status/stop, first-admin setup, and consistent SQLite backups. It does
+  not install a background broker agent or survive sleep/reboot automatically.
 - Live data-quality quarantine and readiness-aware `/api/health`.
 - Storage failures return sanitized HTTP 503 with `Retry-After`; a shared
   circuit breaker retries normal outages after 60 seconds and active-time quota
@@ -143,16 +153,34 @@ must not be presented as implemented.
   capital and risk caps; long-option premium is treated as maximum order risk.
   Pending Simulation intents expire with signal validity and block when their
   source signal is canceled.
+- Underlying 0DTE paper trades use session close minus five minutes, including
+  half-days. Missing cutoff observations become `UNRESOLVED_DATA` and are
+  visible but excluded from scored returns; material gaps block promotion.
+  This partial-profit underlying model is not the v2 full-exit option lifecycle.
 
-Run locally with `.venv/bin/uvicorn intellidhan_gateway.app:app --port 8321`.
-Copy `.env.example` to `.env`, set a random `INTELLIDHAN_OWNER_TOKEN` of at
-least 24 characters for first-admin setup, optionally set a separate
-`INTELLIDHAN_INVITE_CODE`, and configure durable state before production. Open
-the Account panel to create the first administrator. See
-[Accounts and personal settings](docs/21-accounts-and-personal-settings.md).
-For broker automation, trust the repository, authenticate the declared MCP with
-`codex mcp login robinhood-trading`, and follow the mandatory
-[Codex + Robinhood execution contract](docs/27-codex-robinhood-execution.md).
+## Private local setup
+
+From a checkout with the project dependencies installed in `.venv`:
+
+```bash
+.venv/bin/python scripts/local_runtime.py start
+.venv/bin/python scripts/local_runtime.py create-admin
+```
+
+Open `http://127.0.0.1:8321` and sign in with the local account you create in the
+terminal. The launcher generates setup tokens privately; do not paste them
+into chat or the browser. Use `status`, `backup`, and `stop` with the same
+launcher. Existing cloud accounts/history are not copied. On macOS the data
+directory is `~/Library/Application Support/IntelliDhan/local`.
+
+See [local setup, limits, and validation plan](docs/35-local-research-desk.md)
+for dependency installation and shared-worktree commands. Real option
+Simulation still requires read-only quotes from the official Robinhood MCP;
+the server does not supply them automatically. Authentication and runtime tool
+discovery are separate from starting the app. Follow the mandatory
+[execution contract](docs/27-codex-robinhood-execution.md). This local profile
+rejects Live mode even if a saved policy requests it. Ordinary hosted setup
+remains in [Accounts and personal settings](docs/21-accounts-and-personal-settings.md).
 
 ## Repository change discipline
 
@@ -213,6 +241,7 @@ requires the same-commit README update.
 | 36 | [UX Signals-First Simplicity](docs/32-ux-signals-first-simplicity.md) | Signals-first Today hierarchy, density reduction, progressive disclosure; logo/colors unchanged |
 | 37 | [Beta Reliability &amp; Strategy Readiness](docs/34-beta-reliability-and-strategy-readiness.md) | Free-tier limits, outage recovery, reduced polling/AI spend, horizon safeguards, and remaining live blockers |
 | 38 | [September Beta Validation](docs/research/2026-09-24-beta-validation.md) | Frozen later-period SPY/QQQ results, cost sensitivity, session-block intervals, and daily benchmark comparison |
+| 39 | [Local Research Desk](docs/35-local-research-desk.md) | Private durable local setup, backups, evidence boundaries, remaining broker/data prerequisites, and forward-validation plan |
 
 ## Core Product Tenets
 

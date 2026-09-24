@@ -4,6 +4,10 @@ Date: 2026-09-24. Scope: keep the current Koyeb/Python/PostgreSQL stack; reduce
 avoidable cost and failures, preserve records, and validate trading hypotheses.
 No hosting migration, paid upgrade, database replacement, or Live activation.
 
+Follow-up: the user subsequently chose a separate local research desk. See
+[doc 35](35-local-research-desk.md). The Koyeb deployment remains untouched;
+its quotas and outage are not resolved by the local instance.
+
 ## Hosting constraint
 
 Koyeb documents a free PostgreSQL allowance of **five active hours/month and
@@ -108,15 +112,16 @@ unconfirmed, and option-level historical prices/fills are missing.
 
 Required next work, in dependency order:
 
-1. Restore durable storage access and verify quota/uptime adequacy before any
-   continuous automation. This needs a hosting allowance decision outside code.
+1. Verify durable storage and uptime before continuous automation. The local
+   profile provides separate persistent SQLite without Koyeb quotas, but sleep,
+   power loss, connectivity, backups, and broker access remain dependencies.
 2. Collect official-MCP bid/ask Simulation observations and realistic exits for
    the actual production path, with reasons and rejected-entry records.
 3. Correct swing replay's signal-close fills, missing costs, gap stops, and
    production-path mismatch before comparing entry filters.
-   The underlying paper executor also still uses a fixed 15:55 flatten time;
-   replace it with a calendar-aware cutoff and test early-close lifecycle
-   behavior before claiming half-day execution readiness.
+   The local follow-up corrected the underlying paper executor to session close
+   minus five minutes and added half-day/missing-observation tests. This does
+   not validate actual broker exits or the separate option lifecycle.
 4. Predeclare one new setup hypothesis and a future holdout; do not repeatedly
    optimize the September evaluation window now that its results are known.
 5. Require positive net expectancy and acceptable drawdown under cost stress,
