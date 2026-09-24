@@ -37,11 +37,16 @@
   without invented return; pending trades expire unfilled. UI shows unknown
   outcomes and the underlying-model/option-performance distinction. This does
   not validate actual v2 full-position option exits or broker protection.
-- Verification: 507 tests passed, 6 live-network integration tests deselected;
+- Verification: 508 tests passed, 6 live-network integration tests deselected;
   Ruff, both inline JS parse checks, JS behavior tests, and diff check passed.
   One existing Starlette/httpx deprecation warning remains. Separate independent
   agents reviewed launcher, local-only gates, admission, paper cutoffs, risk
   accounting, and docs. Check PR CI after this checkpoint.
+  Initial local lint used Ruff 0.15.21 while CI pins 0.4.10; CI caught E721 in
+  the strict quantity check. Follow-up uses explicit integer/boolean checks
+  with a boolean regression; pinned Ruff 0.4.10 and independent re-review pass.
+  Use the pinned version for subsequent lint runs. PostgreSQL CI passed on
+  the initial checkpoint; verify the new CI run after this lint correction.
 - Actual strategy remains HISTORICAL_RESEARCH, live_eligible=false, no qualified
   MTF winner. September tests are known/negative, not a fresh holdout. Do not
   conflate raw EMA or underlying tranche returns with MTF option profitability.

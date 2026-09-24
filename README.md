@@ -8,6 +8,8 @@ SQLite backups. Cloud credentials are not inherited. Research-only 9EMA signals
 can now enter Simulation without weakening Live confidence/calibration gates.
 Fresh simulated entries recheck premium debit, current capital limits, daily
 usage, and open-position count without silently resizing a selected contract.
+Contract validation rejects boolean quantities explicitly and follows the
+repository's pinned Ruff rules.
 Underlying paper exits respect shortened sessions; missing exit observations
 are shown as unscored, never invented wins or losses. The earlier beta outage
 recovery and lower-overhead refresh work remains in this branch. No strategy

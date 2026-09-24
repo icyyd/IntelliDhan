@@ -1021,7 +1021,7 @@ class AutotradeManager:
             buying_power = float(selected["buying_power"])
             selected_ceiling = float(selected["capital_ceiling"])
             observed = datetime.fromisoformat(str(selected["observed_at"]))
-            if type(quantity) is not int or quantity <= 0 or observed.tzinfo is None:
+            if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0 or observed.tzinfo is None:
                 raise ValueError
             if not all(math.isfinite(value) and value > 0 for value in (buying_power, selected_ceiling, ask_price)):
                 raise ValueError

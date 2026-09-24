@@ -128,6 +128,14 @@ def test_nonfinite_entry_ask_is_never_a_simulated_fill(manager):
     assert intent.status == IntentStatus.SHADOW
 
 
+def test_boolean_contract_quantity_is_not_an_integer_position(manager):
+    intent = select(manager)
+    intent.option_selection["quantity"] = True
+    with pytest.raises(ValueError, match="capital evidence"):
+        manager.record_simulation(intent.intent_id, observation(intent))
+    assert intent.status == IntentStatus.SHADOW
+
+
 def test_filled_simulation_does_not_consume_actual_live_admission_capacity(manager):
     manager.update_policy({"max_daily_dollar_risk": 250})
     simulated = select(manager)
