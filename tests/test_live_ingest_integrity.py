@@ -141,11 +141,27 @@ class FakeProvider:
         return [b for b in self._bars if b.symbol == symbol]
 
 
+@pytest.fixture
+def fixed_market_now(monkeypatch):
+    """Keep replay checks independent of today's market hours and 5m boundary."""
+    import intellidhan_gateway.live as live_module
+
+    now = datetime(2026, 7, 24, 14, 32, tzinfo=timezone.utc)
+
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return now.astimezone(tz) if tz else now.replace(tzinfo=None)
+
+    monkeypatch.setattr(live_module, "datetime", FixedDateTime)
+    return now
+
+
 @pytest.mark.asyncio
-async def test_ingest_skips_future_bars_and_leaves_them_undeduped():
-    loop = LiveLoop()
-    now = datetime.now(timezone.utc)
-    past = bar5(now - timedelta(minutes=5), 100, 101, 99, 100.5)
+async def test_ingest_skips_future_bars_and_leaves_them_undeduped(fixed_market_now):
+    loop = LiveLoop(["QQQ"])
+    now = fixed_market_now
+    past = bar5(now - timedelta(minutes=2), 100, 101, 99, 100.5)
     forming = bar5(now + timedelta(minutes=3), 100.5, 100.7, 100.4, 100.6)
     loop.provider = FakeProvider([past, forming])
     await loop._ingest_recent(days=1)
@@ -156,9 +172,11 @@ async def test_ingest_skips_future_bars_and_leaves_them_undeduped():
 
 
 @pytest.mark.asyncio
-async def test_boot_replay_suppresses_delivery_but_live_polling_delivers(monkeypatch):
+async def test_boot_replay_suppresses_delivery_but_live_polling_delivers(
+    monkeypatch, fixed_market_now,
+):
     loop = LiveLoop(symbols=["QQQ"])
-    now = datetime.now(timezone.utc)
+    now = fixed_market_now
     delivered, notified = [], []
 
     async def fake_deliver(alert):
@@ -187,25 +205,27 @@ async def test_boot_replay_suppresses_delivery_but_live_polling_delivers(monkeyp
     monkeypatch.setattr(PaperTrade, "from_alert", classmethod(lambda cls, a, s: None))
 
     # replay phase: started_at is None -> state warms, nothing delivered
-    loop.provider = FakeProvider([bar5(now - timedelta(minutes=10), 100, 101, 99, 100.5)])
+    loop.provider = FakeProvider([bar5(now - timedelta(minutes=7), 100, 101, 99, 100.5)])
     assert loop.started_at is None
-    await loop._ingest_recent(days=1)
+    await loop._ingest_recent(days=1, now=now - timedelta(minutes=5))
     assert delivered == []
     assert loop.alerts == [fake_alert]  # still recorded for dashboard/audit
 
     # live phase: started_at set -> the same pipeline delivers
     loop.started_at = now
-    loop.provider = FakeProvider([bar5(now - timedelta(minutes=5), 100.5, 101.5, 100, 101)])
+    loop.provider = FakeProvider([bar5(now - timedelta(minutes=2), 100.5, 101.5, 100, 101)])
     await loop._ingest_recent(days=1)
     assert delivered == [fake_alert]
 
 
 @pytest.mark.asyncio
-async def test_restart_replay_is_time_safe_persists_settlement_and_restores_controls(tmp_path):
+async def test_restart_replay_is_time_safe_persists_settlement_and_restores_controls(
+    tmp_path, fixed_market_now,
+):
     store = TerminalStore(tmp_path / "restart.sqlite3")
     store.init_schema()
-    now = datetime.now(timezone.utc).replace(microsecond=0)
-    filled = now - timedelta(minutes=10)
+    now = fixed_market_now
+    filled = now - timedelta(minutes=7)
 
     settles_after_fill = make_trade()
     settles_after_fill.alert_id = "alr_restart_settle"
@@ -264,7 +284,9 @@ async def test_restart_replay_is_time_safe_persists_settlement_and_restores_cont
 
 
 @pytest.mark.asyncio
-async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(tmp_path):
+async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(
+    tmp_path, fixed_market_now,
+):
     store = TerminalStore(tmp_path / "legacy-window.sqlite3")
     store.init_schema()
     created = datetime(2026, 7, 10, 14, 30, tzinfo=timezone.utc)
@@ -317,7 +339,7 @@ async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(tm
     class MigrationProvider:
         async def get_bars(self, symbol, timeframe, start, end, **kwargs):
             if timeframe == Timeframe.M5:
-                return [bar5(end - timedelta(minutes=5), 100, 101, 99, 100.5)]
+                return [bar5(end - timedelta(minutes=2), 100, 101, 99, 100.5)]
             return [
                 Bar(
                     symbol=symbol,

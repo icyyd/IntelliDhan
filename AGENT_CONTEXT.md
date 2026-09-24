@@ -1,5 +1,39 @@
 # IntelliDhan Agent Context
 
+## 2026-09-24 — Beta cost, recovery, and strategy evidence
+
+- Worktree `/Users/dhanvin/Documents/IntelliDhan-beta-optimize`, branch
+  `codex/beta-reliability-strategy-gates`, based on `origin/main` `26dd83f`.
+  Original shared checkout's unrelated modifications remain untouched.
+- User chose to retain Koyeb; no ChatGPT Sites migration. Free PostgreSQL's
+  five-hour monthly active allowance cannot support a 6.5-hour trading day.
+  Production quota failure is not cured by this code; no billing changes made.
+- Added sanitized store 503/circuit recovery, off-thread boot/account work,
+  session preservation, no actionability during storage failure, and quiet
+  recovery replay. Hidden tabs pause polling/WS; Home levels avoid optional AI.
+- Optional research option plans enforce horizon/quote rules and full-premium
+  risk; Yahoo legs remain SHADOW. Production composer still uses underlying
+  plans; official-MCP Live rules, Simulation default, and calibration unchanged.
+- Frozen later-period tests lose after costs: ORR control 48 trades/-0.4843R,
+  ORR July shadow candidate 36/-0.6321R, 30m EMA crossover 43/-0.2896R at
+  2 bps/side, Jul 27–Sep 23. This is not a test of production EMA9_MTF options.
+  Daily trend filters reduced drawdown but lagged buy-and-hold. Read the full
+  limitations in `docs/research/2026-09-24-beta-validation.md`.
+- Independent option/reliability/UI re-reviews found no remaining blockers in
+  this patch. Review fixed a schema-init race, a recovery-reconciliation race,
+  explicit logout during cooldown, and early-close option expiry handling.
+  The store generation latch survives successful browser probes until the
+  engine restores its durable state. Existing paper-executor 15:55 flatten
+  behavior remains a documented half-day readiness blocker.
+- Verification: 430 tests passed, 6 live integration tests deselected; Ruff,
+  inline JavaScript behavior/parse checks, and `git diff --check` passed.
+  PostgreSQL integration checks run separately in PR CI. One existing
+  Starlette/httpx deprecation warning remains.
+  Tests use an explicit worktree PYTHONPATH with the original venv; do not let
+  its editable install accidentally test the older shared checkout.
+- Next operator action is PR review/merge authorization; no deployment or
+  broker action is authorized by this implementation pass.
+
 ## 2026-07-24 — Responsive overlap guard
 
 - Follow-up branch `codex/overlap-fix` is based on merged `main` commit

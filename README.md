@@ -1,18 +1,23 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-25 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-09-24 · **Status:** Research beta; live profitability unvalidated
 
-**Last system pass:** five-pane, signals-first Today workspace with strategy-plane
-evidence objects, net-expectancy gating, responsive overlap guards, simplified
-navigation, and a visible two-minute single-flight refresh cycle for market data
-and analysis. Real-time state and the faster automation safety poll remain
-intact; failed or partial batches retain their last-good freshness and post-policy
-reads cannot reuse stale polls. Live eligibility remains fail-closed and the
-SPY/QQQ 9EMA auto-trader remains Simulation-only behind evidence, health,
-capital, and confirmation gates.
-The signal radar remains the primary Today surface while market pulse,
-highlights, macro events, and the premarket watch provide secondary context;
-selected setups provide progressive depth without rendering duplicate alerts.
+**Last system pass:** reduced beta polling/AI overhead, database-outage recovery,
+session-preserving 503 responses, and horizon-specific option research plans
+with full-premium risk sizing. Visible Today data refreshes every two minutes;
+hidden tabs suspend polling and WebSockets, and the faster automation/journal
+poll is limited to the open automation dialog. The backend's market loop and
+execution checks are unchanged in cadence. Readiness and cached signal actions
+fail closed during storage outages; no strategy was promoted to Live.
+
+Fresh frozen-parameter SPY/QQQ tests on 42 completed sessions through September 23
+were negative after costs for both ORR profiles and the 30m EMA crossover.
+See [beta validation evidence](docs/research/2026-09-24-beta-validation.md).
+Koyeb's free PostgreSQL tier provides only five active hours per month;
+these optimizations **do not make continuous trading reliable on that quota**
+or restore a quota-exhausted database. Keep this stack for limited research beta
+use, subject to its remaining allowance. Hosting/billing and execution mode
+were not changed. See [beta limits and recovery](docs/34-beta-reliability-and-strategy-readiness.md).
 
 The Opening Range Reversal video rules are captured as a separate,
 underlying-only research backtest (`ORB_REVERSAL_15M`) with a point-in-time
@@ -21,8 +26,8 @@ prior-day level experiment, costs, and walk-forward tuning. Its short Yahoo
 window is diagnostic only; daily context uses the same raw price basis as the
 intraday bars, and it is not live-eligible or an options-performance claim.
 See [Opening Range Reversal Backtest](docs/32-opening-range-reversal-backtest.md).
-The latest permutation study found promising shadow candidates, but none has
-enough untouched sessions to replace the control configuration. The exact
+The July permutation study found promising shadow candidates, but the September
+hold-later check did not reproduce their edge. The exact
 1,152-variant study is reproducible with
 `scripts/opening_range_reversal_permutations.py`. The improved settings are
 available only as the explicit `shadow_candidate` research profile; `control`
@@ -46,7 +51,7 @@ must not be presented as implemented.
   remain separate tasks.
 - Module screens keep the signal queue primary, expose compact live status
   strips, and collapse chart/profile context until requested. External research
-  feeds and the daily brief refresh automatically every two minutes; stock-pick
+  feeds and the daily brief refresh every two minutes while Today is visible; stock-pick
   cards expose a compact business case, evidence, analyst-target context when
   available, and explicit invalidation/risk context before the full Analyze
   dossier.
@@ -80,6 +85,18 @@ must not be presented as implemented.
   deployments require PostgreSQL or a mounted persistent volume, enforced by a
   readiness gate when `INTELLIDHAN_REQUIRE_DURABLE_STATE=true`.
 - Live data-quality quarantine and readiness-aware `/api/health`.
+- Storage failures return sanitized HTTP 503 with `Retry-After`; a shared
+  circuit breaker retries normal outages after 60 seconds and active-time quota
+  failures after 30 minutes. Account cookies are preserved. Boot restoration
+  and account handlers run off the event loop; remaining synchronous market
+  persistence is still a scaling limitation. Successful browser probes cannot
+  bypass required engine reconciliation. Explicit logout still clears local
+  cookies during an outage and reports unsuccessful server-side revocation.
+- Optional option research uses 0–1DTE scalp, 21–90DTE swing, and ≥365DTE LEAPS
+  contracts; HODL stays equity-only. Quotes must pass finite/two-sided liquidity
+  checks; full debit is reserved as maximum option loss. Yahoo options remain
+  research-only, and the production composer still uses underlying plans.
+  Expiries beyond the verified exchange calendar (currently 2027) are withheld.
 - Adjusted, settled-session smart-play ranking for momentum leaders, breakout
   watches, and trend pullbacks, with partial-scan failures and configured-universe
   scope shown explicitly.
@@ -194,6 +211,8 @@ requires the same-commit README update.
 | 34 | [Opening Range Reversal Backtest](docs/32-opening-range-reversal-backtest.md) | Deterministic 15m opening-range reversal rules, ATR manipulation gate, prior-day level experiment, slippage-aware walk-forward diagnostics |
 | 35 | [ORR Five-Year Fine-Tuning Model](docs/33-orr-five-year-fine-tuning-model.md) | SPY/SPX point-in-time data contract, interpretable meta-labeler, purged walk-forward tuning, robustness score, and promotion gates |
 | 36 | [UX Signals-First Simplicity](docs/32-ux-signals-first-simplicity.md) | Signals-first Today hierarchy, density reduction, progressive disclosure; logo/colors unchanged |
+| 37 | [Beta Reliability &amp; Strategy Readiness](docs/34-beta-reliability-and-strategy-readiness.md) | Free-tier limits, outage recovery, reduced polling/AI spend, horizon safeguards, and remaining live blockers |
+| 38 | [September Beta Validation](docs/research/2026-09-24-beta-validation.md) | Frozen later-period SPY/QQQ results, cost sensitivity, session-block intervals, and daily benchmark comparison |
 
 ## Core Product Tenets
 

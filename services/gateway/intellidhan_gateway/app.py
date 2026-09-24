@@ -53,6 +53,7 @@ from intellidhan_gateway.research_consensus import (
     technical_score,
 )
 from intellidhan_gateway.stock_analysis import StockAnalysisService
+from intellidhan_gateway.terminal_store import StoreUnavailable
 from intellidhan_gateway.workspace_agent import (
     WorkspaceAgentTriggerService,
     WorkspaceAgentUnavailable,
@@ -114,12 +115,8 @@ class CodexOptionSelectionRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        loop.store.init_schema()
-        if not loop.store.list_watchlists():
-            loop.store.create_watchlist("Research")
-    except Exception as exc:
-        loop.last_error = f"operational store initialization failed: {exc}"
+    # Boot owns initialization and recovery. The HTTP process must start even
+    # while the database is sleeping or has exhausted its free quota.
     task = asyncio.create_task(loop.run_forever())
     try:
         yield
@@ -131,6 +128,40 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="IntelliDhan", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=WEB_DIR / "assets"), name="assets")
+
+
+@app.exception_handler(StoreUnavailable)
+async def store_unavailable(_request: Request, exc: StoreUnavailable):
+    return JSONResponse(
+        {
+            "detail": str(exc),
+            "code": "DATABASE_UNAVAILABLE",
+            "reason": exc.reason,
+            "retry_after_seconds": exc.retry_after_seconds,
+        },
+        status_code=503,
+        headers={"Retry-After": str(exc.retry_after_seconds), "Cache-Control": "no-store"},
+    )
+
+
+@app.middleware("http")
+async def persistence_cooldown(request: Request, call_next):
+    # Account requests cannot be mistaken for an empty store, and execution
+    # endpoints cannot use stale in-memory state while persistence is down.
+    local_logout = request.method == "DELETE" and request.url.path == "/api/auth/session"
+    if not local_logout and request.url.path.startswith("/api/") and request.url.path not in {
+        "/api/health", "/api/liveness", "/api/calibration",
+    }:
+        store = loop.store
+        if store.last_error and store.retry_after_seconds:
+            return await store_unavailable(
+                request,
+                StoreUnavailable(
+                    store.readiness().get("failure_reason") or "connection",
+                    store.retry_after_seconds,
+                ),
+            )
+    return await call_next(request)
 
 
 def _require_token(request: Request, env_name: str, *, control: bool = False) -> None:
@@ -251,7 +282,7 @@ def _validate_capital_limits(payload: dict) -> dict[str, dict]:
 
 
 @app.get("/api/auth/session")
-async def auth_session(request: Request):
+def auth_session(request: Request):
     account_count = loop.store.count_users()
     principal = request_principal(request, loop.store)
     configured = account_count > 0 or owner_configured()
@@ -271,7 +302,7 @@ async def auth_session(request: Request):
 
 
 @app.post("/api/auth/session")
-async def create_auth_session(request: Request, payload: dict = Body(...)):
+def create_auth_session(request: Request, payload: dict = Body(...)):
     rate_limiter.check(_client_key(request, "login"), limit=5, window_seconds=60)
     if payload.get("email") is not None:
         email = str(payload.get("email", "")).strip().lower()
@@ -306,7 +337,7 @@ async def create_auth_session(request: Request, payload: dict = Body(...)):
 
 
 @app.post("/api/auth/register")
-async def register_account(request: Request, payload: dict = Body(...)):
+def register_account(request: Request, payload: dict = Body(...)):
     rate_limiter.check(_client_key(request, "register"), limit=3, window_seconds=300)
     first_account = loop.store.count_users() == 0
     if first_account and not owner_configured():
@@ -337,13 +368,13 @@ async def register_account(request: Request, payload: dict = Body(...)):
 
 
 @app.get("/api/accounts")
-async def list_accounts(request: Request):
+def list_accounts(request: Request):
     _require_personal(request, roles={"ADMIN"})
     return {"accounts": loop.store.list_users()}
 
 
 @app.post("/api/accounts")
-async def create_account(request: Request, payload: dict = Body(...)):
+def create_account(request: Request, payload: dict = Body(...)):
     _require_personal(request, roles={"ADMIN"})
     try:
         role = str(payload.get("role", "TRADER")).upper()
@@ -364,18 +395,29 @@ async def create_account(request: Request, payload: dict = Body(...)):
 
 
 @app.delete("/api/auth/session")
-async def delete_auth_session(request: Request):
+def delete_auth_session(request: Request):
     token = request.cookies.get(SESSION_COOKIE, "")
+    revoked = True
     if token:
-        loop.store.revoke_user_session(session_token_hash(token))
-    response = JSONResponse({"authenticated": False})
+        try:
+            loop.store.revoke_user_session(session_token_hash(token))
+        except StoreUnavailable:
+            revoked = False
+    response = JSONResponse({
+        "authenticated": False,
+        "session_revoked": revoked,
+        "detail": "Signed out." if revoked else (
+            "Signed out on this browser. Server-side session revocation could not be "
+            "completed while the database is unavailable."
+        ),
+    }, headers={"Cache-Control": "no-store"})
     response.delete_cookie(OWNER_COOKIE, path="/")
     response.delete_cookie(SESSION_COOKIE, path="/")
     return response
 
 
 @app.get("/api/account/preferences")
-async def get_preferences(request: Request):
+def get_preferences(request: Request):
     principal = _require_personal(request)
     if principal.legacy:
         return DEFAULT_PREFERENCES
@@ -383,7 +425,7 @@ async def get_preferences(request: Request):
 
 
 @app.put("/api/account/preferences")
-async def put_preferences(request: Request, updates: dict = Body(...)):
+def put_preferences(request: Request, updates: dict = Body(...)):
     principal = _require_personal(request)
     if principal.legacy:
         raise HTTPException(
@@ -1171,7 +1213,11 @@ async def record_autotrade_receipt(
 
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
-    principal = websocket_principal(websocket, loop.store)
+    try:
+        principal = await asyncio.to_thread(websocket_principal, websocket, loop.store)
+    except StoreUnavailable:
+        await websocket.close(code=1013, reason="saved data temporarily unavailable")
+        return
     if principal is None:
         await websocket.close(code=4401, reason="sign-in required")
         return
@@ -1197,7 +1243,11 @@ async def ws(websocket: WebSocket):
                 await websocket.close(code=4401, reason="account session expired")
                 break
             if session_check_task in done:
-                current = websocket_principal(websocket, loop.store)
+                try:
+                    current = await asyncio.to_thread(websocket_principal, websocket, loop.store)
+                except StoreUnavailable:
+                    await websocket.close(code=1013, reason="saved data temporarily unavailable")
+                    break
                 if current is None or current.user_id != principal.user_id:
                     await websocket.close(
                         code=4401, reason="account session revoked or expired"

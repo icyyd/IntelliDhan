@@ -1,9 +1,9 @@
 """Alert Composer — Setup → complete trade plan (doc 09).
 
-Vehicle selection: an OptionSelector (live Yahoo chains) resolves a contract at
-0.30–0.45 delta when available; otherwise the alert ships as EQUITY with the
-same underlying levels. Sizing: risk budget = module budget × risk cap ×
-drawdown multiplier; zero-fit suppresses rather than stretches risk (G6).
+Vehicle selection respects each module's option horizon; unavailable contracts
+fall back to the same underlying levels. Sizing: risk budget = module budget ×
+risk cap × drawdown multiplier. Long-option risk reserves the entire premium,
+since a modeled stop cannot bound losses through gaps or illiquid markets.
 """
 
 from __future__ import annotations
@@ -17,6 +17,8 @@ import yaml
 
 from intellidhan_engine.calibration import CalibrationMap
 from intellidhan_engine.voice import complement_line, lint
+from intellidhan_ingestor.market_clock import MarketClock
+from intellidhan_schemas.option_policy import eligible_option_expiry
 from intellidhan_schemas.signals import (
     Action,
     Alert,
@@ -144,20 +146,32 @@ class Composer:
     def _compose_option(
         self, alert_id: str, setup: Setup, leg: OptionLeg, risk_budget: float
     ) -> Alert | None:
+        expected_type = "CALL" if setup.direction == Direction.LONG else "PUT"
+        if (leg.side != "BUY" or leg.option_type != expected_type
+                or not eligible_option_expiry(
+                    setup.module, leg.expiry, setup.ts,
+                    expiry_close=MarketClock().option_expiry_close(leg.expiry),
+                )
+                or leg.delta is None or not math.isfinite(leg.delta)
+                or not 0 < abs(leg.delta) <= 1
+                or (leg.delta > 0) != (expected_type == "CALL")):
+            return self._compose_equity(alert_id, setup, risk_budget)
         quote = self.options.leg_quote(leg)
         if quote is None:
             return self._compose_equity(alert_id, setup, risk_budget)
         bid, ask = quote
+        if not all(math.isfinite(v) for v in (bid, ask)) or bid <= 0 or ask < bid:
+            return self._compose_equity(alert_id, setup, risk_budget)
         mid = (bid + ask) / 2
         if mid <= 0 or (ask - bid) / mid > 0.10:  # RULE-T8 liquidity gate
             return self._compose_equity(alert_id, setup, risk_budget)
         entry_limit = round(mid + 0.4 * (ask - mid), 2)  # doc 09 §2 slippage model
-        delta = abs(leg.delta or 0.4)
+        delta = abs(leg.delta)
         underlying_risk = abs(setup.entry_underlying - setup.stop_underlying)
         stop_est = max(round(entry_limit - delta * underlying_risk, 2), 0.05)
-        per_contract_risk = (entry_limit - stop_est) * 100
-        if per_contract_risk <= 0:
+        if entry_limit <= stop_est:
             return None
+        per_contract_risk = entry_limit * 100
         contracts = math.floor(risk_budget / per_contract_risk)
         capital = contracts * entry_limit * 100
         max_capital = self.budgets.capital(setup.module) * self.drawdown_multiplier
@@ -174,7 +188,7 @@ class Composer:
             entry_limit=entry_limit, entry_zone=(round(mid * 0.98, 2), zone_hi),
             stop_est_vehicle=stop_est,
             capital=round(capital, 2), dollar_risk=round(dollar_risk, 2),
-            budget_note=(f"{contracts} contract{'s' if contracts != 1 else ''} risk "
+            budget_note=(f"{contracts} contract{'s' if contracts != 1 else ''} premium at risk "
                          f"${dollar_risk:,.0f} = "
                          f"{dollar_risk / self.budgets.capital(setup.module):.0%} of "
                          f"${self.budgets.capital(setup.module):,.0f} {setup.module.value} budget"),
@@ -199,6 +213,18 @@ class Composer:
             management.append("Hard flatten by 15:55 ET")
         thesis = f"{setup.explain} {complement_line(setup.confidence)}"
         risks = [self._evidence_risk_line(setup.strategy)]
+        research_only = setup.research_only or any(leg.research_only for leg in legs)
+        if vehicle == Vehicle.OPTION:
+            risks.append("Full premium is at risk; the estimated option stop is not a loss guarantee.")
+            risks.append(
+                "Reward/risk and targets describe the underlying setup, not an option-return "
+                "forecast. Dollar risk reserves the full option premium."
+            )
+        if any(leg.research_only for leg in legs):
+            risks.append(
+                "Research option chain: quote freshness is unverified and delta is estimated; "
+                "not eligible for live execution."
+            )
         if setup.evidence and setup.evidence.expected_net_r is not None:
             risks.append(
                 f"Declared expected net R after {setup.evidence.cost_stress_r}R cost stress: "
@@ -221,8 +247,8 @@ class Composer:
             thesis=thesis, invalidation=setup.invalidation, management=management,
             risks=risks,
             valid_until=setup.ts + VALIDITY[setup.module],
-            status="SHADOW" if setup.research_only else "ACTIVE",
-            research_only=setup.research_only,
+            status="SHADOW" if research_only else "ACTIVE",
+            research_only=research_only,
             evidence=setup.evidence,
         )
 
