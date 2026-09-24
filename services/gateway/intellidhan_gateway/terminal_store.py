@@ -9,8 +9,11 @@ universe membership, watchlists, and saved screens for the discovery workflow.
 from __future__ import annotations
 
 import json
+import math
 import os
 import sqlite3
+import threading
+import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -182,6 +185,19 @@ def _slug(value: str) -> str:
     return "".join(ch for ch in cleaned if ch.isalnum() or ch in "-_")[:64]
 
 
+class StoreUnavailable(RuntimeError):
+    """Sanitized, retryable storage failure; never a missing account or empty ledger."""
+
+    def __init__(self, reason: str, retry_after_seconds: int) -> None:
+        self.reason = reason
+        self.retry_after_seconds = max(1, retry_after_seconds)
+        super().__init__(
+            "Database active-time quota exhausted. Saved data is temporarily unavailable."
+            if reason == "quota"
+            else "Saved data is temporarily unavailable. Please try again shortly."
+        )
+
+
 class TerminalStore:
     """Small synchronous store; writes are short and remain off market math paths."""
 
@@ -196,6 +212,45 @@ class TerminalStore:
         self.postgres = configured.startswith(("postgres://", "postgresql://"))
         self.initialized = False
         self.last_error: str | None = None
+        self._failure_reason: str | None = None
+        self._retry_at = 0.0
+        self._recovery_probe = False
+        self._failure_lock = threading.Lock()
+        self._failure_generation = 0
+
+    @property
+    def retry_after_seconds(self) -> int:
+        return max(0, math.ceil(self._retry_at - time.monotonic()))
+
+    @property
+    def failure_generation(self) -> int:
+        """Monotonic failure history; a successful probe must not erase it."""
+        with self._failure_lock:
+            return self._failure_generation
+
+    def _admit_connection(self) -> tuple[int, bool]:
+        # One recovery probe at a time, shared by browser and background work.
+        # Successful connections are short-lived so an idle DB can sleep.
+        with self._failure_lock:
+            if self._failure_reason:
+                if self.retry_after_seconds or self._recovery_probe:
+                    raise StoreUnavailable(self._failure_reason, self.retry_after_seconds)
+                self._recovery_probe = True
+                return self._failure_generation, True
+            return self._failure_generation, False
+
+    def _record_connection_failure(self, exc: Exception) -> StoreUnavailable:
+        # Never send libpq's host/DSN/error details to a public health endpoint.
+        reason = "quota" if "active time quota" in str(exc).lower() else "connection"
+        delay = 1800 if reason == "quota" else 60
+        failure = StoreUnavailable(reason, delay)
+        with self._failure_lock:
+            self._failure_generation += 1
+            self._failure_reason = reason
+            self._retry_at = time.monotonic() + delay
+            self._recovery_probe = False
+            self.last_error = str(failure)
+        return failure
 
     @property
     def backend(self) -> str:
@@ -211,21 +266,40 @@ class TerminalStore:
 
     @contextmanager
     def _connection(self) -> Iterator[Any]:
-        if self.postgres:
-            with psycopg.connect(self.location, row_factory=dict_row) as connection:
-                yield connection
-                connection.commit()
-            return
-        path = Path(self.location)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        connection = sqlite3.connect(path)
-        connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA foreign_keys=ON")
+        generation, recovery_probe = self._admit_connection()
         try:
-            yield connection
-            connection.commit()
+            if self.postgres:
+                with psycopg.connect(
+                    self.location,
+                    row_factory=dict_row,
+                    connect_timeout=5,
+                    options="-c statement_timeout=5000 -c lock_timeout=5000",
+                ) as connection:
+                    yield connection
+                    connection.commit()
+            else:
+                path = Path(self.location)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                connection = sqlite3.connect(path, timeout=5)
+                connection.row_factory = sqlite3.Row
+                connection.execute("PRAGMA foreign_keys=ON")
+                try:
+                    yield connection
+                    connection.commit()
+                finally:
+                    connection.close()
+        except (psycopg.OperationalError, psycopg.InterfaceError, sqlite3.OperationalError) as exc:
+            raise self._record_connection_failure(exc) from exc
+        else:
+            with self._failure_lock:
+                if generation == self._failure_generation:
+                    self._failure_reason = None
+                    self._retry_at = 0.0
+                    self.last_error = None
         finally:
-            connection.close()
+            with self._failure_lock:
+                if recovery_probe and generation == self._failure_generation:
+                    self._recovery_probe = False
 
     def _sql(self, statement: str) -> str:
         return statement.replace("?", "%s") if self.postgres else statement
@@ -240,7 +314,6 @@ class TerminalStore:
                 else:
                     connection.executescript(SCHEMA)
             self.initialized = True
-            self.last_error = None
         except Exception as exc:
             self.initialized = False
             self.last_error = str(exc)
@@ -882,4 +955,6 @@ class TerminalStore:
             "connected": self.initialized and self.last_error is None,
             "deploy_durable": self.deploy_durable,
             "last_error": self.last_error,
+            "failure_reason": self._failure_reason,
+            "retry_after_seconds": self.retry_after_seconds,
         }

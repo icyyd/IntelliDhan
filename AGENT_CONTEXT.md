@@ -1,5 +1,158 @@
 # IntelliDhan Agent Context
 
+## 2026-09-24 — Beginner signal/analyst refactor
+
+- User requested a plain-language signal generator and stock analyst for 0DTE,
+  2–5-day Swing, and LEAPS, informed by three Money Talk Rashad resources in an
+  external browser. Continued isolated `codex/beta-reliability-strategy-gates`
+  / draft PR #26; original shared dirty checkout remains untouched. No merge,
+  deployment, strategy promotion, new real account, or trading action authorized.
+- Reviewed external Chrome course indexes, written simplified-stop and paper
+  lessons, selected video-caption passages (0DTE, LEAPS, strike selection), and
+  embedded TradeFormIQ UI. This was targeted, not all 80 general lessons or a
+  complete/current entry-rule transcription. Doc 36 records precise scope,
+  references, implementation decisions, and testable follow-up contracts.
+- New default shell: `web/desk.html`, isolated `desk.js`/`desk.css`; three tasks
+  Signals / Stock analyst / My journal. Old tools retained at `/advanced`.
+  Navy/orange owl-lotus brand, responsive card hierarchy, details-on-demand,
+  source timestamps, no trading controls. Uses accessible focus/text labels and
+  progressive disclosure from the UI/UX skill, not its generic template palette.
+- Added typed pure decision summaries: trend, descriptive buy/sell/hold/wait,
+  next step, horizon coverage, source/packet age distinction, explicit stock vs
+  option units, execution_authorized=false. Independent review tightened
+  alert-specific sample/calibration/expectancy checks; an unrelated sufficient
+  bucket cannot label a weak alert reviewable. Missing/stale evidence means wait.
+- `/api/state.signal_desk` and `/api/dossier/{symbol}.decision` are additive.
+  `include_review=false` skips paid Claude for background dossier refresh;
+  explicit analysis retains multi-brain/advisory review. `/api/playbooks` is a
+  public educational catalog, including unsupported credit spreads, available
+  even during DB cooldown. It cannot change policy or produce broker intents.
+- Browser controller refreshes every two minutes while visible, handles 401
+  versus 503, honors retry cooldowns, aborts stale searches, clears private data
+  on verified logout/expiry, queues navigation refreshes, preserves open details,
+  and uses HttpOnly account sessions. Watchlist writes stay user-initiated.
+- Current strategy boundaries remain: Swing has no uniform 2–5-session exit;
+  LEAPS has no registered entry/exit strategy; daily forecast is 21/63 sessions;
+  source-course spreads are not supported by the long-option executor. Audit
+  found fixed eight-hour Swing entry expiry can preclude the next-day fill; doc 36 schedules
+  a separate causal lifecycle change, not a display-layer permission bypass.
+- Fixed two existing wall-clock-dependent paper test fixtures to known regular
+  session timestamps, with fill time before exit bar; kept every assertion.
+  Intermediate full regression: 591 passed / 6 network tests deselected. Later UI
+  source-age and navigation tests were added; record final validation below.
+- Backed up local SQLite before restarting port 8321. New default page verified there;
+  user still needs local account setup, no password fabricated. Isolated
+  `scripts/preview_signal_desk.py` on port 8322 provides explicitly DEMO synthetic
+  data for filled-screen visual QA, no real stack/database/provider imports,
+  all mutations blocked. Stop the temporary preview at the end of QA. Keep the
+  actual port 8321 runtime in local-only Simulation; do not conflate preview results
+  with market observations or performance.
+- Final local verification: 605 passed, 6 opt-in network tests deselected; pinned
+  Ruff 0.4.10, JavaScript parsing, and diff checks passed. Independent reviewers
+  cleared both backend and frontend readiness/source-age fixes plus the preview
+  boundaries. Responsive DOM bounds showed no horizontal overflow at 320, 375,
+  768, 1024, or 1440px; actual SPY public analysis rendered WAIT with explicit
+  stale/missing coverage. Local health remained READY. No live-strategy efficacy
+  claim follows from these software tests. Check the new PR CI after pushing.
+
+## 2026-09-24 — Private local research runtime
+
+- User chose local operation. Continue the existing cohesive branch
+  `codex/beta-reliability-strategy-gates` in
+  `/Users/dhanvin/Documents/IntelliDhan-beta-optimize`, draft PR #26. Latest
+  fetched main is still `26dd83f`; no other open PR was present. Original dirty
+  `/Users/dhanvin/Documents/IntelliDhan` checkout remains untouched.
+- Added `scripts/local_runtime.py`: start/run/status/stop/create-admin/backup;
+  uses private persistent storage outside Git, isolated credentials and source
+  paths, loopback binding, verified process identity, and SQLite online backups.
+  It drops inherited cloud/provider credentials and prevents `.env` loading.
+  Local-only mode is enforced server-side; Live cannot be selected/activated.
+- Local server was started at `http://127.0.0.1:8321` using the existing original
+  checkout's dependency venv with worktree-specific PYTHONPATH. Private data:
+  `~/Library/Application Support/IntelliDhan/local`. No passwords/tokens were
+  displayed or committed. Cloud accounts/history were not imported; user must
+  run `create-admin` in their terminal and sign in. No account was fabricated.
+- Actual smoke: liveness, health, auth session, authenticated state/status/trade
+  log returned 200; health READY, durable SQLite restored, current SPY/QQQ Yahoo
+  bars observed. Local-only=true, effective mode SIMULATION, no option fills.
+  Verified online backup and graceful immediate stop/start with retained state.
+  TIME_WAIT initially caused a false occupied-port error; SO_REUSEADDR (not
+  REUSEPORT) fixed it, with a regression that an active listener still blocks.
+  UI rendered in the in-app browser; signed-in UI was not tested with a newly
+  created personal account. No auto-login/service/keep-awake was installed.
+- Fixed research 9EMA admission deadlock (confidence capped at 0.74 vs 0.75
+  minimum) only for its Simulation path. Live threshold/calibration unchanged.
+  Fresh option Simulation entry now rechecks actual debit and original/current
+  capital ceilings. Daily premium usage and open-position limits are tracked
+  separately from Live, using actual entry debit/date, including closed trades.
+  No implicit resizing or policy-cap increase. Independent review also fixed
+  Simulation risk leaking into Live's admission reservation sum.
+- Underlying paper cutoff is session close minus five minutes (including
+  half-days). Missing trustworthy cutoff bars leave open trades UNRESOLVED_DATA
+  without invented return; pending trades expire unfilled. UI shows unknown
+  outcomes and the underlying-model/option-performance distinction. This does
+  not validate actual v2 full-position option exits or broker protection.
+- Verification: 508 tests passed, 6 live-network integration tests deselected;
+  Ruff, both inline JS parse checks, JS behavior tests, and diff check passed.
+  One existing Starlette/httpx deprecation warning remains. Separate independent
+  agents reviewed launcher, local-only gates, admission, paper cutoffs, risk
+  accounting, and docs. Check PR CI after this checkpoint.
+  Initial local lint used Ruff 0.15.21 while CI pins 0.4.10; CI caught E721 in
+  the strict quantity check. Follow-up uses explicit integer/boolean checks
+  with a boolean regression; pinned Ruff 0.4.10 and independent re-review pass.
+  Use the pinned version for subsequent lint runs. PostgreSQL CI passed on
+  the initial checkpoint; verify the new CI run after this lint correction.
+- Actual strategy remains HISTORICAL_RESEARCH, live_eligible=false, no qualified
+  MTF winner. September tests are known/negative, not a fresh holdout. Do not
+  conflate raw EMA or underlying tranche returns with MTF option profitability.
+  Swing replay's causal fills/costs/gaps/splits and LEAPS data remain blockers.
+  Optional Yahoo-option Composer is not connected to LiveLoop; its premium-zone
+  mapping must be fixed before dynamic intent use, not bypassed with larger caps.
+- No official Robinhood MCP tools were available in this agent session. CLI
+  shows an OAuth-configured `robinhood` alias and a project `robinhood-trading`
+  alias requiring login; neither proves current account/tool access here.
+  User must authenticate/reconnect and tools must be discovered before quotes.
+  Starting the app does not start a quote collector. No real orders, calibration
+  promotion, cloud decommission, merge, or deployment were performed.
+- Next: local admin setup, verified official MCP read-only quote access, then a
+  frozen forward Simulation study of the actual MTF+v2 lifecycle including
+  bid/ask costs, gaps, all skips, and uncertainty. See doc 35. Preserve explicit
+  promotion, mode activation, pre-trade review and per-order confirmation gates.
+
+## 2026-09-24 — Beta cost, recovery, and strategy evidence
+
+- Worktree `/Users/dhanvin/Documents/IntelliDhan-beta-optimize`, branch
+  `codex/beta-reliability-strategy-gates`, based on `origin/main` `26dd83f`.
+  Original shared checkout's unrelated modifications remain untouched.
+- User chose to retain Koyeb; no ChatGPT Sites migration. Free PostgreSQL's
+  five-hour monthly active allowance cannot support a 6.5-hour trading day.
+  Production quota failure is not cured by this code; no billing changes made.
+- Added sanitized store 503/circuit recovery, off-thread boot/account work,
+  session preservation, no actionability during storage failure, and quiet
+  recovery replay. Hidden tabs pause polling/WS; Home levels avoid optional AI.
+- Optional research option plans enforce horizon/quote rules and full-premium
+  risk; Yahoo legs remain SHADOW. Production composer still uses underlying
+  plans; official-MCP Live rules, Simulation default, and calibration unchanged.
+- Frozen later-period tests lose after costs: ORR control 48 trades/-0.4843R,
+  ORR July shadow candidate 36/-0.6321R, 30m EMA crossover 43/-0.2896R at
+  2 bps/side, Jul 27–Sep 23. This is not a test of production EMA9_MTF options.
+  Daily trend filters reduced drawdown but lagged buy-and-hold. Read the full
+  limitations in `docs/research/2026-09-24-beta-validation.md`.
+- Independent option/reliability/UI re-reviews found no remaining blockers in
+  this patch. Review fixed a schema-init race, a recovery-reconciliation race,
+  explicit logout during cooldown, and early-close option expiry handling.
+  The store generation latch survives successful browser probes until the
+  engine restores its durable state. Existing paper-executor 15:55 flatten
+  behavior remains a documented half-day readiness blocker.
+- Verification: 430 tests passed, 6 live integration tests deselected; Ruff,
+  inline JavaScript behavior/parse checks, and `git diff --check` passed.
+  PostgreSQL integration checks run separately in PR CI. One existing
+  Starlette/httpx deprecation warning remains.
+  Tests use an explicit worktree PYTHONPATH with the original venv; do not let
+  its editable install accidentally test the older shared checkout.
+- Next operator action is PR review/merge authorization; no deployment or
+  broker action is authorized by this implementation pass.
+
 ## 2026-07-24 — Responsive overlap guard
 
 - Follow-up branch `codex/overlap-fix` is based on merged `main` commit

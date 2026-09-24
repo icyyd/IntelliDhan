@@ -9,13 +9,13 @@ Underlying-level simulation: options P&L is graded on the underlying R-multiple
 
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import datetime, timedelta
 from enum import Enum
 
 from pydantic import BaseModel
 
-from intellidhan_ingestor.market_clock import ET
-from intellidhan_schemas import Bar
+from intellidhan_ingestor.market_clock import ET, MarketClock
+from intellidhan_schemas import Bar, SessionState
 from intellidhan_schemas.signals import Alert, Direction, Module, Setup, stable_plan_key
 
 
@@ -27,6 +27,7 @@ class Outcome(str, Enum):
     TP_FULL = "TP_FULL"           # all tranches exited at targets
     FLATTENED_TIME = "FLATTENED_TIME"
     STOPPED_AFTER_BE = "STOPPED_AFTER_BE"  # breakeven after T1 ratchet
+    UNRESOLVED_DATA = "UNRESOLVED_DATA"  # cannot establish a valid timed-exit observation
 
 
 class PaperTrade(BaseModel):
@@ -54,6 +55,7 @@ class PaperTrade(BaseModel):
     mfe_r: float = 0.0            # max favorable excursion in R
     valid_until: datetime
     research_only: bool = False
+    resolution_note: str | None = None
 
     @classmethod
     def from_alert(cls, alert: Alert, setup: Setup) -> "PaperTrade":
@@ -73,13 +75,14 @@ class PaperTrade(BaseModel):
 
 
 TRANCHES = (0.33, 0.33, 0.34)
-ZDTE_FLATTEN = time(15, 55)
+ZDTE_FLATTEN_BEFORE_CLOSE = timedelta(minutes=5)
 
 
 class PaperExecutor:
     """Feed every 5m bar; open trades resolve exactly per their printed plan."""
 
     def __init__(self) -> None:
+        self.clock = MarketClock()
         self.trades: list[PaperTrade] = []
         self._active: dict[str, list[PaperTrade]] = {}
         self._by_alert_id: dict[str, PaperTrade] = {}
@@ -148,6 +151,21 @@ class PaperExecutor:
         return settled
 
     def _advance(self, t: PaperTrade, bar: Bar) -> bool:
+        if t.outcome not in {Outcome.PENDING, Outcome.OPEN}:
+            return False
+        flatten_at = None
+        if t.module == Module.ZDTE:
+            # Anchor the session to the plan, never the next arriving bar.
+            # Otherwise a gap through the close can become an overnight scalp.
+            reference = t.created_at or t.filled_at or t.valid_until
+            session_close = (
+                self.clock.option_expiry_close(reference.astimezone(ET).date().isoformat())
+                if reference.tzinfo is not None else None
+            )
+            if session_close is None:
+                return self._unresolved_session(t, bar, "Trading-session calendar is unavailable.")
+            flatten_at = session_close - ZDTE_FLATTEN_BEFORE_CLOSE
+
         # Boot catch-up replays bars from before a restored plan existed.  A
         # pending plan can only fill on a bar strictly after alert creation;
         # an open plan can only advance on a bar strictly after its recorded
@@ -160,6 +178,23 @@ class PaperExecutor:
         )
         if not_before is not None and bar.ts_close <= not_before:
             return False
+
+        if flatten_at is not None:
+            if t.outcome == Outcome.PENDING and bar.ts_close >= flatten_at:
+                t.outcome = Outcome.EXPIRED_UNFILLED
+                t.exit_ts = bar.ts_close
+                t.resolution_note = "Entry window ended at the session's five-minute exit cutoff."
+                return True
+            if t.outcome == Outcome.OPEN and bar.ts_close > flatten_at:
+                return self._unresolved_session(
+                    t, bar,
+                    f"Missing exit observation at {flatten_at.isoformat()}; later prices "
+                    "cannot establish the scheduled hypothetical fill.",
+                )
+            # Never fill a regular-session plan with premarket/holiday bars.
+            bar_open = bar.ts_close - timedelta(seconds=bar.timeframe.seconds)
+            if self.clock.session_state(bar_open) != SessionState.RTH:
+                return False
 
         sign = 1.0 if t.direction == Direction.LONG else -1.0
         risk = abs(t.entry - t.initial_stop)
@@ -221,7 +256,7 @@ class PaperExecutor:
                 return True
 
         # 0DTE hard flatten (doc 04 §4)
-        if t.module == Module.ZDTE and bar.ts_close.astimezone(ET).time() >= ZDTE_FLATTEN:
+        if flatten_at is not None and bar.ts_close == flatten_at:
             exited_r = sum(TRANCHES[i] * sign * (t.targets[i] - t.entry) / risk
                            for i in range(t.tranches_exited))
             remaining = 1.0 - sum(TRANCHES[: t.tranches_exited])
@@ -232,16 +267,31 @@ class PaperExecutor:
             return True
         return False
 
+    @staticmethod
+    def _unresolved_session(t: PaperTrade, bar: Bar, reason: str) -> bool:
+        if t.outcome == Outcome.PENDING:
+            t.outcome = Outcome.EXPIRED_UNFILLED
+            t.exit_ts = bar.ts_close
+        else:
+            t.outcome = Outcome.UNRESOLVED_DATA
+            t.exit_ts = None  # no invented exit timestamp or price
+        t.realized_r = None
+        t.resolution_note = reason
+        return True
+
 
 def performance_report(trades: list[PaperTrade]) -> dict:
-    decided = [t for t in trades if t.realized_r is not None]
+    unresolved = sum(t.outcome == Outcome.UNRESOLVED_DATA for t in trades)
+    decided = [t for t in trades if t.realized_r is not None
+               and t.outcome != Outcome.UNRESOLVED_DATA]
     if not decided:
-        return {"decided": 0}
+        return {"decided": 0, "unresolved_data": unresolved}
     wins = [t for t in decided if t.realized_r > 0]
     gross_win = sum(t.realized_r for t in wins)
     gross_loss = -sum(t.realized_r for t in decided if t.realized_r < 0)
     return {
         "decided": len(decided),
+        "unresolved_data": unresolved,
         "win_rate": round(len(wins) / len(decided), 3),
         "avg_r": round(sum(t.realized_r for t in decided) / len(decided), 3),
         "profit_factor": round(gross_win / gross_loss, 2) if gross_loss > 0 else None,

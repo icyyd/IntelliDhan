@@ -140,6 +140,11 @@ class OptionLeg(BaseModel):
     expiry: str          # YYYY-MM-DD
     delta: float | None
     iv: float | None
+    quote_source: str | None = None
+    delta_source: str | None = None
+    # A chain without a verified quote timestamp/Greeks is research evidence,
+    # even if it was downloaded a moment ago.
+    research_only: bool = False
 
 
 class TakeProfit(BaseModel):

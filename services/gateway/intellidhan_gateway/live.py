@@ -28,13 +28,15 @@ from intellidhan_schemas import DataQuality, SessionState, Timeframe
 from intellidhan_schemas.signals import Alert, stable_plan_key
 
 from intellidhan_gateway.autotrade import AutomationMode, AutotradeManager
-from intellidhan_gateway.terminal_store import TerminalStore
+from intellidhan_gateway.terminal_store import StoreUnavailable, TerminalStore
 from intellidhan_gateway.universe import load_live_symbols, security_records
 
 def _load_dotenv() -> None:
     """Load repo .env into the environment (existing vars win) so Telegram
     credentials and DB passwords work without shell exports. Runs at module
     import — before any LiveLoop/TelegramSender is constructed."""
+    if os.getenv("INTELLIDHAN_LOCAL_ONLY", "").lower() in {"1", "true", "yes"}:
+        return  # the local launcher owns its isolated, allowlisted environment
     env = Path(__file__).resolve().parents[3] / ".env"
     if not env.exists():
         return
@@ -122,15 +124,22 @@ class LiveLoop:
         self.provider_state = "NOT_READY"
         self.last_error: str | None = None
         self.persistence_ready = False
+        self._restored_store_generation = self.store.failure_generation
         self.quality_reports: dict[str, dict] = {}
         self.ws_subscribers: list[asyncio.Queue] = []
 
-    async def boot(self) -> None:
-        self.boot_state = "STARTING"
-        self.last_error = None
-        restart_at = datetime.now(timezone.utc)
+    @property
+    def persistence_recovery_required(self) -> bool:
+        return bool(self.store.last_error) or (
+            self._restored_store_generation != self.store.failure_generation
+        )
+
+    def _restore_operational_state(self, restart_at: datetime) -> None:
+        """Blocking database work runs in a thread so liveness stays responsive."""
+        generation = self.store.failure_generation
         self.store.init_schema()
-        self.persistence_ready = True
+        if not self.store.list_watchlists():
+            self.store.create_watchlist("Research")
         self.store.seed_universe(security_records())
         self.autotrade = AutotradeManager(
             self.autotrade.policy_path,
@@ -185,7 +194,18 @@ class LiveLoop:
             )
             controls.register_open(trade.module, trade.symbol, trade.strategy)
         self.seen_bars = set()
+        if self.store.last_error or generation != self.store.failure_generation:
+            raise StoreUnavailable("connection", self.store.retry_after_seconds)
+        self._restored_store_generation = generation
+        self.persistence_ready = True
 
+    async def boot(self) -> None:
+        self.boot_state = "STARTING"
+        self.started_at = None  # recovery replays are notification-silent too
+        self.persistence_ready = False
+        self.last_error = None
+        restart_at = datetime.now(timezone.utc)
+        await asyncio.to_thread(self._restore_operational_state, restart_at)
         end = restart_at
         from intellidhan_engine.macro import build_macro_series
         vix_task = self.provider.get_bars(
@@ -224,6 +244,8 @@ class LiveLoop:
         intraday = await self._ingest_recent(
             days=4, now=end
         )  # warm intraday TFs + today so far
+        if self.persistence_recovery_required:
+            raise StoreUnavailable("connection", self.store.retry_after_seconds)
         self.started_at = end
         self.last_heartbeat = end
         self.last_error = intraday.summary
@@ -387,6 +409,10 @@ class LiveLoop:
         return cancelled
 
     def symbol_block_reason(self, symbol: str) -> str | None:
+        if self.persistence_recovery_required:
+            return "saved trade state is unavailable; execution is paused"
+        if self.boot_state in {"STARTING", "FAILED"}:
+            return "market engine is recovering; execution is paused"
         status = self.symbol_health.get(symbol.upper())
         if status is None:
             return f"{symbol.upper()} market data is not monitored"
@@ -575,7 +601,7 @@ class LiveLoop:
         if self.persistence_ready:
             self.store.upsert_paper_trade(trade.model_dump(mode="json"))
         controls = (
-            self.runner.shadow_controls if getattr(setup, "research_only", False)
+            self.runner.shadow_controls if getattr(alert, "research_only", False)
             else self.runner.controls
         )
         controls.register_open(setup.module, setup.symbol, setup.strategy)
@@ -683,28 +709,39 @@ class LiveLoop:
     async def run_forever(self) -> None:
         self.loop_state = "STARTING"
         try:
-            while self.started_at is None:
+            while True:
                 try:
-                    await self.boot()
+                    if self.started_at is None or not self.persistence_ready or self.persistence_recovery_required:
+                        if self.store.retry_after_seconds:
+                            raise StoreUnavailable(
+                                self.store.readiness().get("failure_reason") or "connection",
+                                self.store.retry_after_seconds,
+                            )
+                        await self.boot()
+                    self.loop_state = "RUNNING"
+                    await self.poll_once(datetime.now(timezone.utc))
                 except asyncio.CancelledError:
                     raise
                 except Exception as exc:
                     self.boot_state = "FAILED"
                     self.loop_state = "DEGRADED"
                     self.provider_state = "NOT_READY"
+                    self.persistence_ready = False
                     self.last_error = str(exc)
                     self.last_heartbeat = datetime.now(timezone.utc)
                     print(f"[live] boot failed: {exc}")
-                    await asyncio.sleep(POLL_SECONDS)
-            self.loop_state = "RUNNING"
-            while True:
-                await self.poll_once(datetime.now(timezone.utc))
                 await asyncio.sleep(POLL_SECONDS)
         finally:
             self.loop_state = "STOPPED"
 
     async def poll_once(self, now: datetime) -> None:
         """Run one supervised iteration; operational failures degrade, never kill it."""
+        if self.persistence_recovery_required:
+            self.persistence_ready = False
+            self.loop_state = "DEGRADED"
+            self.last_error = self.store.last_error or "saved trade state requires recovery"
+            self.last_heartbeat = datetime.now(timezone.utc)
+            return
         errors: list[str] = []
         try:
             await self.maybe_brief(now)
@@ -713,6 +750,12 @@ class LiveLoop:
         except Exception as exc:
             errors.append(f"briefing: {exc}")
             print(f"[live] briefing error: {exc}")
+        if self.persistence_recovery_required:
+            self.persistence_ready = False
+            self.loop_state = "DEGRADED"
+            self.last_error = self.store.last_error or "saved trade state requires recovery"
+            self.last_heartbeat = datetime.now(timezone.utc)
+            return
         session = self.clock.session_state(now)
         required_close = self.clock.latest_completed_bar_close(
             now - BAR_PUBLICATION_GRACE, Timeframe.M5
@@ -750,6 +793,9 @@ class LiveLoop:
             self.last_poll = now
         elif session != SessionState.RTH:
             self._mark_market_closed()
+        if self.persistence_recovery_required:
+            self.persistence_ready = False
+            errors.append("saved trade state requires recovery")
         self.last_error = "; ".join(errors) or None
         self.loop_state = "DEGRADED" if errors else "RUNNING"
         self.last_heartbeat = datetime.now(timezone.utc)
@@ -771,6 +817,7 @@ class LiveLoop:
             and heartbeat_age_seconds <= POLL_SECONDS * 3 + 30
         )
         persistence = self.store.readiness()
+        persistence_restored = self.persistence_ready and not self.persistence_recovery_required
         durability_required = os.getenv(
             "INTELLIDHAN_REQUIRE_DURABLE_STATE", ""
         ).lower() in {"1", "true", "yes"}
@@ -779,7 +826,8 @@ class LiveLoop:
             self.boot_state == "READY"
             and self.loop_state == "RUNNING"
             and self.provider_state == "READY"
-            and self.persistence_ready
+            and persistence_restored
+            and persistence["connected"]
             and durability_ready
             and heartbeat_fresh
         )
@@ -789,6 +837,7 @@ class LiveLoop:
             "loop_state": self.loop_state,
             "provider_state": self.provider_state,
             "persistence": persistence,
+            "persistence_restored": persistence_restored,
             "durability_required": durability_required,
             "durability_ready": durability_ready,
             # Keep the snapshot contract JSON-native even though FastAPI also
@@ -810,7 +859,11 @@ class LiveLoop:
             "heartbeat_age_seconds": heartbeat_age_seconds,
             "last_error": self.last_error,
             "data_quality": self.quality_reports,
-            "symbols": self.symbol_health,
+            "symbols": {
+                symbol: {**status, "actionable": False}
+                if not persistence["connected"] or not persistence_restored else status
+                for symbol, status in self.symbol_health.items()
+            },
             "quarantined_symbols": [
                 symbol
                 for symbol, status in self.symbol_health.items()
@@ -819,7 +872,7 @@ class LiveLoop:
             "actionable_symbols": [
                 symbol
                 for symbol, status in self.symbol_health.items()
-                if status["actionable"]
+                if status["actionable"] and persistence["connected"] and persistence_restored
             ],
         }
 

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Understand the market, research a stock, and follow evidence-aware trading setups with IntelliDhan.">
+  <meta name="theme-color" content="#071B36">
+  <title>IntelliDhan · Your signal desk</title>
+  <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/desk.css">
+  <script src="/assets/desk.js" defer></script>
+</head>
+<body class="desk">
+  <a class="desk-skip" href="#deskMain">Skip to main content</a>
+  <header class="desk-header">
+    <a class="desk-brand" href="/" aria-label="IntelliDhan home"><img src="/assets/brand/intellidhan-mark-inverse.svg" width="40" height="40" alt=""><span>Intelli<b>Dhan</b><small>Clarity before action.</small></span></a>
+    <nav class="desk-nav" aria-label="Main navigation">
+      <button type="button" data-desk-view="signals" aria-current="page">Signals</button>
+      <button type="button" data-desk-view="analyst">Stock analyst</button>
+      <button type="button" data-desk-view="journal">My journal</button>
+    </nav>
+    <div class="desk-header-tools"><a class="desk-advanced-link" href="/advanced">Advanced workspace</a><button class="desk-account-button" type="button" id="deskAccountButton">Sign in</button></div>
+  </header>
+  <main class="desk-main" id="deskMain">
+    <div class="desk-statusbar" role="status" aria-live="polite" aria-atomic="true"><span id="deskConnection">Checking your session…</span><span id="deskUpdated">Automatically checks every 2 minutes</span></div>
+    <div class="desk-notice" id="deskNotice" role="status" hidden></div>
+
+    <section id="deskSignals" aria-labelledby="deskSignalsTitle">
+      <div class="desk-intro"><div><p class="desk-eyebrow">Your signal desk</p><h1 id="deskSignalsTitle">A clearer view of what to do next.</h1><p>Start with the trend. See the setup. Know when to wait.</p></div><button class="desk-button desk-button-secondary" type="button" data-desk-view="analyst">Research a stock <span aria-hidden="true">↗</span></button></div>
+      <section class="desk-pulse" aria-label="Market direction and next step"><div id="deskPulse"><p class="desk-eyebrow">Next step</p><h2>Wait for verified data</h2><p>Sign in to see the current market and research setups.</p></div><div class="desk-benchmarks" id="deskBenchmarks" aria-label="SPY, QQQ and SPX market context"></div></section>
+      <div class="desk-section-head"><div><h2>Find your timeframe</h2><p>Different holding periods need different evidence.</p></div></div>
+      <div class="desk-horizons" role="tablist" aria-label="Holding period">
+        <button id="deskTab0dte" type="button" role="tab" data-desk-horizon="0DTE" aria-selected="true" aria-controls="deskSignalPanel"><b>Today · 0DTE</b><small>Same-day options · high risk</small></button>
+        <button id="deskTabSwing" type="button" role="tab" data-desk-horizon="SWING" aria-selected="false" aria-controls="deskSignalPanel" tabindex="-1"><b>Swing trades</b><small>Target: 2–5 trading days</small></button>
+        <button id="deskTabLeaps" type="button" role="tab" data-desk-horizon="LEAPS" aria-selected="false" aria-controls="deskSignalPanel" tabindex="-1"><b>LEAPS</b><small>Long-dated options research</small></button>
+      </div>
+      <section id="deskSignalPanel" role="tabpanel" aria-labelledby="deskTab0dte" tabindex="0">
+        <div class="desk-section-head"><div><h2 id="deskHorizonTitle">Today’s setups</h2><p id="deskHorizonNote">0DTE options can lose their full premium in one session.</p></div><span class="desk-tag desk-tag-research">Evidence before execution</span></div>
+        <p class="desk-muted" id="deskSignalCount" role="status"></p>
+        <div id="deskSignalList" class="desk-card-grid" aria-live="polite"><div class="desk-empty"><h3>Your signals will appear here.</h3><p>Sign in to load current setups. A rising or falling market alone is not an entry signal.</p></div></div>
+        <details class="desk-card desk-detail desk-playbook-details"><summary>How we find setups for this timeframe</summary><div id="deskPlaybooks"><p class="desk-muted">Strategy coverage is loading. Popularity does not establish profitability.</p></div></details>
+      </section>
+      <div class="desk-context-grid">
+        <section class="desk-card" aria-labelledby="deskBriefTitle"><p class="desk-eyebrow">The daily read</p><h2 id="deskBriefTitle">What matters today</h2><div id="deskBrief"><p class="desk-muted">The daily brief appears after sign-in.</p></div></section>
+        <section class="desk-card" aria-labelledby="deskNewsTitle"><p class="desk-eyebrow">Market context</p><h2 id="deskNewsTitle">Headlines to know</h2><div id="deskNews"><p class="desk-muted">No current headlines loaded.</p></div></section>
+        <section class="desk-card" aria-labelledby="deskEventsTitle"><p class="desk-eyebrow">Plan around volatility</p><h2 id="deskEventsTitle">Events to watch</h2><div id="deskEvents"><p class="desk-muted">Calendar not loaded. Missing events do not mean the day is clear.</p></div></section>
+      </div>
+      <section class="desk-card desk-watchlist" aria-labelledby="deskWatchTitle"><div class="desk-section-head"><div><h2 id="deskWatchTitle">Your watchlist</h2><p>Save a company from Stock analyst. Your list stays with your account.</p></div><a href="/advanced" class="desk-text-link">More discovery tools</a></div><div id="deskWatchlist"><p class="desk-muted">Sign in to see your saved stocks.</p></div></section>
+    </section>
+
+    <section id="deskAnalyst" aria-labelledby="deskAnalystTitle" hidden>
+      <div class="desk-intro"><div><p class="desk-eyebrow">Understand before you act</p><h1 id="deskAnalystTitle">Your stock analyst.</h1><p>The business, the trend, the case for it—and the case against it.</p></div></div>
+      <form class="desk-search-form" id="deskAnalysisForm"><label for="deskAnalysisSymbol">Stock ticker</label><div class="desk-search-row"><input id="deskAnalysisSymbol" name="symbol" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" pattern="[A-Za-z][A-Za-z0-9.\-]{0,11}" placeholder="e.g. AAPL, NVDA, SPY" required><button class="desk-button" id="deskAnalyzeButton" type="submit">Analyze stock <span aria-hidden="true">↗</span></button></div><p class="desk-muted">On-demand research. It cannot place an order or turn a research view into a trading signal.</p></form>
+      <p class="desk-analysis-status" id="deskAnalysisStatus" role="status" aria-live="polite"></p>
+      <div id="deskAnalysisContent"><div class="desk-empty"><h2>One ticker. The complete picture.</h2><p>Get a plain-language view of direction, business strength, risks, and the evidence available for each timeframe.</p></div></div>
+    </section>
+
+    <section id="deskJournal" aria-labelledby="deskJournalTitle" hidden>
+      <div class="desk-intro"><div><p class="desk-eyebrow">Learn from what happened</p><h1 id="deskJournalTitle">My journal.</h1><p>Shared signal and simulation history. Broker records are visible only to authorized administrators.</p></div></div>
+      <div class="desk-notice">Paper results are models, not broker fills. A stock-price replay does not establish option profitability.</div>
+      <div id="deskJournalContent" class="desk-journal-list"><div class="desk-empty"><h2>No journal loaded.</h2><p>Sign in to review the available history.</p></div></div>
+    </section>
+    <footer class="desk-footer"><span>Research first. No promised returns. Options can lose their full premium.</span><a href="/advanced">Detailed evidence, settings &amp; advanced tools</a></footer>
+  </main>
+
+  <dialog class="desk-account-dialog" id="deskAccountDialog" aria-labelledby="deskAccountTitle">
+    <div class="desk-dialog-head"><div><p class="desk-eyebrow">Your workspace</p><h2 id="deskAccountTitle">Sign in</h2></div><button class="desk-close" type="button" id="deskCloseAccount" aria-label="Close account dialog">×</button></div>
+    <div id="deskSignedOut"><p>Use your IntelliDhan account. Your session stays on this browser; no brokerage credentials belong here.</p><form id="deskSignInForm" class="desk-account-form"><label for="deskEmail">Email</label><input id="deskEmail" type="email" autocomplete="username" required><label for="deskPassword">Password</label><input id="deskPassword" type="password" autocomplete="current-password" minlength="12" maxlength="128" required><button class="desk-button" id="deskSignInButton" type="submit">Sign in</button></form><details class="desk-detail"><summary>Need an account?</summary><p id="deskSetupHelp">Ask your administrator for access. For a new local installation, run <code>scripts/local_runtime.py create-admin</code> in Terminal. Do not paste setup codes into chat.</p><a href="/advanced">Account setup and account preferences</a></details></div>
+    <div id="deskSignedIn" hidden><p id="deskAccountIdentity"></p><p>Account preferences and capital limits remain available in the advanced workspace.</p><a class="desk-button desk-button-secondary" href="/advanced">Open account settings</a><button class="desk-button desk-button-quiet" id="deskSignOutButton" type="button">Sign out</button></div>
+    <p id="deskAccountStatus" role="status" aria-live="polite"></p>
+  </dialog>
+  <noscript><p class="desk-notice">JavaScript is needed to load the signal desk. No trading action is available while it is disabled.</p></noscript>
+</body>
+</html>

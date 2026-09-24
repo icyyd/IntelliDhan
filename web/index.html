@@ -1933,9 +1933,9 @@ body.signals-home .legacy-signal-board{display:none}
     <section class="panel autotrade-panel" aria-labelledby="autotradeTitle">
       <div class="panel-head"><h2 id="autotradeTitle">Auto-trader</h2><span class="auto-mode simulation" id="autotradeMode">SIMULATION</span></div>
       <div class="auto-stats">
-        <span><b id="autotradeReady">0</b><small>Ready</small></span>
+        <span><b id="autotradeReady">0</b><small>Live-ready</small></span>
         <span><b id="autotradeApproval">0</b><small>Open trades</small></span>
-        <span><b id="autotradeExpiry">Always</b><small>Live until</small></span>
+        <span><b id="autotradeExpiry">Not enabled</b><small>Live until</small></span>
       </div>
       <button class="auto-configure" id="autotradeConfigure" type="button" onclick="openAutotrade()"><svg class="icon"><use href="#i-gear"/></svg> Review settings</button>
     </section>
@@ -2066,7 +2066,7 @@ body.signals-home .legacy-signal-board{display:none}
     <div class="auto-agent auto-wide"><span class="stat-bubble"><svg class="icon"><use href="#i-user"/></svg></span><span><b>Two clear modes</b><small>Simulation watches real quotes without orders. Live stages real long-option orders through the official Robinhood connection. Changes affect every user and the connected Robinhood agent.</small></span></div>
     <label class="auto-field"><span>Mode</span><select id="autoMode"><option>SIMULATION</option><option>LIVE</option></select></label>
     <label class="auto-field"><span>Live for minutes</span><input type="number" id="autoMinutes" min="1" max="480" value="30"></label>
-    <label class="auto-field"><span>Minimum confidence (%)</span><input type="number" id="autoConfidence" min="50" max="95" value="75"></label>
+    <label class="auto-field"><span>Live confidence minimum (%)</span><input type="number" id="autoConfidence" min="50" max="95" value="75"><small>Research 9EMA Simulation may remain below this threshold; its score is not a calibrated win rate.</small></label>
     <label class="auto-field"><span>Max risk / order ($)</span><input type="number" id="autoOrderRisk" min="1" value="250"></label>
     <label class="auto-field"><span>Max daily risk ($)</span><input type="number" id="autoDailyRisk" min="1" value="500"></label>
     <label class="auto-field"><span>Max open intents</span><input type="number" id="autoOpenIntents" min="1" max="20" value="1"></label>
@@ -2089,6 +2089,8 @@ let lastState = null, calibration = {}, briefing = null, macroNews = null, daily
 let focusData = null, focusIntelligence = {}, focusAIResults = {}, focusRefreshInFlight = false;
 const AUTO_REFRESH_MS = 120000;
 let workspaceRefreshInFlight = null, workspaceRefreshScope = null, stateRefreshInFlight = null, lastWorkspaceRefreshAt = 0;
+let workspaceRefreshFailed = false, dataConnectionUnavailable = false;
+let apiRetryAt = 0, sessionNeedsRecovery = false, sessionRefreshInFlight = null;
 let symbolOrder = [];
 let selectedSymbol = null, selectedAlertId = null, selectionTouched = false;
 let ownerAuthenticated = false, watchlistsCache = [], savedScreensCache = [], discoverLoaded = false;
@@ -2142,6 +2144,7 @@ function heldDataAlerts(s){
   return rawActiveAlerts(s).filter(a=>isDataQuarantined(symbolDataQuality(s,a.symbol)));
 }
 function activeAlerts(s){
+  if(dataConnectionUnavailable) return [];
   return rawActiveAlerts(s).filter(a=>!isDataQuarantined(symbolDataQuality(s,a.symbol)));
 }
 function selectedAlert(s){
@@ -2209,13 +2212,45 @@ function fmtNewsTime(value){
   return parsed.toLocaleDateString([], {month:"short", day:"numeric"})+" · "+parsed.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
 }
 
+function backendRetryDelay(response,payload){
+  const header=response.headers?.get("Retry-After");
+  const seconds=Number(header);
+  const headerDelay=header?(Number.isFinite(seconds)?seconds*1000:Date.parse(header)-Date.now()):0;
+  const bodyDelay=Number(payload.retry_after_seconds)*1000;
+  const delay=Math.max(Number.isFinite(headerDelay)?headerDelay:0,Number.isFinite(bodyDelay)?bodyDelay:0);
+  return delay>0?Math.max(1000,delay):60000;
+}
+function unavailableError(){
+  const error=new Error("Account storage is temporarily unavailable. Updates will resume automatically.");
+  error.status=503; error.code="DATABASE_UNAVAILABLE";
+  error.retryAfterMs=Math.max(0,apiRetryAt-Date.now());
+  return error;
+}
+function markDataUnavailable(){
+  dataConnectionUnavailable=true;
+  workspaceRefreshFailed=true;
+  if(lastState) renderAll();
+  else renderDataQualityNotice({});
+  setHealth("down");
+  updateRefreshStatus("failed");
+}
 async function fetchJSON(url, options){
+  const signingOut=url==="/api/auth/session"&&String(options?.method||"GET").toUpperCase()==="DELETE";
+  if(Date.now()<apiRetryAt&&!signingOut) throw unavailableError();
   const r = await fetch(url, options);
   const payload = await r.json().catch(()=>({}));
   if(!r.ok){
     if(r.status===401 && url!=="/api/auth/session") clearPersonalState("Your session expired.");
     const error = new Error(typeof payload.detail==="string"?payload.detail:`${url} ${r.status}`);
     error.status = r.status;
+    error.code = payload.code;
+    if(r.status===503&&payload.code==="DATABASE_UNAVAILABLE"){
+      error.retryAfterMs=backendRetryDelay(r,payload);
+      apiRetryAt=Math.max(apiRetryAt,Date.now()+error.retryAfterMs);
+      sessionNeedsRecovery=true;
+      pauseLiveConnection();
+      markDataUnavailable();
+    }
     throw error;
   }
   return payload;
@@ -2227,9 +2262,11 @@ async function refresh(){
   stateRefreshInFlight=(async()=>{
     try{
       lastState = await fetchJSON("/api/state");
+      dataConnectionUnavailable=Date.now()<apiRetryAt;
       renderAll();
-      return true;
+      return !dataConnectionUnavailable;
     }catch(e){
+      markDataUnavailable();
       setHealth(e.status===401?"auth":"down");
       return false;
     }
@@ -2257,7 +2294,7 @@ async function refreshBriefing(){
     macroNews = feed && Array.isArray(feed.items) ? feed : null;
     renderBriefing();
     renderMacroNews();
-    return true;
+    return briefResult.status==="fulfilled"&&newsResult.status==="fulfilled";
   }catch(e){ return false; }
 }
 async function refreshDailyBrief(){
@@ -2281,10 +2318,13 @@ async function refreshDailyBrief(){
 function updateRefreshStatus(mode="idle"){
   const container=document.getElementById("refreshStatus"), label=document.getElementById("refreshStatusText");
   if(!container||!label) return;
+  const unavailable=Date.now()<apiRetryAt;
   container.classList.toggle("refreshing",mode==="refreshing");
-  container.classList.toggle("failed",mode==="failed");
+  container.classList.toggle("failed",mode==="failed"||workspaceRefreshFailed||unavailable);
+  if(unavailable){ label.textContent=`Updates paused · retry in ${Math.max(1,Math.ceil((apiRetryAt-Date.now())/60000))}m`; return; }
+  if(document.visibilityState==="hidden"){ label.textContent="Updates paused while away"; return; }
   if(mode==="refreshing"){ label.textContent="Refreshing analysis…"; return; }
-  if(mode==="failed"){ label.textContent="Refresh delayed"; return; }
+  if(mode==="failed"||workspaceRefreshFailed){ label.textContent="Refresh delayed"; return; }
   if(!ownerAuthenticated){ label.textContent="Auto-refresh · 2m"; return; }
   if(!lastWorkspaceRefreshAt){ label.textContent="Auto-refresh · 2m"; return; }
   const elapsed=Date.now()-lastWorkspaceRefreshAt;
@@ -2294,6 +2334,12 @@ function updateRefreshStatus(mode="idle"){
 }
 
 async function refreshWorkspace(){
+  if(document.visibilityState==="hidden"||Date.now()<apiRetryAt){ updateRefreshStatus(); return false; }
+  if(sessionNeedsRecovery){
+    const session=await refreshOwnerSession();
+    if(session.unavailable) return false;
+    if(session.authenticated) connectWS();
+  }
   const requestedScope=ownerAuthenticated?"authenticated":"anonymous";
   if(workspaceRefreshInFlight){
     if(requestedScope==="authenticated"&&workspaceRefreshScope!=="authenticated"){
@@ -2306,9 +2352,14 @@ async function refreshWorkspace(){
   workspaceRefreshScope=requestedScope;
   const batch=(async()=>{
     const tasks=[refreshCalibration()];
-    if(requestedScope==="authenticated") tasks.push(refresh(),refreshBriefing(),refreshDailyBrief(),refreshFocus(),refreshAutotrade());
+    if(requestedScope==="authenticated"){
+      tasks.push(refresh(),refreshAutotrade());
+      if(activeView==="signals") tasks.push(refreshBriefing(),refreshDailyBrief(),refreshFocus());
+    }
+    if(activeView==="discover"&&discoverLoaded) tasks.push(runDiscovery(undefined,{background:true}));
     const results=await Promise.all(tasks);
-    if(results.some(result=>result===false)){ updateRefreshStatus("failed"); return false; }
+    workspaceRefreshFailed=results.some(result=>result===false);
+    if(workspaceRefreshFailed){ updateRefreshStatus("failed"); return false; }
     lastWorkspaceRefreshAt=Date.now();
     updateRefreshStatus();
     return true;
@@ -2475,6 +2526,8 @@ function setHealth(mode){
 }
 
 function clearPersonalState(reason="Sign in required.", reload=true){
+  pauseLiveConnection();
+  dataConnectionUnavailable=false; workspaceRefreshFailed=false;
   ownerAuthenticated=false;
   accountUser=null; preferencesCache=null; preferencesApplied=false;
   lastState=null; briefing=null; macroNews=null; dailyBrief=null; dailyBriefRenderKey=null; focusData=null; focusIntelligence={}; focusAIResults={}; focusRefreshInFlight=false; watchlistsCache=[]; savedScreensCache=[];
@@ -2483,9 +2536,6 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   lastWorkspaceRefreshAt=0; updateRefreshStatus();
   if(typeof autotradeCache!=="undefined") autotradeCache=null;
   if(typeof budgetsCache!=="undefined"){ budgetsCache=null; budgetsStatus="idle"; budgetsError=""; }
-  if(typeof wsConnection!=="undefined"&&wsConnection){
-    const socket=wsConnection; wsConnection=null; socket.onclose=null; socket.close();
-  }
   ["owner-dialog","budgets-dialog","autotrade-dialog"].forEach(id=>{
     const dialog=document.getElementById(id); if(dialog?.open) dialog.close();
   });
@@ -2508,6 +2558,7 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   document.getElementById("dailySetup").hidden=true;
   document.getElementById("contextPanel").hidden=true;
   document.getElementById("riskPanel").hidden=true;
+  document.getElementById("dataQualityNotice").hidden=true;
   document.getElementById("focusAnchors").innerHTML=["SPX","SPY","QQQ"].map(symbol=>`<article class="anchor-card"><div class="anchor-head"><span class="anchor-symbol">${symbol}</span></div><span class="anchor-price">—</span><div class="anchor-foot"><span class="dot warn"></span><span class="anchor-foot-copy">Sign in to refresh</span></div></article>`).join("");
   document.getElementById("focusGrid").innerHTML=`<div class="empty">Sign in to build the current focus list.</div>`;
   document.getElementById("curatedFocusList").innerHTML=`<div class="empty">Sign in to load candidates.</div>`;
@@ -2518,7 +2569,7 @@ function clearPersonalState(reason="Sign in required.", reload=true){
   document.getElementById("autotradeMode").className="auto-mode simulation";
   document.getElementById("autotradeReady").textContent="0";
   document.getElementById("autotradeApproval").textContent="0";
-  document.getElementById("autotradeExpiry").textContent="Always";
+  document.getElementById("autotradeExpiry").textContent="Not enabled";
   document.getElementById("budgets-body").textContent="Sign in to load your capital limits.";
   document.getElementById("budgets-status").textContent="";
   document.getElementById("autoMode").value="SIMULATION";
@@ -2548,7 +2599,9 @@ function renderAll(){
   const pausedSymbols=Object.entries(s.readiness?.symbols||{}).filter(([,state])=>state.actionable===false);
   const quarantined=pausedSymbols.filter(([,state])=>state.status==="QUARANTINED");
   // Honest readiness first; market-closed is healthy only after boot + DQ + store pass.
-  if(quarantined.length){
+  if(dataConnectionUnavailable){
+    setHealth("down");
+  } else if(quarantined.length){
     setHealth("warn");
     document.getElementById("dataHealth").lastChild.textContent = ` ${quarantined.length} ticker${quarantined.length===1?"":"s"} paused`;
   } else if(s.readiness && !s.readiness.ok){
@@ -2594,6 +2647,14 @@ function renderOverview(s){
 
 function renderDataQualityNotice(s){
   const notice=document.getElementById("dataQualityNotice");
+  if(dataConnectionUnavailable){
+    notice.hidden=false;
+    notice.classList.remove("waiting");
+    document.getElementById("dataQualityTitle").textContent="Signal updates are paused";
+    document.getElementById("dataQualityDetail").textContent="The latest state cannot be verified. Displayed research may be out of date; active signals will return after the connection recovers.";
+    document.getElementById("dataQualitySymbols").replaceChildren();
+    return;
+  }
   const states=Object.entries(s.readiness?.symbols||{});
   const quarantined=states.filter(([,state])=>state.status==="QUARANTINED");
   const waiting=states.filter(([,state])=>state.status==="WAITING");
@@ -2799,14 +2860,14 @@ function renderTodayPanes(){
   const benchmarkSymbols=["SPX","SPY","QQQ"], timeframes=["D","1H","5m"];
   const trendRows=benchmarkSymbols.map(symbol=>{
     const data=lastState?.symbols?.[symbol], matrix=data?.matrix||{}, quality=symbolDataQuality(lastState,symbol);
-    const blocked=quality?.actionable===false||["QUARANTINED","WAITING","STALE"].includes(quality?.status);
+    const blocked=dataConnectionUnavailable||quality?.actionable===false||["QUARANTINED","WAITING","STALE"].includes(quality?.status);
     const states=blocked?[]:timeframes.map(tf=>matrix[tf]).filter(Boolean);
     const vote=states.reduce((sum,state)=>sum+trendVote(state),0);
     return {symbol, states, vote, data, blocked};
   });
   const votes=trendRows.flatMap(row=>row.states.map(trendVote));
   const total=votes.reduce((sum,value)=>sum+value,0), maxVotes=Math.max(votes.length*2,1), normalized=total/maxVotes;
-  const feedPaused=lastState?.readiness?.ok===false;
+  const feedPaused=dataConnectionUnavailable||lastState?.readiness?.ok===false;
   const trend=votes.length&&!feedPaused?(normalized>=.24?"BULLISH":normalized<=-.24?"BEARISH":"CHOP"):"PENDING";
   const trendClass=trend==="PENDING"?"chop":trend.toLowerCase();
   const confidence=votes.length?Math.round(Math.abs(total)/maxVotes*100):null;
@@ -2845,7 +2906,7 @@ function renderTodayPanes(){
     return `<button class="today-signal" type="button" data-today-alert="${esc(alert.alert_id)}"><span class="today-signal-symbol">${esc(alert.symbol)}</span><span class="today-signal-copy"><b>${esc(alert.strategy||alert.status||"Active signal")}</b><small>${esc(alert.thesis||alert.invalidation||"Review the complete plan before acting.")}</small></span><span class="today-signal-score">${confidence}<small>confidence</small></span></button>`;
   }).join(""):`<div class="today-empty"><b>No active signals right now.</b><br>${fallback.length?"Top research names are shown below while the engine waits for confirmation.":"The engine is waiting for current, validated data."}</div>${fallback.length?`<div class="today-signal-list">${fallback.map((row,index)=>{const play=row.best_play||{}, rvol=finiteNumber(row.volume_ratio_5d_to_prior_20d); return `<button class="today-signal held" type="button" data-today-mover="${esc(row.symbol)}"><span class="today-signal-symbol">${esc(row.symbol)}</span><span class="today-signal-copy"><b>${esc(play.label||"Research watch")}</b><small>${esc(play.confirmation||"No active confirmation")}${rvol==null?"":` · RVOL ${rvol.toFixed(2)}×`}</small></span><span class="today-signal-score">${play.eligible?Math.round(play.score||0):"—"}<small>rank</small></span></button>`;}).join("")}</div>`:""}`;
   const signalStatus=document.getElementById("todaySignalStatus");
-  if(signalStatus) signalStatus.innerHTML=`<span class="dot ${alerts.length?"live":"warn"}"></span>${alerts.length?`${alerts.length} active`:"Waiting"}`;
+  if(signalStatus) signalStatus.innerHTML=`<span class="dot ${alerts.length?"live":"warn"}"></span>${dataConnectionUnavailable?"Updates paused":alerts.length?`${alerts.length} active`:"Waiting"}`;
   moversHost.querySelectorAll("[data-today-mover]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.todayMover)));
   signalsHost.querySelectorAll("[data-today-mover]").forEach(button=>button.addEventListener("click",()=>analyzeCandidate(button.dataset.todayMover)));
   signalsHost.querySelectorAll("[data-today-alert]").forEach(button=>button.addEventListener("click",()=>selectAlert(button.dataset.todayAlert)));
@@ -3030,7 +3091,7 @@ function renderAlertCard(a){
         <span class="ac-sym">${esc(a.symbol)}</span><span class="ac-live">$${fmtPx(a.underlying_price)}</span>
         <span class="ac-strat">${esc(a.strategy.replace(/_/g,' '))} · ${esc(a.module)}</span>
       </div>
-      <div class="signal-score-pill" aria-label="${confidence}% historical reliability score"><b>${confidence}%</b><small>${ev.blocked?'research score':'signal score'}</small></div>
+      <div class="signal-score-pill" aria-label="${confidence}% ${a.research_only||ev.blocked?'research score; not a calibrated win probability':'signal score; see historical evidence and its limitations'}"><b>${confidence}%</b><small>${a.research_only||ev.blocked?'research score':'signal score'}</small></div>
     </div>
     ${characterChip(a.strategy, ev)}
     <div class="ac-thesis">${esc(a.thesis)}</div>
@@ -3123,13 +3184,17 @@ function renderSuppressionTape(s){
 
 function renderPerformance(s){
   const p = s.performance || {};
-  document.getElementById("bdPerformance").innerHTML = p.decided ? `
+  const unresolved=Number(p.unresolved_data)||0;
+  const summary=p.decided ? `
     <div class="stat-row">
       <div class="stat"><div class="v num">${p.decided}</div><div class="k">decided</div></div>
       <div class="stat"><div class="v num">${(p.win_rate*100).toFixed(0)}%</div><div class="k">win rate</div></div>
       <div class="stat"><div class="v num">${p.avg_r>0?"+":""}${p.avg_r}</div><div class="k">avg R</div></div>
       <div class="stat"><div class="v num">${p.profit_factor??"—"}</div><div class="k">profit factor</div></div>
-    </div>` : `<div class="empty">No settled paper trades yet.</div>`;
+    </div>` : `<div class="empty">No scored paper trades yet.</div>`;
+  document.getElementById("bdPerformance").innerHTML=summary+
+    (unresolved?`<div class="empty"><b>${unresolved} not scored</b> · Missing reliable exit observations. Outcome unknown; excluded from scored results.</div>`:"")+
+    `<div class="empty">Underlying paper model only: fees and option spreads are not included. This is not verified option profitability.</div>`;
 }
 
 function renderRisk(s){
@@ -3322,8 +3387,11 @@ function renderAccountSession(session){
   document.getElementById("autotradeConfigure").hidden=(user?.role!=="ADMIN");
 }
 async function refreshOwnerSession(){
-  try{
+  if(sessionRefreshInFlight) return sessionRefreshInFlight;
+  const request=(async()=>{ try{
     const session=await fetchJSON("/api/auth/session");
+    sessionNeedsRecovery=false;
+    if(ownerAuthenticated&&!session.authenticated){ clearPersonalState("Your session expired."); return session; }
     ownerAuthenticated=Boolean(session.authenticated);
     const button=document.getElementById("ownerButton");
     button.style.color=ownerAuthenticated?"var(--teal)":"";
@@ -3331,9 +3399,21 @@ async function refreshOwnerSession(){
     button.setAttribute("aria-label",ownerAuthenticated?"Account, signed in":"Sign in");
     renderAccountSession(session);
     if(ownerAuthenticated) await Promise.all([loadWatchlists(),loadSavedScreens(),loadPreferences(),loadCapitalLimits()]);
-    else renderWatchlists();
+    else{
+      dataConnectionUnavailable=false;
+      renderDataQualityNotice({});
+      renderWatchlists();
+      setHealth("auth");
+    }
     return session;
-  }catch(e){ ownerAuthenticated=false; renderWatchlists(); return {configured:false,authenticated:false}; }
+  }catch(e){
+    sessionNeedsRecovery=true;
+    markDataUnavailable();
+    return {unavailable:true,authenticated:ownerAuthenticated,user:accountUser,message:e.message};
+  }})();
+  sessionRefreshInFlight=request;
+  try{ return await request; }
+  finally{ if(sessionRefreshInFlight===request) sessionRefreshInFlight=null; }
 }
 async function openOwnerDialog(){
   const dialog=document.getElementById("owner-dialog"), status=document.getElementById("ownerStatus");
@@ -3341,11 +3421,13 @@ async function openOwnerDialog(){
   document.getElementById("ownerToken").value="";
   dialog.showModal();
   const session=await refreshOwnerSession();
-  if(!session.configured){ status.textContent="Account access is not configured on the server."; status.className="bd-status err"; }
+  if(session.unavailable){ status.textContent="Account access is temporarily unavailable. Your session will be checked again automatically."; status.className="bd-status err"; }
+  else if(!session.configured){ status.textContent="Account access is not configured on the server."; status.className="bd-status err"; }
   else if(session.authenticated){ status.textContent="Your account is ready."; status.className="bd-status ok"; }
 }
 async function completeAccountSignIn(message){
-  await refreshOwnerSession();
+  const session=await refreshOwnerSession();
+  if(session.unavailable) throw new Error("Sign-in could not be verified yet. Your session will be checked again automatically.");
   connectWS();
   await refreshWorkspace();
   const status=document.getElementById("ownerStatus");
@@ -3394,10 +3476,29 @@ async function signInOwner(){
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; }
 }
 async function signOutOwner(){
-  await fetchJSON("/api/auth/session",{method:"DELETE"}).catch(()=>{});
-  clearPersonalState("Signed out.");
-  document.getElementById("ownerStatus").textContent="Signed out.";
-  document.getElementById("ownerStatus").className="bd-status ok";
+  try{
+    const result=await fetchJSON("/api/auth/session",{method:"DELETE"});
+    try{
+      if(result.session_revoked===false) sessionStorage.setItem("id-signout-notice",result.detail);
+      else sessionStorage.removeItem("id-signout-notice");
+    }catch(error){}
+    clearPersonalState("Signed out.");
+  }catch(error){
+    document.getElementById("ownerStatus").textContent="Sign-out could not be confirmed. Please try again when account access recovers.";
+    document.getElementById("ownerStatus").className="bd-status err";
+  }
+}
+function showSignOutNotice(){
+  let message;
+  try{
+    message=sessionStorage.getItem("id-signout-notice");
+    sessionStorage.removeItem("id-signout-notice");
+  }catch(error){ return; }
+  if(!message) return;
+  const status=document.getElementById("ownerStatus");
+  status.textContent=message; status.className="bd-status";
+  const dialog=document.getElementById("owner-dialog");
+  if(!dialog.open) dialog.showModal();
 }
 async function loadPreferences(){
   if(!ownerAuthenticated||accountUser?.legacy){ preferencesCache=null; return; }
@@ -3631,13 +3732,15 @@ async function queueWorkspaceAgentResearch(button){
   }catch(error){ output.classList.remove("work-agent-queued"); output.innerHTML=`<b>Workspace Agent dispatch unavailable.</b><p>${esc(error.message||"The deterministic candidate evidence above is unchanged.")}</p>`; if(error.status===401) openOwnerDialog(); }
   finally{ button.disabled=false; }
 }
-async function runDiscovery(event){
+async function runDiscovery(event,{background=false}={}){
   event?.preventDefault();
   const params=new URLSearchParams(currentDiscoverFilters());
   const button=document.getElementById("discoverRun"), output=document.getElementById("discoverResults");
-  button.disabled=true; button.classList.add("loading"); output.innerHTML=`<div class="empty">Scanning completed daily history…</div>`;
-  try{ renderDiscovery(await fetchJSON(`/api/discover?${params}`)); }
-  catch(e){ output.innerHTML=`<div class="empty"><b>Discovery is unavailable.</b>${esc(e.message)}</div>`; }
+  if(button.disabled) return true;
+  button.disabled=true; button.classList.add("loading");
+  if(!background) output.innerHTML=`<div class="empty">Scanning completed daily history…</div>`;
+  try{ renderDiscovery(await fetchJSON(`/api/discover?${params}`)); return true; }
+  catch(e){ output.innerHTML=`<div class="empty"><b>Discovery is unavailable.</b>${esc(e.message)}</div>`; return false; }
   finally{ button.disabled=false; button.classList.remove("loading"); }
 }
 function analyzeCandidate(symbol){
@@ -3694,8 +3797,8 @@ async function runHomeSearch(symbol){
   if(!clean) return;
   output.hidden=false; output.innerHTML=`<div class="empty">Loading completed daily levels for ${esc(clean)}…</div>`;
   try{
-    const dossier=await fetchJSON(`/api/dossier/${encodeURIComponent(clean)}?years=3&include_backtest=false&cost_bps=10`);
-    renderHomeLevels(dossier);
+    const analysis=await fetchJSON(`/api/analyze/${encodeURIComponent(clean)}?years=3&include_backtest=false&cost_bps=10`);
+    renderHomeLevels({analysis});
   }catch(error){ output.innerHTML=`<div class="empty"><b>${esc(clean)} could not be analyzed.</b>${esc(error.message||"Try a listed US ticker.")}</div>`; }
 }
 document.getElementById("homeStockSearchForm").addEventListener("submit",async event=>{
@@ -4167,11 +4270,15 @@ function renderAutotrade(data){
   const badge=document.getElementById("autotradeMode");
   badge.textContent=mode;
   badge.className="auto-mode "+mode.toLowerCase();
+  const modeControl=document.getElementById("autoMode");
+  const liveOption=Array.from(modeControl.options).find(option=>option.value==="LIVE");
+  if(liveOption) liveOption.disabled=Boolean(data.local_only);
+  modeControl.title=data.local_only?"Local research profile: real orders are disabled.":"";
   document.getElementById("autotradeReady").textContent=data.ready||0;
   document.getElementById("autotradeApproval").textContent=data.open_trades||0;
   const until=data.policy?.live_until;
-  document.getElementById("autotradeExpiry").textContent=until
-    ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "Always";
+  document.getElementById("autotradeExpiry").textContent=mode==="LIVE"&&until
+    ? new Date(until).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "Not enabled";
 }
 async function refreshAutotrade({force=false}={}){
   if(!ownerAuthenticated){ autotradeCache=null; return true; }
@@ -4218,6 +4325,7 @@ async function openAutotrade(){
   dlg.showModal();
   await Promise.all([refreshAutotrade(),refreshAutotradeJournal()]);
   const p=autotradeCache?.policy||{};
+  if(autotradeCache?.local_only) status.textContent="Local research profile · Simulation only. Real option quotes still require a connected broker agent.";
   document.getElementById("autoMode").value=p.mode||"SIMULATION";
   document.getElementById("autoConfidence").value=Math.round((p.min_confidence||.75)*100);
   document.getElementById("autoOrderRisk").value=p.max_dollar_risk_per_order||250;
@@ -4246,7 +4354,7 @@ async function saveAutotrade(){
   try{
     await autotradeRequest("/api/autotrade/policy","PUT",payload);
     await refreshAutotrade({force:true});
-    status.textContent=mode==="LIVE"?"Live window staged. Eligible orders still require broker review and confirmation.":"Simulation is watching real prices.";
+    status.textContent=mode==="LIVE"?"Live window staged. Eligible orders still require broker review and confirmation.":"Simulation enabled. Option entries and exits are recorded only when the connected agent supplies valid real quotes.";
     status.className="bd-status ok";
   }catch(e){ status.textContent=e.message; status.className="bd-status err"; if(e.status===401) openOwnerDialog(); }
 }
@@ -4335,21 +4443,54 @@ async function saveBudgets(){
 }
 
 // ── WebSocket with reconnect-with-backoff (doc 18 §7.10/§7.12) ──────
-let wsRetry = 1000, wsConnection = null;
+let wsRetry = 1000, wsConnection = null, wsReconnectTimer = null, wsRefreshTimer = null, lastWSRefreshAt = 0;
+function pauseLiveConnection(){
+  clearTimeout(wsReconnectTimer); wsReconnectTimer=null;
+  clearTimeout(wsRefreshTimer); wsRefreshTimer=null;
+  if(wsConnection){
+    const socket=wsConnection; wsConnection=null;
+    socket.onclose=null; socket.close();
+  }
+}
+function scheduleWSReconnect(){
+  clearTimeout(wsReconnectTimer); wsReconnectTimer=null;
+  if(!ownerAuthenticated||document.visibilityState==="hidden") return;
+  const delay=Math.max(Math.min(wsRetry*=1.6,60000),apiRetryAt-Date.now());
+  wsReconnectTimer=setTimeout(()=>{ wsReconnectTimer=null; connectWS(); },delay);
+}
 function connectWS(){
-  if(!ownerAuthenticated||wsConnection) return;
+  if(!ownerAuthenticated||wsConnection||document.visibilityState==="hidden") return;
+  if(Date.now()<apiRetryAt){ scheduleWSReconnect(); return; }
   try{
     const ws = new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws`);
     wsConnection=ws;
     ws.onopen = () => { wsRetry = 1000; };
-    ws.onmessage = () => refresh();
-    ws.onclose = event => {
+    ws.onmessage = () => {
+      if(wsRefreshTimer||document.visibilityState==="hidden") return;
+      wsRefreshTimer=setTimeout(()=>{
+        wsRefreshTimer=null; lastWSRefreshAt=Date.now();
+        if(document.visibilityState!=="hidden"&&Date.now()>=apiRetryAt) refresh();
+      },Math.max(0,5000-(Date.now()-lastWSRefreshAt)));
+    };
+    ws.onclose = async event => {
+      if(wsConnection!==ws) return;
       wsConnection=null;
-      if(event.code===4401){ clearPersonalState("Your session expired."); return; }
-      if(ownerAuthenticated) setTimeout(connectWS, Math.min(wsRetry*=1.6, 15000));
+      clearTimeout(wsRefreshTimer); wsRefreshTimer=null;
+      markDataUnavailable();
+      if(event.code===4401||event.code===1013){
+        sessionNeedsRecovery=true;
+        if(document.visibilityState!=="hidden") await refreshOwnerSession();
+      }
+      scheduleWSReconnect();
     };
     ws.onerror = () => ws.close();
-  }catch(e){ setTimeout(connectWS, 5000); }
+  }catch(e){ scheduleWSReconnect(); }
+}
+function pollVisibleAutotrade(){
+  if(document.visibilityState==="hidden"||Date.now()<apiRetryAt) return;
+  if(document.getElementById("autotrade-dialog")?.open){
+    refreshAutotrade(); refreshAutotradeJournal();
+  }
 }
 
 let resizeTimer;
@@ -4361,14 +4502,18 @@ window.addEventListener("resize",()=>{
 loadDiscoveryPresets();
 refreshOwnerSession().then(session=>{
   if(session.authenticated) connectWS();
-  else clearPersonalState("Sign in required.", false);
+  else if(!session.unavailable) clearPersonalState("Sign in required.", false);
+  if(session.unavailable) return;
   refreshWorkspace();
-});
+}).finally(showSignOutNotice);
 setInterval(refreshWorkspace, AUTO_REFRESH_MS);
 setInterval(updateRefreshStatus, 15000);
-setInterval(refreshAutotrade, 15000);
+setInterval(pollVisibleAutotrade, 15000);
 document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="visible"&&Date.now()-lastWorkspaceRefreshAt>=AUTO_REFRESH_MS) refreshWorkspace();
+  if(document.visibilityState==="hidden"){ pauseLiveConnection(); updateRefreshStatus(); return; }
+  markDataUnavailable();
+  connectWS();
+  refreshWorkspace();
 });
 </script>
 </body>

@@ -45,14 +45,17 @@ from intellidhan_gateway.autotrade import AUTOTRADE_CONTRACT_VERSION, OptionCand
 from intellidhan_gateway.claude_research import ClaudeResearchReviewer
 from intellidhan_gateway.discovery import DiscoveryService, PRESETS
 from intellidhan_gateway.daily_brief import DailyBriefService
+from intellidhan_gateway.decision_summary import summarize_dossier, summarize_signal
 from intellidhan_gateway.live import LiveLoop
 from intellidhan_gateway.macro_news import MacroNewsService
+from intellidhan_gateway.playbooks import build_playbook_catalog
 from intellidhan_gateway.research_feeds import ResearchFeedService
 from intellidhan_gateway.research_consensus import (
     build_research_consensus,
     technical_score,
 )
 from intellidhan_gateway.stock_analysis import StockAnalysisService
+from intellidhan_gateway.terminal_store import StoreUnavailable
 from intellidhan_gateway.workspace_agent import (
     WorkspaceAgentTriggerService,
     WorkspaceAgentUnavailable,
@@ -114,12 +117,8 @@ class CodexOptionSelectionRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        loop.store.init_schema()
-        if not loop.store.list_watchlists():
-            loop.store.create_watchlist("Research")
-    except Exception as exc:
-        loop.last_error = f"operational store initialization failed: {exc}"
+    # Boot owns initialization and recovery. The HTTP process must start even
+    # while the database is sleeping or has exhausted its free quota.
     task = asyncio.create_task(loop.run_forever())
     try:
         yield
@@ -131,6 +130,53 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="IntelliDhan", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=WEB_DIR / "assets"), name="assets")
+
+
+@app.exception_handler(StoreUnavailable)
+async def store_unavailable(_request: Request, exc: StoreUnavailable):
+    return JSONResponse(
+        {
+            "detail": str(exc),
+            "code": "DATABASE_UNAVAILABLE",
+            "reason": exc.reason,
+            "retry_after_seconds": exc.retry_after_seconds,
+        },
+        status_code=503,
+        headers={"Retry-After": str(exc.retry_after_seconds), "Cache-Control": "no-store"},
+    )
+
+
+@app.middleware("http")
+async def persistence_cooldown(request: Request, call_next):
+    if not _local_request_allowed(request):
+        return JSONResponse({"detail": "Local runtime requires a same-origin loopback request."}, status_code=403)
+    # Account requests cannot be mistaken for an empty store, and execution
+    # endpoints cannot use stale in-memory state while persistence is down.
+    local_logout = request.method == "DELETE" and request.url.path == "/api/auth/session"
+    if not local_logout and request.url.path.startswith("/api/") and request.url.path not in {
+        "/api/health", "/api/liveness", "/api/calibration", "/api/playbooks",
+    }:
+        store = loop.store
+        if store.last_error and store.retry_after_seconds:
+            return await store_unavailable(
+                request,
+                StoreUnavailable(
+                    store.readiness().get("failure_reason") or "connection",
+                    store.retry_after_seconds,
+                ),
+            )
+    return await call_next(request)
+
+
+def _local_request_allowed(connection: Request | WebSocket) -> bool:
+    """Reject DNS rebinding/cross-origin requests against the local profile."""
+    if not loop.autotrade.local_only:
+        return True
+    if connection.url.hostname not in {"127.0.0.1", "localhost"}:
+        return False
+    origin = connection.headers.get("origin")
+    scheme = "https" if connection.url.scheme in {"https", "wss"} else "http"
+    return origin is None or origin == f"{scheme}://{connection.headers.get('host', '')}"
 
 
 def _require_token(request: Request, env_name: str, *, control: bool = False) -> None:
@@ -251,7 +297,7 @@ def _validate_capital_limits(payload: dict) -> dict[str, dict]:
 
 
 @app.get("/api/auth/session")
-async def auth_session(request: Request):
+def auth_session(request: Request):
     account_count = loop.store.count_users()
     principal = request_principal(request, loop.store)
     configured = account_count > 0 or owner_configured()
@@ -271,7 +317,7 @@ async def auth_session(request: Request):
 
 
 @app.post("/api/auth/session")
-async def create_auth_session(request: Request, payload: dict = Body(...)):
+def create_auth_session(request: Request, payload: dict = Body(...)):
     rate_limiter.check(_client_key(request, "login"), limit=5, window_seconds=60)
     if payload.get("email") is not None:
         email = str(payload.get("email", "")).strip().lower()
@@ -306,7 +352,7 @@ async def create_auth_session(request: Request, payload: dict = Body(...)):
 
 
 @app.post("/api/auth/register")
-async def register_account(request: Request, payload: dict = Body(...)):
+def register_account(request: Request, payload: dict = Body(...)):
     rate_limiter.check(_client_key(request, "register"), limit=3, window_seconds=300)
     first_account = loop.store.count_users() == 0
     if first_account and not owner_configured():
@@ -337,13 +383,13 @@ async def register_account(request: Request, payload: dict = Body(...)):
 
 
 @app.get("/api/accounts")
-async def list_accounts(request: Request):
+def list_accounts(request: Request):
     _require_personal(request, roles={"ADMIN"})
     return {"accounts": loop.store.list_users()}
 
 
 @app.post("/api/accounts")
-async def create_account(request: Request, payload: dict = Body(...)):
+def create_account(request: Request, payload: dict = Body(...)):
     _require_personal(request, roles={"ADMIN"})
     try:
         role = str(payload.get("role", "TRADER")).upper()
@@ -364,18 +410,29 @@ async def create_account(request: Request, payload: dict = Body(...)):
 
 
 @app.delete("/api/auth/session")
-async def delete_auth_session(request: Request):
+def delete_auth_session(request: Request):
     token = request.cookies.get(SESSION_COOKIE, "")
+    revoked = True
     if token:
-        loop.store.revoke_user_session(session_token_hash(token))
-    response = JSONResponse({"authenticated": False})
+        try:
+            loop.store.revoke_user_session(session_token_hash(token))
+        except StoreUnavailable:
+            revoked = False
+    response = JSONResponse({
+        "authenticated": False,
+        "session_revoked": revoked,
+        "detail": "Signed out." if revoked else (
+            "Signed out on this browser. Server-side session revocation could not be "
+            "completed while the database is unavailable."
+        ),
+    }, headers={"Cache-Control": "no-store"})
     response.delete_cookie(OWNER_COOKIE, path="/")
     response.delete_cookie(SESSION_COOKIE, path="/")
     return response
 
 
 @app.get("/api/account/preferences")
-async def get_preferences(request: Request):
+def get_preferences(request: Request):
     principal = _require_personal(request)
     if principal.legacy:
         return DEFAULT_PREFERENCES
@@ -383,7 +440,7 @@ async def get_preferences(request: Request):
 
 
 @app.put("/api/account/preferences")
-async def put_preferences(request: Request, updates: dict = Body(...)):
+def put_preferences(request: Request, updates: dict = Body(...)):
     principal = _require_personal(request)
     if principal.legacy:
         raise HTTPException(
@@ -427,7 +484,27 @@ async def liveness():
 @app.get("/api/state")
 async def state(request: Request):
     _require_personal(request)
-    return JSONResponse(jsonable_encoder(loop.snapshot()))
+    snapshot = loop.snapshot()
+    now = datetime.now(timezone.utc)
+    evidence = {
+        key: {"meta": value.meta, "buckets": value.buckets}
+        for key, value in loop.runner.calibration.items()
+    }
+    snapshot["signal_desk"] = {
+        "version": 1,
+        "generated_at": now.isoformat(),
+        "signals": [
+            summarize_signal(alert, health=snapshot["readiness"], calibration=evidence, now=now)
+            for alert in snapshot["alerts"]
+        ],
+    }
+    return JSONResponse(jsonable_encoder(snapshot))
+
+
+@app.get("/api/playbooks")
+async def playbooks():
+    """Educational catalog only; neither signals nor execution authorization."""
+    return build_playbook_catalog()
 
 
 @app.get("/api/calibration")
@@ -768,6 +845,7 @@ async def stock_dossier(
     years: int = Query(10, ge=2, le=15),
     risk_budget: float | None = Query(None, gt=0, le=1_000_000),
     include_backtest: bool = True,
+    include_review: bool = True,
     cost_bps: float = Query(10.0, ge=0, le=100),
 ):
     rate_limiter.check(_client_key(request, "dossier"), limit=30, window_seconds=60)
@@ -829,24 +907,30 @@ async def stock_dossier(
     filings = intelligence.get("filings", {}) if intelligence else {}
     if intelligence and intelligence.get("status") != "UNAVAILABLE":
         multi_brain = build_research_consensus(analysis, intelligence)
-        try:
-            multi_brain["claude_review"] = await asyncio.wait_for(
-                claude_research_reviewer.review(
-                    normalized,
-                    analysis,
-                    intelligence,
-                    multi_brain,
-                ),
-                timeout=25,
-            )
-        except Exception:
+        if not include_review:
             multi_brain["claude_review"] = claude_research_reviewer.status(
-                "UNAVAILABLE",
-                "Claude research review is temporarily unavailable; deterministic research is unchanged.",
+                "NOT_REQUESTED",
+                "Automatic refresh updates deterministic research without requesting a paid AI review.",
             )
+        else:
+            try:
+                multi_brain["claude_review"] = await asyncio.wait_for(
+                    claude_research_reviewer.review(
+                        normalized,
+                        analysis,
+                        intelligence,
+                        multi_brain,
+                    ),
+                    timeout=25,
+                )
+            except Exception:
+                multi_brain["claude_review"] = claude_research_reviewer.status(
+                    "UNAVAILABLE",
+                    "Claude research review is temporarily unavailable; deterministic research is unchanged.",
+                )
         intelligence["multi_brain"] = multi_brain
     company = intelligence.get("company", {}) if intelligence else {}
-    return {
+    dossier = {
         "security": loop.store.get_security(normalized) or {
             "symbol": normalized,
             "name": company.get("name") or normalized,
@@ -871,6 +955,8 @@ async def stock_dossier(
             "social": research_pillars.get("social", {}).get("status", "NOT_CONNECTED"),
         },
     }
+    dossier["decision"] = summarize_dossier(dossier, now=datetime.now(timezone.utc))
+    return dossier
 
 
 @app.get("/api/watchlists")
@@ -1171,7 +1257,14 @@ async def record_autotrade_receipt(
 
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
-    principal = websocket_principal(websocket, loop.store)
+    if not _local_request_allowed(websocket):
+        await websocket.close(code=1008, reason="same-origin loopback required")
+        return
+    try:
+        principal = await asyncio.to_thread(websocket_principal, websocket, loop.store)
+    except StoreUnavailable:
+        await websocket.close(code=1013, reason="saved data temporarily unavailable")
+        return
     if principal is None:
         await websocket.close(code=4401, reason="sign-in required")
         return
@@ -1197,7 +1290,11 @@ async def ws(websocket: WebSocket):
                 await websocket.close(code=4401, reason="account session expired")
                 break
             if session_check_task in done:
-                current = websocket_principal(websocket, loop.store)
+                try:
+                    current = await asyncio.to_thread(websocket_principal, websocket, loop.store)
+                except StoreUnavailable:
+                    await websocket.close(code=1013, reason="saved data temporarily unavailable")
+                    break
                 if current is None or current.user_id != principal.user_id:
                     await websocket.close(
                         code=4401, reason="account session revoked or expired"
@@ -1227,4 +1324,10 @@ async def ws(websocket: WebSocket):
 
 @app.get("/")
 async def index():
+    return FileResponse(WEB_DIR / "desk.html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/advanced")
+async def advanced_workspace():
+    """Retained expert workspace; the beginner desk does not remove tools."""
     return FileResponse(WEB_DIR / "index.html")
