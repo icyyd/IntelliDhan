@@ -1,5 +1,44 @@
 # IntelliDhan Agent Context
 
+## 2026-10-06 — Wheel Deal source research
+
+- User asked to parse https://tjtherealwheeldeal.com/ and shape its knowledge into
+  auto-trading strategies. Read all 12 public decks (151 slides) in external
+  Chrome and all four pages of its October 5 Micron PDF using text plus visual
+  PDF review. Inventoried, but did not watch/transcribe, the 24 YouTube broadcasts.
+  No book purchase, private account access, current-price verification, or
+  performance verification was performed.
+- Added `docs/research/2026-10-06-wheel-deal-research.md` and
+  `docs/research/wheel-deal-candidates.v1.json`. Source practice, proposed test
+  parameters, audit corrections, and unresolved protocol fields are distinct.
+  Three strategy candidates: cash-secured acquisition put, fully covered call,
+  and their fully funded wheel lifecycle. Separate LEAPS analysis checklist is
+  not an entry model. Nothing is runtime-loaded or registered; all execution
+  flags remain false and performance remains null.
+- Important source caveats: coverage must be totaled across expirations; future
+  repurchases do not cover calls; current theta cannot be annualized as earned
+  return; EP16's stated call debit/strike do not match displayed breakeven.
+  Use provider evidence, not source snapshots, for market inputs. No transfer
+  of leveraged/naked structures, source allocation levels, or AI overrides.
+- Data/implementation blockers: historical option quote coverage, share/cash
+  reservations, assignment/settlement ledger, fixed complete protocols, and
+  independent out-of-sample plus forward evidence. The generic underlying-R
+  paper executor is not an options/wheel backtester.
+- Corrected doc 08's claim that the entire design catalog is implemented and
+  that naked legs are structurally unrepresentable; execution gates, not enum
+  vocabulary, enforce the current boundary. Updated README this pass.
+- Continued cohesive draft PR #26 / `codex/beta-reliability-strategy-gates` in
+  the isolated beta worktree. Original shared dirty checkout remains untouched.
+  No broker action, mode change, merge, deployment, or live promotion authorized.
+- Verification: 610 local tests passed, six opt-in network tests deselected;
+  Ruff 0.4.10 and diff checks passed. Two independent agents reviewed the actual
+  patch and cleared the amended research-only handoff. Review fixes added
+  complete prose-source lineage, slide locators/PDF hash, explicit unresolved
+  lifecycle/cost tables, and benchmark-design versus result separation. Their
+  review did not independently repeat the complete source curriculum review.
+  New CI must be checked after push. No backtest or profitability validation
+  was performed by these software checks.
+
 ## 2026-09-24 — Beginner signal/analyst refactor
 
 - User requested a plain-language signal generator and stock analyst for 0DTE,

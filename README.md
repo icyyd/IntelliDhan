@@ -1,8 +1,21 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-09-24 · **Status:** Research beta; live profitability unvalidated
+**Version:** 0.2 alpha · **Date:** 2026-10-06 · **Status:** Research beta; live profitability unvalidated
 
-**Last system pass:** introduced a beginner-first signal desk at `/`, with three
+**Last system pass:** reviewed TJ The Wheel Deal's 12 public lesson decks
+(151 slides) and four-page position summary. Added a source-attributed research
+plan and disabled, machine-readable candidates for cash-secured puts, covered
+calls, a fully funded wheel, and a separate LEAPS analysis check. The 24 linked
+broadcasts were inventoried, not watched/transcribed. These artifacts are not
+runtime configuration: no backtest, performance claim, short-option execution,
+UI change, or Live promotion follows from this review. Source coverage errors,
+theta-income assumptions, and inconsistent arithmetic are explicitly flagged.
+See [wheel research and validation plan](docs/research/2026-10-06-wheel-deal-research.md).
+Verification: 610 local tests passed (six opt-in network tests excluded), pinned
+lint and whitespace checks passed, and two independent patch reviews cleared
+the research-only handoff. These are software/document checks, not trading results.
+
+**Beginner desk pass:** introduced a beginner-first signal desk at `/`, with three
 tasks: Signals, Stock analyst, and My journal. Trend, buy/sell/hold research views,
 and the next safe step are separate. Today, 2–5-session Swing, and LEAPS explain
 their actual evidence coverage; missing or unvalidated evidence means wait.
@@ -229,7 +242,7 @@ requires the same-commit README update.
 | 05 | [Module: Swings](docs/05-module-swings.md) | 2–20 day options & equity swings, earnings plays, credit spreads |
 | 06 | [Module: LEAPS](docs/06-module-leaps.md) | Long-dated options, PMCC, Dynamic Collar (TQQQ strategy), stock replacement |
 | 07 | [Module: Buy & Hold (HODL)](docs/07-module-hodl.md) | Quality-compounder screening, valuation gates, accumulation zones |
-| 08 | [Strategy Library](docs/08-strategy-library.md) | Full catalog: collars, credit spreads, condors, diagonals, wheels, income engines |
+| 08 | [Strategy Library](docs/08-strategy-library.md) | Design catalog and roadmap, not shipped execution support; collars, spreads, wheels, and overlays |
 | 09 | [Alerts & Position Sizing](docs/09-alerts-and-sizing.md) | Alert schema, BTO/STO pricing, stops/TP zones, contract sizing, Telegram delivery |
 | 10 | [Trade Log & Performance](docs/10-trade-log.md) | Automated tracking, P&L simulation, calibration feedback loop |
 | 11 | [UI / UX Specification](docs/11-ui-ux.md) | Design system, screens, components, charting, interaction model |
@@ -263,6 +276,7 @@ requires the same-commit README update.
 | 38 | [September Beta Validation](docs/research/2026-09-24-beta-validation.md) | Frozen later-period SPY/QQQ results, cost sensitivity, session-block intervals, and daily benchmark comparison |
 | 39 | [Local Research Desk](docs/35-local-research-desk.md) | Private durable local setup, backups, evidence boundaries, remaining broker/data prerequisites, and forward-validation plan |
 | 40 | [Beginner Signal Desk](docs/36-beginner-signal-desk.md) | Three-task UI, explicit decision semantics, course research, horizon gaps, and additive display-only APIs |
+| 41 | [Wheel Deal Research](docs/research/2026-10-06-wheel-deal-research.md) | Public-curriculum audit, disabled candidate manifest, coverage/accounting corrections, data needs, and chronological validation plan |
 
 ## Core Product Tenets
 

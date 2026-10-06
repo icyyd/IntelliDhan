@@ -1,0 +1,211 @@
+{
+  "schema_version": "wheel-research-v1",
+  "reviewed_on": "2026-10-06",
+  "status": "RESEARCH_ONLY",
+  "execution_authorized": false,
+  "engine_registered": false,
+  "live_eligible": false,
+  "runtime_loaded": false,
+  "protocol_frozen": false,
+  "research_note": "2026-10-06-wheel-deal-research.md",
+  "backtest_runs": [],
+  "performance": null,
+  "coverage": {
+    "public_lesson_decks_reviewed": 12,
+    "public_slides_reviewed": 151,
+    "position_pdf_pages_reviewed": 4,
+    "youtube_broadcasts_inventoried": 24,
+    "youtube_broadcasts_reviewed": 0,
+    "book_reviewed": false,
+    "broker_records_verified": false
+  },
+  "sources": [
+    {"id": "HOME", "url": "https://tjtherealwheeldeal.com/", "title": "Curriculum and doctrine", "kind": "PUBLIC_PAGE", "review_status": "READ"},
+    {"id": "RTM01", "url": "https://tjtherealwheeldeal.com/rtm/ep01", "title": "The Business Plan", "kind": "LESSON_DECK", "slides_reviewed": 11, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP24", "url": "https://tjtherealwheeldeal.com/episodes/ep24", "title": "Back to the Basics", "kind": "LESSON_DECK", "slides_reviewed": 14, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP16", "url": "https://tjtherealwheeldeal.com/episodes/ep16", "title": "VIX and LEAPS review", "kind": "LESSON_DECK", "slides_reviewed": 15, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP14", "url": "https://tjtherealwheeldeal.com/episodes/ep14", "title": "The Report Card", "kind": "LESSON_DECK", "slides_reviewed": 13, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP17", "url": "https://tjtherealwheeldeal.com/episodes/ep17", "title": "The PNR Trap", "kind": "LESSON_DECK", "slides_reviewed": 14, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP18", "url": "https://tjtherealwheeldeal.com/episodes/ep18", "title": "The Model Account", "kind": "LESSON_DECK", "slides_reviewed": 14, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP19", "url": "https://tjtherealwheeldeal.com/episodes/ep19", "title": "The Swap", "kind": "LESSON_DECK", "slides_reviewed": 12, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP20", "url": "https://tjtherealwheeldeal.com/episodes/ep20", "title": "The De-Risk", "kind": "LESSON_DECK", "slides_reviewed": 12, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP21", "url": "https://tjtherealwheeldeal.com/episodes/ep21", "title": "The Riddle", "kind": "LESSON_DECK", "slides_reviewed": 14, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP22", "url": "https://tjtherealwheeldeal.com/episodes/ep22", "title": "The Human Override", "kind": "LESSON_DECK", "slides_reviewed": 9, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP23", "url": "https://tjtherealwheeldeal.com/episodes/ep23", "title": "Buy. Hold. Hope.", "kind": "LESSON_DECK", "slides_reviewed": 11, "review_status": "ALL_SLIDES_READ"},
+    {"id": "EP13", "url": "https://tjtherealwheeldeal.com/episodes/ep13", "title": "ENPH Deep Dive", "kind": "LESSON_DECK", "slides_reviewed": 12, "review_status": "ALL_SLIDES_READ"},
+    {"id": "MU_PDF", "url": "https://tjtherealwheeldeal.com/highlights/mu-2026-10-05.pdf", "title": "The Micron Complex", "kind": "POSITION_PDF", "pages_reviewed": 4, "review_status": "TEXT_AND_ALL_PAGES_REVIEWED", "retrieved_on": "2026-10-06", "sha256": "7e06acd053ce0eee0baea9a57cce606a01fc6956e1f2c84b83eb81f4bcf93b52"},
+    {"id": "OIC_CSP", "url": "https://www.optionseducation.org/strategies/all-strategies/cash-secured-put", "title": "Cash-Secured Put", "kind": "OFFICIAL_MECHANICS", "review_status": "READ"},
+    {"id": "OIC_CC", "url": "https://www.optionseducation.org/strategies/all-strategies/covered-call-buy-write", "title": "Covered Call", "kind": "OFFICIAL_MECHANICS", "review_status": "READ"},
+    {"id": "CBOE_SPX", "url": "https://www.cboe.com/tradable-products/sp-500/spx-options/spx-specifications", "title": "SPX Specifications", "kind": "OFFICIAL_MECHANICS", "review_status": "READ"},
+    {"id": "FINRA_ASSIGNMENT", "url": "https://syndication.finra.org/content/trading-options-understanding-assignment", "title": "Trading Options: Understanding Assignment", "kind": "OFFICIAL_MECHANICS", "review_status": "READ"},
+    {"id": "CBOE_BXM", "url": "https://cdn.cboe.com/resources/indices/factsheet/CboeGlobalIndices_BXM-Index.pdf", "title": "Cboe S&P 500 BuyWrite Index", "kind": "BENCHMARK_DESIGN", "review_status": "DEFINITION_AND_CAVEATS_REVIEWED_NOT_PERFORMANCE_VALIDATION"},
+    {"id": "CBOE_PUTWRITE", "url": "https://cdn.cboe.com/api/global/us_indices/governance/WPTR_Methodology.pdf", "title": "Cboe PutWrite Indices Methodology", "kind": "BENCHMARK_DESIGN", "review_status": "RELEVANT_METHODOLOGY_REVIEWED_NOT_PERFORMANCE_VALIDATION"}
+  ],
+  "claims": [
+    {"id": "PREMIUM_IS_LIABILITY", "source_ids": ["HOME", "EP19"], "classification": "SOURCE_PRINCIPLE", "summary": "Opening premium cash and realized trading profit are different ledger values."},
+    {"id": "EARLY_CAPTURE", "source_ids": ["EP24"], "classification": "SOURCE_PRACTICE_NOT_VALIDATION", "summary": "The author describes closing short options after 50 to 75 percent premium capture."},
+    {"id": "PORTFOLIO_STRESS", "source_ids": ["EP14", "EP17"], "classification": "SOURCE_PRINCIPLE", "summary": "Evaluate correlated shocks, volatility changes and capacity, not isolated positions only."},
+    {"id": "PURPOSE_AND_PRECOMMITMENT", "source_ids": ["RTM01", "EP18", "MU_PDF"], "classification": "SOURCE_PRINCIPLE", "summary": "Define objectives, assignment intent and adverse-scenario actions before entry."},
+    {"id": "BUSINESS_EVIDENCE", "source_ids": ["EP13"], "classification": "SOURCE_FRAMEWORK", "summary": "Review competitive strength, management, market, finances, movement and account fit."},
+    {"id": "LEAPS_PURCHASE_COST", "source_ids": ["EP16"], "classification": "SOURCE_PRINCIPLE", "summary": "Separate a bullish business thesis from the cost and timing of a long option."},
+    {"id": "TOTAL_COVERAGE_REQUIRED", "source_ids": ["EP13", "EP17", "EP18", "OIC_CC"], "source_locators": {"EP13": "slide 10", "EP17": "slides 8-9", "EP18": "slides 6 and 9"}, "classification": "INTELLIDHAN_CORRECTION", "summary": "Reserve distinct owned shares for all outstanding calls; planned repurchases are not coverage."},
+    {"id": "THETA_NOT_FORECAST", "source_ids": ["EP14", "MU_PDF"], "source_locators": {"EP14": "slide 5", "MU_PDF": "pages 2 and 4"}, "classification": "INTELLIDHAN_CORRECTION", "summary": "Do not multiply current theta into guaranteed future income or erase marked losses."},
+    {"id": "VERIFY_SOURCE_ARITHMETIC", "source_ids": ["EP16"], "source_locators": {"EP16": "slide 10"}, "classification": "INTELLIDHAN_CORRECTION", "summary": "The displayed long-call breakeven does not reconcile with the stated strike and debit."},
+    {"id": "AI_NO_AUTHORITY", "source_ids": ["EP21", "EP22"], "classification": "INTELLIDHAN_SAFETY_BOUNDARY", "summary": "Scenario critique and human preferences cannot override deterministic eligibility or risk limits."},
+    {"id": "ASSIGNMENT_IS_PATH_DEPENDENT", "source_ids": ["OIC_CSP", "OIC_CC", "FINRA_ASSIGNMENT", "CBOE_SPX"], "classification": "OFFICIAL_MECHANICS", "summary": "Exercise, assignment and cash versus share settlement differ by contract; do not infer historical assignment from the closing price alone."},
+    {"id": "BENCHMARK_NOT_STRATEGY_RESULT", "source_ids": ["CBOE_BXM", "CBOE_PUTWRITE"], "classification": "OFFICIAL_BENCHMARK_DESIGN", "summary": "Hypothetical index methodologies inform comparisons; their results do not validate an ETF or single-stock wheel."}
+  ],
+  "shared_constraints": {
+    "short_opening_supported_by_current_executor": false,
+    "historical_option_replay_implemented": false,
+    "assignment_and_share_ledger_implemented": false,
+    "initial_research_underlyings": ["SPY", "QQQ"],
+    "exclude_underlyings_from_equity_wheel": ["SPX"],
+    "standard_deliverable_shares": 100,
+    "adjusted_contracts_allowed": false,
+    "margin_borrowing_allowed": false,
+    "automatic_rolling_allowed": false,
+    "long_option_sizing_reusable": false,
+    "put_cash_reservation": "Full strike times standard deliverable times contracts plus costs; no double reservation or reliance on future sale proceeds.",
+    "call_share_reservation": "Sum obligations across all expirations against exclusive unencumbered share lots already owned.",
+    "missing_data_action": "BLOCK_NEW_RESEARCH_ENTRY_AND_MARK_UNRESOLVED_EXPOSURE",
+    "unresolved_protocol": {
+      "data_source_and_license": null,
+      "historical_coverage_audit": null,
+      "capital_and_concentration_limits": null,
+      "quote_age_spread_size_and_oi_thresholds": null,
+      "earnings_and_dividend_exclusion_windows": null,
+      "causal_acquisition_and_liquidation_prices": null,
+      "thesis_failure_and_time_exit_priority": null,
+      "assignment_model_and_sensitivity_cases": null,
+      "cost_schedule_and_cash_yield_methodology": null,
+      "maximum_campaign_holding_sessions": null,
+      "oos_dates_sample_minimums_and_promotion_thresholds": null
+    }
+  },
+  "cost_policy": {
+    "result_basis": "PRETAX_NET_OF_DECLARED_COSTS",
+    "dividends": "Include point-in-time entitlement and actual payment timing; never assume all calls retain the dividend.",
+    "cash_interest": "Only on eligible balances under a dated yield and availability policy; no double counting reserved cash.",
+    "taxes": "EXCLUDED_NO_AFTER_TAX_CLAIM",
+    "borrowing": "PROHIBITED_CASH_FUNDED_EXPERIMENT",
+    "fee_schedule": null,
+    "slippage_and_spread_stress_schedule": null,
+    "cash_yield_series_and_reinvestment_method": null
+  },
+  "lifecycle_scenarios": {
+    "version": "required-cases-v1",
+    "status": "NOT_SPECIFIED_NOT_IMPLEMENTED",
+    "required_case_fields": ["event_clock", "availability_rule", "source", "expected_ledger_state"],
+    "cases": [
+      {"id": "EARLY_PUT_ASSIGNMENT", "specification": null},
+      {"id": "EX_DIVIDEND_CALL_ASSIGNMENT", "specification": null},
+      {"id": "ITM_EXPIRATION", "specification": null},
+      {"id": "AFTER_HOURS_EXERCISE_AND_GAP", "specification": null},
+      {"id": "SETTLEMENT_AND_AVAILABLE_CASH_SHARES", "specification": null},
+      {"id": "FAILED_OR_PARTIAL_CLOSE", "specification": null},
+      {"id": "HALT_OR_MISSING_QUOTE", "specification": null}
+    ]
+  },
+  "benchmarks": [
+    {"id": "SAME_CAPITAL_BUY_HOLD", "kind": "LOCAL_COMPARATOR_TO_IMPLEMENT", "performance": null},
+    {"id": "SAME_CAPITAL_CASH", "kind": "LOCAL_COMPARATOR_TO_IMPLEMENT", "performance": null},
+    {"id": "BXM", "kind": "BENCHMARK_DESIGN_NOT_STRATEGY_RESULT", "source_ids": ["CBOE_BXM"], "performance": null},
+    {"id": "PUTY_WPUT", "kind": "BENCHMARK_DESIGN_NOT_STRATEGY_RESULT", "source_ids": ["CBOE_PUTWRITE"], "performance": null}
+  ],
+  "candidates": [
+    {
+      "id": "RESEARCH_CASH_SECURED_ACQUISITION_V1",
+      "kind": "STRATEGY_CANDIDATE",
+      "horizon": "MULTIWEEK_OPTION_WITH_POTENTIAL_LONG_TERM_SHARES",
+      "claim_ids": ["PREMIUM_IS_LIABILITY", "EARLY_CAPTURE", "PURPOSE_AND_PRECOMMITMENT"],
+      "execution_authorized": false,
+      "engine_registered": false,
+      "live_eligible": false,
+      "validation_status": "NOT_BACKTESTED",
+      "rule_origin": "INTELLIDHAN_PROPOSAL_INSPIRED_BY_SOURCE_NOT_AUTHOR_RULESET",
+      "purpose": "Compare cash-secured stock acquisition with same-capital stock ownership and cash.",
+      "proposed_parameters": {
+        "evaluation": "First exchange session each week, 15 minutes before scheduled close; only prior completed daily bars for trend context.",
+        "expiry_dte": {"minimum": 30, "maximum": 45, "target": 35, "unit": "CALENDAR_DAYS"},
+        "absolute_delta": {"minimum": 0.15, "maximum": 0.25, "target": 0.20},
+        "strike_rule": "OTM put at or below the predeclared acquisition ceiling; skip if no contract fits.",
+        "net_premium_capture_variants": [0.50, 0.75],
+        "assignment": "Only with full reserved cash; assigned shares become a separately tracked lot.",
+        "quantity": "Whole standard contracts within all frozen cash, concentration and risk caps; zero if unaffordable."
+      },
+      "unresolved": ["Acquisition ceiling algorithm", "Trend filter", "All shared unresolved protocol fields"],
+      "performance": null
+    },
+    {
+      "id": "RESEARCH_COVERED_CALL_OVERLAY_V1",
+      "kind": "STRATEGY_CANDIDATE",
+      "horizon": "MULTIWEEK_OVERLAY_ON_OWNED_SHARES",
+      "claim_ids": ["TOTAL_COVERAGE_REQUIRED", "PREMIUM_IS_LIABILITY", "PORTFOLIO_STRESS"],
+      "execution_authorized": false,
+      "engine_registered": false,
+      "live_eligible": false,
+      "validation_status": "NOT_BACKTESTED",
+      "rule_origin": "INTELLIDHAN_PROPOSAL_INSPIRED_BY_SOURCE_NOT_AUTHOR_RULESET",
+      "purpose": "Compare fully covered option income against uncapped total-return stock ownership.",
+      "proposed_parameters": {
+        "expiry_dte": {"minimum": 30, "maximum": 45, "target": 35, "unit": "CALENDAR_DAYS"},
+        "absolute_delta": {"minimum": 0.15, "maximum": 0.25, "target": 0.20},
+        "owned_lot_coverage_variants": [0.0, 0.50, 1.0],
+        "strike_rule": "OTM call at or above a predeclared acceptable liquidation price.",
+        "coverage_rule": "Never reuse shares across rungs or sell reserved shares before call close or delivery reconciliation.",
+        "quantity": "Round coverage down to whole standard lots; 50 percent coverage of one lot creates zero calls."
+      },
+      "unresolved": ["Liquidation price algorithm", "Rally filter and evaluation timing", "All shared unresolved protocol fields"],
+      "performance": null
+    },
+    {
+      "id": "RESEARCH_FULLY_FUNDED_WHEEL_V1",
+      "kind": "STRATEGY_CANDIDATE",
+      "horizon": "MULTIWEEK_TO_MULTIMONTH_CAMPAIGN_NOT_2_TO_5_DAY_SWING",
+      "claim_ids": ["PURPOSE_AND_PRECOMMITMENT", "TOTAL_COVERAGE_REQUIRED", "PORTFOLIO_STRESS"],
+      "execution_authorized": false,
+      "engine_registered": false,
+      "live_eligible": false,
+      "validation_status": "NOT_BACKTESTED",
+      "rule_origin": "INTELLIDHAN_PROPOSAL_INSPIRED_BY_SOURCE_NOT_AUTHOR_RULESET",
+      "purpose": "Test the combined cash-to-assignment-to-delivery lifecycle after its components pass accounting checks.",
+      "depends_on": ["RESEARCH_CASH_SECURED_ACQUISITION_V1", "RESEARCH_COVERED_CALL_OVERLAY_V1"],
+      "proposed_parameters": {
+        "states": ["CASH", "PUT_CASH_RESERVED", "SHORT_PUT", "ASSIGNMENT_PENDING", "SHARES_OWNED", "SHARES_RESERVED", "COVERED_CALL", "DELIVERY_PENDING", "UNRESOLVED"],
+        "reentry": "Only after broker-independent simulated lifecycle reconciliation and the next eligible observation.",
+        "rolling": "Disabled; a later rolling experiment requires a new version and complete close/open accounting."
+      },
+      "unresolved": ["Component protocols", "State transitions and settlement rules", "All shared unresolved protocol fields"],
+      "performance": null
+    },
+    {
+      "id": "RESEARCH_LEAPS_ENTRY_COST_REVIEW_V1",
+      "kind": "ANALYST_RESEARCH_CHECK",
+      "horizon": "LEAPS_RESEARCH_NOT_AN_ENTRY_STRATEGY",
+      "claim_ids": ["BUSINESS_EVIDENCE", "LEAPS_PURCHASE_COST", "VERIFY_SOURCE_ARITHMETIC", "AI_NO_AUTHORITY"],
+      "execution_authorized": false,
+      "engine_registered": false,
+      "live_eligible": false,
+      "validation_status": "NOT_BACKTESTED",
+      "rule_origin": "INTELLIDHAN_PROPOSAL_INSPIRED_BY_SOURCE_NOT_AUTHOR_RULESET",
+      "purpose": "Compare stock and long-call expressions of the same sourced business thesis without creating a signal.",
+      "proposed_parameters": {
+        "evidence_sections": ["competitive_strength", "management", "market_demand", "financial_strength_and_valuation", "price_behavior_and_liquidity", "portfolio_fit"],
+        "option_checks": ["debit", "intrinsic_and_extrinsic", "expiry_breakeven", "iv_context", "liquidity", "catalyst_timing", "total_premium_loss"],
+        "missing_evidence": "UNKNOWN; no favorable defaults or fabricated portfolio fit."
+      },
+      "unresolved": ["Point-in-time financial and option datasets", "Separate LEAPS entry and exit specification"],
+      "performance": null
+    }
+  ],
+  "rejected_transfers": [
+    "Naked or prospectively cash-covered call ladders",
+    "Leveraged far-dated short puts represented as cash-secured",
+    "Treating premium collection or theta as realized portfolio return",
+    "Increasing exposure solely because VIX is high",
+    "Automatic rolls, averaging down, or discretionary AI safety overrides",
+    "Using source snapshots as historical quotes or calibrated probabilities",
+    "Applying this wheel curriculum as a proven 0DTE entry system"
+  ]
+}
