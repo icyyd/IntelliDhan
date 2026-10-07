@@ -1,6 +1,14 @@
 # 08 — Strategy Library
 
-Canonical registry of every strategy the engine can propose. Each entry in code is a `StrategyDef` declaring: module(s), universe, trigger TF, entry template, exit/management template, factor-weight vector, hard-gate overrides, and its calibration table. This doc is the human-readable catalog.
+This is a **design catalog and roadmap**, not a list of shipped strategies.
+The implemented registry is `services/engine/intellidhan_engine/strategies.py`;
+it currently contains seven price-based strategies, not the short-option wheel,
+covered calls, or spreads below. Current automated scope is single long options
+under [doc 27](27-codex-robinhood-execution.md). Generic schema vocabulary does
+not establish execution support or financial validation. The new
+[Wheel Deal research plan](research/2026-10-06-wheel-deal-research.md) and disabled
+manifest specify the evidence and lifecycle work needed before those concepts
+could become implementation candidates. The registry format below is proposed.
 
 ## 1. Registry Format
 
@@ -78,7 +86,10 @@ rr_metric: POP_BASED
 
 ## 3. Shared Management Doctrine
 
-- Defined risk always for short premium; naked short options are **not representable** in the schema (deliberate).
+- Proposed short-premium policy: no uncovered calls or unfunded put obligations.
+  The generic schema can express short legs; it is the current execution gate,
+  not schema vocabulary, that rejects short-opening orders. Any later expansion
+  requires separately reviewed collateral, assignment, and lifecycle controls.
 - Profit-taking defaults: verticals 50% · condors 25–50% · flies 25% · long options tranche at TP zones (33/33/34) with milestone stop-ratchets (doc 05 §4).
 - Time exits: short premium at 21 DTE (swing) / 15:55 (0DTE); long options at 50% of entry DTE if thesis unproven.
 - Roll doctrine (from the brief): roll winners up/out, don't fight (RULE-6 of collar); never roll a loser more than once; rolls must collect credit or buy demonstrable protection.

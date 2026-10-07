@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import os
 import secrets
+import threading
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
@@ -282,13 +283,15 @@ def require_user(
 class RateLimiter:
     def __init__(self) -> None:
         self._events: dict[str, deque[float]] = defaultdict(deque)
+        self._lock = threading.Lock()
 
     def check(self, key: str, *, limit: int, window_seconds: int) -> None:
-        now = time.monotonic()
-        events = self._events[key]
-        cutoff = now - window_seconds
-        while events and events[0] <= cutoff:
-            events.popleft()
-        if len(events) >= limit:
-            raise HTTPException(status_code=429, detail="rate limit exceeded; retry shortly")
-        events.append(now)
+        with self._lock:
+            now = time.monotonic()
+            events = self._events[key]
+            cutoff = now - window_seconds
+            while events and events[0] <= cutoff:
+                events.popleft()
+            if len(events) >= limit:
+                raise HTTPException(status_code=429, detail="rate limit exceeded; retry shortly")
+            events.append(now)

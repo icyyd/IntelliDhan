@@ -132,11 +132,16 @@ def test_store_survives_reopen(tmp_path):
 # ---------- executor restore ----------
 
 def test_executor_restore_reactivates_only_undecided_trades():
+    # Exercise restoration during a real session, independent of wall-clock
+    # test time. After-hours bars correctly follow the unresolved-data path.
+    now = datetime(2026, 9, 24, 15, 0, tzinfo=timezone.utc)
     done = make_trade(Outcome.STOPPED, alert_id="alr_done")
     done.realized_r = -1.0
     pending = make_trade(Outcome.PENDING, alert_id="alr_pend")
     open_t = make_trade(Outcome.OPEN, alert_id="alr_open")
-    open_t.filled_at = datetime.now(timezone.utc)
+    open_t.filled_at = now - timedelta(minutes=5)
+    pending.valid_until = now + timedelta(hours=1)
+    open_t.valid_until = now + timedelta(hours=1)
 
     ex = PaperExecutor()
     ex.restore([done, pending, open_t])
@@ -144,7 +149,6 @@ def test_executor_restore_reactivates_only_undecided_trades():
     assert {t.alert_id for t in ex._active["QQQ"]} == {"alr_pend", "alr_open"}
 
     # a restored OPEN trade still settles per its plan
-    now = datetime.now(timezone.utc)
     stop_bar = Bar(symbol="QQQ", timeframe=Timeframe.M5, ts_close=now, open=99.5,
                    high=99.6, low=98.5, close=98.8, volume=1e6, source="fx")
     settled = ex.on_bar(stop_bar)

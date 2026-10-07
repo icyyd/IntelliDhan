@@ -1,0 +1,139 @@
+//@version=6
+// RESEARCH COVERAGE LEDGER ONLY. Every P&L/return/win-rate figure is meaningless.
+// One 1-unit broker-emulator marker per observed RTH date; no trade thesis.
+// Never connect this script to alerts, webhooks, or a broker. All alerts disabled.
+// Run SPY and SPX separately on standard 5-minute candles. Enable SPY extended
+// hours. Start Deep Backtesting before the study (e.g. 2023-09-01) for warmup.
+// Export Trades CSV: the Signal column carries COV1 exit records. Epochs are ms.
+// Audit those records against an independent exchange calendar. Missing dates,
+// missing session ends and an entirely absent dataset cannot be certified here.
+strategy("IntelliDhan Coverage only - no trading results", overlay = false,
+     initial_capital = 100000000, default_qty_type = strategy.fixed,
+     default_qty_value = 1, process_orders_on_close = true,
+     calc_on_every_tick = false, calc_on_order_fills = false,
+     margin_long = 100, margin_short = 100, commission_value = 0, slippage = 0)
+
+const string TZ = "America/New_York"
+const int STEP = 300000
+int studyStart = input.time(timestamp("06 Oct 2023 00:00 -0400"), "Study start (inclusive, ET)")
+int studyEnd = input.time(timestamp("06 Oct 2026 00:00 -0400"), "Study end (exclusive, ET)")
+bool isSpy = syminfo.ticker == "SPY"
+// tickerid may serialize session/adjustment modifiers; retain the source symbol.
+string sourceSymbol = syminfo.prefix + ":" + syminfo.ticker
+if barstate.isfirst
+    if not (isSpy or syminfo.ticker == "SPX")
+        runtime.error("Coverage probe allowlist: SPY / SPX only.")
+    if not chart.is_standard or not timeframe.isminutes or timeframe.multiplier != 5
+        runtime.error("Use standard 5-minute OHLC candles, not synthetic chart types.")
+    if studyStart >= studyEnd
+        runtime.error("Study start must precede study end.")
+
+int day = timestamp(TZ, year(time, TZ), month(time, TZ), dayofmonth(time, TZ), 0, 0)
+int minuteOfDay = hour(time, TZ) * 60 + minute(time, TZ)
+bool weekday = dayofweek(time, TZ) >= dayofweek.monday and dayofweek(time, TZ) <= dayofweek.friday
+// Native market membership excludes early-close afternoon extended-hours bars.
+// It is provider metadata, NOT independent proof of the exchange calendar.
+bool rth = weekday and session.ismarket and minuteOfDay >= 570 and minuteOfDay < 960
+bool pm = isSpy and weekday and minuteOfDay >= 240 and minuteOfDay < 570
+bool inWindow = time >= studyStart and time < studyEnd
+
+var int pmDay = na
+var int pmCount = 0
+var int pmFirst = na
+var int pmLast = na
+var bool pmGap = false
+var int seenRthDay = na
+var int observedDays = 0
+var int activeDay = na
+var int lastStartedDay = na
+var int rCount = 0
+var int rFirst = na
+var int rLast = na
+var bool rGap = false
+var int pCount = na
+var int pFirst = na
+var int pLast = na
+var bool pGap = true
+var int warm = 0
+var int markedDays = 0
+var string lastRecord = "No observed study sessions"
+
+f_int(int value) =>
+    na(value) ? "na" : str.tostring(value)
+
+f_record(string reason) =>
+    string value = "COV1|sym=" + sourceSymbol + "|day=" + str.format_time(activeDay, "yyyy-MM-dd", TZ)
+    value += "|r=" + f_int(rCount) + "|rf=" + f_int(rFirst) + "|rl=" + f_int(rLast) + "|rg=" + (rGap ? "1" : "0")
+    value += "|p=" + f_int(pCount) + "|pf=" + f_int(pFirst) + "|pl=" + f_int(pLast) + "|pg=" + (isSpy ? (pGap ? "1" : "0") : "na")
+    value += "|end=" + reason + "|warm=" + f_int(warm)
+    value
+
+// Historical completed bars only. No realtime markers or live orders.
+if barstate.isconfirmed and not barstate.isrealtime
+    // Defer unknown session ends to the next observed date. Marker fill time can
+    // then differ from the audited day; always parse day/rf/rl in the comment.
+    if not na(activeDay) and (day != activeDay or time >= studyEnd)
+        string reason = time >= studyEnd ? "WINDOW_END" : "NEXT_DAY"
+        lastRecord := f_record(reason)
+        strategy.order("END-" + str.tostring(activeDay), strategy.short, qty = 1, comment = lastRecord, disable_alert = true)
+        activeDay := na
+
+    if na(pmDay) or pmDay != day
+        pmDay := day
+        pmCount := 0
+        pmFirst := na
+        pmLast := na
+        pmGap := false
+    if pm
+        pmGap := pmGap or time_close - time != STEP or (pmCount > 0 and time != pmLast)
+        if pmCount == 0
+            pmFirst := time
+        pmLast := time_close
+        pmCount += 1
+
+    bool newRthDay = rth and (na(seenRthDay) or seenRthDay != day)
+    if newRthDay
+        seenRthDay := day
+        if inWindow and (na(lastStartedDay) or lastStartedDay != day)
+            activeDay := day
+            lastStartedDay := day
+            rCount := 0
+            rFirst := time
+            rLast := na
+            rGap := time != day + 570 * 60000
+            pCount := isSpy ? pmCount : na
+            pFirst := isSpy ? pmFirst : na
+            pLast := isSpy ? pmLast : na
+            pGap := pmGap or pmCount != 66 or na(pmFirst) or na(pmLast)
+            if isSpy and not na(pmFirst) and not na(pmLast)
+                pGap := pGap or pmFirst != day + 4 * 3600000 or pmLast != day + 570 * 60000
+            warm := observedDays
+            markedDays += 1
+            string entryNote = "BEGIN1|sym=" + sourceSymbol + "|day=" + str.format_time(day, "yyyy-MM-dd", TZ)
+            strategy.order("BEGIN-" + str.tostring(day), strategy.long, qty = 1, comment = entryNote, disable_alert = true)
+        observedDays += 1
+
+    if rth and inWindow and not na(activeDay) and activeDay == day
+        rGap := rGap or time_close - time != STEP or (rCount > 0 and time != rLast)
+        rCount += 1
+        rLast := time_close
+
+    // Native last-bar flags may be absent when the last expected bar is missing.
+    // rg only flags missing 09:30 start/internal grid errors; it does NOT certify
+    // expected close. An independent calendar must validate r/rf/rl for each day.
+    bool naturalEnd = rth and (session.islastbar_regular or hour(time_close, TZ) * 60 + minute(time_close, TZ) == 960)
+    if not na(activeDay) and (naturalEnd or barstate.islastconfirmedhistory)
+        string reason = naturalEnd ? "RTH_END" : "DATA_END"
+        lastRecord := f_record(reason)
+        strategy.order("END-" + str.tostring(activeDay), strategy.short, qty = 1, comment = lastRecord, disable_alert = true)
+        activeDay := na
+
+// DATA_END is a provisional tail record, never a completeness certificate.
+// warm counts observed previous RTH dates; it is NOT validated ATR warmup.
+// Same-bar marker close/reopen is accounting only, NOT an executable fill model.
+var table notice = table.new(position.top_left, 1, 3)
+if barstate.islast
+    table.cell(notice, 0, 0, "COVERAGE ONLY — ignore all trading performance", text_color = color.orange)
+    table.cell(notice, 0, 1, "Observed study dates: " + str.tostring(markedDays) + " | Export COV1 Signal records")
+    table.cell(notice, 0, 2, lastRecord)
+plot(markedDays, "Observed study dates (chart calculation only)", display = display.data_window)

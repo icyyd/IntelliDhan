@@ -22,7 +22,7 @@ jobs:
       - name: Require README updates on direct main updates
         if: github.event_name == 'push'
         run: python scripts/check_readme_updates.py "${{ github.event.before }}" HEAD
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,research]"
       - run: ruff check .
       - run: pytest -v
 

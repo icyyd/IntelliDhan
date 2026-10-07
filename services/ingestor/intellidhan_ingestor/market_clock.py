@@ -58,6 +58,16 @@ class MarketClock:
     def rth_close(self, d: date) -> time:
         return HALF_DAY_CLOSE if self.is_half_day(d) else RTH_CLOSE
 
+    def option_expiry_close(self, expiry: str) -> datetime | None:
+        """Conservative regular-session option cutoff; unknown calendars fail closed."""
+        try:
+            day = date.fromisoformat(expiry)
+            if not self.is_trading_day(day):
+                return None
+        except (TypeError, ValueError):
+            return None
+        return datetime.combine(day, self.rth_close(day), tzinfo=ET)
+
     def session_state(self, now: datetime) -> SessionState:
         if now.tzinfo is None:
             raise ValueError("naive datetime rejected")

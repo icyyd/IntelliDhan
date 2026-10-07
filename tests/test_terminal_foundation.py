@@ -422,13 +422,18 @@ def test_frontend_clears_personal_state_on_logout_401_and_ws_expiry():
     )]
     assert "lastState=null" in clear_block
     assert "currentDossier=null" in clear_block
-    assert "socket.onclose=null; socket.close()" in clear_block
+    assert "pauseLiveConnection();" in clear_block
+    pause_block = source[source.index("function pauseLiveConnection") : source.index(
+        "function scheduleWSReconnect"
+    )]
+    assert "socket.onclose=null; socket.close()" in pause_block
+    assert "clearTimeout(wsReconnectTimer)" in pause_block
     assert 'document.getElementById("briefBody").replaceChildren()' in clear_block
     assert '"budgets-dialog","autotrade-dialog"' in clear_block
     assert '"bdSuppression","bdEvidence","bdPerformance"' in clear_block
     assert '"profile0dteInner","marketChart","chartLegend","dailyChart"' in clear_block
     assert "if(reload) window.location.reload()" in clear_block
-    assert 'else clearPersonalState("Sign in required.", false)' in source
+    assert 'else if(!session.unavailable) clearPersonalState("Sign in required.", false)' in source
     assert 'clearPersonalState("Signed out.")' in source
     assert 'r.status===401 && url!=="/api/auth/session"' in source
     assert 'event.code===4401' in source

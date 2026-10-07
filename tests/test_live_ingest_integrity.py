@@ -29,8 +29,11 @@ def bar5(ts, o, h, lo, c, sym="QQQ", v=1e6):
                low=lo, close=c, volume=v, source="fx")
 
 
+SESSION_BAR = datetime(2026, 9, 24, 15, 0, tzinfo=timezone.utc)
+
+
 def make_trade(entry=100.0, stop=99.0, valid_minutes=60) -> PaperTrade:
-    now = datetime.now(timezone.utc)
+    now = SESSION_BAR
     return PaperTrade(
         alert_id="alr_t", symbol="QQQ", module=Module.ZDTE, strategy="T",
         direction=Direction.LONG, confidence=0.8, entry=entry, initial_stop=stop,
@@ -45,7 +48,7 @@ def test_fill_bar_that_traverses_stop_settles_stopped_at_minus_1r():
     ex = PaperExecutor()
     t = make_trade(entry=100.0, stop=99.0)
     ex.track(t)
-    now = datetime.now(timezone.utc)
+    now = SESSION_BAR
     # one bar spans entry AND stop: limit fill is certain, so is the stop-out
     settled = ex.on_bar(bar5(now, 100.6, 100.8, 98.5, 98.9))
     assert settled == [t]
@@ -58,7 +61,7 @@ def test_fill_bar_not_touching_stop_stays_open_without_target_credit():
     ex = PaperExecutor()
     t = make_trade(entry=100.0, stop=99.0)
     ex.track(t)
-    now = datetime.now(timezone.utc)
+    now = SESSION_BAR
     # fills the limit, stays above the stop, even tags T1 high — no credit yet
     settled = ex.on_bar(bar5(now, 100.6, 101.2, 99.8, 100.9))
     assert settled == []
@@ -68,7 +71,7 @@ def test_fill_bar_not_touching_stop_stays_open_without_target_credit():
 
 def test_short_fill_bar_traversing_stop_settles_stopped():
     ex = PaperExecutor()
-    now = datetime.now(timezone.utc)
+    now = SESSION_BAR
     t = PaperTrade(
         alert_id="alr_s", symbol="QQQ", module=Module.ZDTE, strategy="T",
         direction=Direction.SHORT, confidence=0.8, entry=100.0, initial_stop=101.0,
@@ -141,11 +144,27 @@ class FakeProvider:
         return [b for b in self._bars if b.symbol == symbol]
 
 
+@pytest.fixture
+def fixed_market_now(monkeypatch):
+    """Keep replay checks independent of today's market hours and 5m boundary."""
+    import intellidhan_gateway.live as live_module
+
+    now = datetime(2026, 7, 24, 14, 32, tzinfo=timezone.utc)
+
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return now.astimezone(tz) if tz else now.replace(tzinfo=None)
+
+    monkeypatch.setattr(live_module, "datetime", FixedDateTime)
+    return now
+
+
 @pytest.mark.asyncio
-async def test_ingest_skips_future_bars_and_leaves_them_undeduped():
-    loop = LiveLoop()
-    now = datetime.now(timezone.utc)
-    past = bar5(now - timedelta(minutes=5), 100, 101, 99, 100.5)
+async def test_ingest_skips_future_bars_and_leaves_them_undeduped(fixed_market_now):
+    loop = LiveLoop(["QQQ"])
+    now = fixed_market_now
+    past = bar5(now - timedelta(minutes=2), 100, 101, 99, 100.5)
     forming = bar5(now + timedelta(minutes=3), 100.5, 100.7, 100.4, 100.6)
     loop.provider = FakeProvider([past, forming])
     await loop._ingest_recent(days=1)
@@ -156,9 +175,11 @@ async def test_ingest_skips_future_bars_and_leaves_them_undeduped():
 
 
 @pytest.mark.asyncio
-async def test_boot_replay_suppresses_delivery_but_live_polling_delivers(monkeypatch):
+async def test_boot_replay_suppresses_delivery_but_live_polling_delivers(
+    monkeypatch, fixed_market_now,
+):
     loop = LiveLoop(symbols=["QQQ"])
-    now = datetime.now(timezone.utc)
+    now = fixed_market_now
     delivered, notified = [], []
 
     async def fake_deliver(alert):
@@ -187,25 +208,27 @@ async def test_boot_replay_suppresses_delivery_but_live_polling_delivers(monkeyp
     monkeypatch.setattr(PaperTrade, "from_alert", classmethod(lambda cls, a, s: None))
 
     # replay phase: started_at is None -> state warms, nothing delivered
-    loop.provider = FakeProvider([bar5(now - timedelta(minutes=10), 100, 101, 99, 100.5)])
+    loop.provider = FakeProvider([bar5(now - timedelta(minutes=7), 100, 101, 99, 100.5)])
     assert loop.started_at is None
-    await loop._ingest_recent(days=1)
+    await loop._ingest_recent(days=1, now=now - timedelta(minutes=5))
     assert delivered == []
     assert loop.alerts == [fake_alert]  # still recorded for dashboard/audit
 
     # live phase: started_at set -> the same pipeline delivers
     loop.started_at = now
-    loop.provider = FakeProvider([bar5(now - timedelta(minutes=5), 100.5, 101.5, 100, 101)])
+    loop.provider = FakeProvider([bar5(now - timedelta(minutes=2), 100.5, 101.5, 100, 101)])
     await loop._ingest_recent(days=1)
     assert delivered == [fake_alert]
 
 
 @pytest.mark.asyncio
-async def test_restart_replay_is_time_safe_persists_settlement_and_restores_controls(tmp_path):
+async def test_restart_replay_is_time_safe_persists_settlement_and_restores_controls(
+    tmp_path, fixed_market_now,
+):
     store = TerminalStore(tmp_path / "restart.sqlite3")
     store.init_schema()
-    now = datetime.now(timezone.utc).replace(microsecond=0)
-    filled = now - timedelta(minutes=10)
+    now = fixed_market_now
+    filled = now - timedelta(minutes=7)
 
     settles_after_fill = make_trade()
     settles_after_fill.alert_id = "alr_restart_settle"
@@ -216,7 +239,7 @@ async def test_restart_replay_is_time_safe_persists_settlement_and_restores_cont
 
     remains_active = make_trade(entry=150.0)
     remains_active.alert_id = "alr_restart_active"
-    remains_active.created_at = now - timedelta(days=10)
+    remains_active.created_at = now - timedelta(minutes=15)
     remains_active.valid_until = now + timedelta(hours=1)
     store.upsert_paper_trade(settles_after_fill.model_dump(mode="json"))
     store.upsert_paper_trade(remains_active.model_dump(mode="json"))
@@ -264,7 +287,9 @@ async def test_restart_replay_is_time_safe_persists_settlement_and_restores_cont
 
 
 @pytest.mark.asyncio
-async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(tmp_path):
+async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(
+    tmp_path, fixed_market_now,
+):
     store = TerminalStore(tmp_path / "legacy-window.sqlite3")
     store.init_schema()
     created = datetime(2026, 7, 10, 14, 30, tzinfo=timezone.utc)
@@ -309,7 +334,7 @@ async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(tm
 
     # Push the matching legacy alert just outside the normal newest-250 view.
     for index in range(250):
-        newer = composer.compose(setup_at(created + timedelta(minutes=5 * (index + 1))))
+        newer = composer.compose(setup_at(created + timedelta(seconds=index + 1)))
         store.upsert_alert(newer.model_dump(mode="json"))
     assert len(store.list_alerts()) == 250
     assert len(store.list_alerts(limit=None)) == 251
@@ -317,7 +342,7 @@ async def test_boot_migrates_legacy_plan_identity_beyond_default_alert_window(tm
     class MigrationProvider:
         async def get_bars(self, symbol, timeframe, start, end, **kwargs):
             if timeframe == Timeframe.M5:
-                return [bar5(end - timedelta(minutes=5), 100, 101, 99, 100.5)]
+                return [bar5(end - timedelta(minutes=2), 100, 101, 99, 100.5)]
             return [
                 Bar(
                     symbol=symbol,

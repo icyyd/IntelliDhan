@@ -48,7 +48,10 @@ definition:
     - fra
 
   instance_types:
-    - type: free      # Nano: 512 MB RAM, 0.1 vCPU, always-on on the free plan
+    # Free instances sleep after idle periods; they are not an always-on SLA.
+    # Free PostgreSQL has a separate active-time quota (currently 5h/month).
+    # Keeping this type avoids an implicit paid upgrade, not quota exhaustion.
+    - type: free      # 512 MB RAM, 0.1 vCPU; limited research beta only
 
   docker:
     dockerfile: Dockerfile

@@ -1,0 +1,2196 @@
+{
+  "protocol_id": "SPY_SPX_ORB_LEVELS_V1",
+  "protocol_sha256": "befb257d4d735450f528b31fa49e1a0d5cd5d1af2ca976e848cc8c3cfd1eb3b5",
+  "requested_window": [
+    "2023-10-06",
+    "2026-10-06"
+  ],
+  "as_of": "2026-10-06",
+  "status": "DESCRIPTIVE_RESEARCH_ONLY",
+  "three_year_test_complete": false,
+  "archive_coverage_complete": false,
+  "premarket_coverage_complete": false,
+  "full_study_blockers": [
+    "Incomplete three-year RTH archive",
+    "Incomplete SPY premarket archive",
+    "Point-in-time corporate-action coverage unverified",
+    "Historical data publication/availability not verified",
+    "Confirmatory contrasts and net execution/option replay not performed"
+  ],
+  "limitations": [
+    "Underlying price-path labels, not orders, options returns, or trading win rates.",
+    "SPY and SPX reported separately; they are correlated and are not independent replications.",
+    "Three OR durations and 12 patterns create 72 asset-level cells, not 72 independent edges.",
+    "All-available cells are diagnostics only; never select parameters on historical test results.",
+    "Pointwise intervals do not correct for searching many hypotheses; no significance claim.",
+    "Retrospective test data has prior project exposure; fresh prospective confirmation required."
+  ],
+  "execution_authorized": false,
+  "live_eligible": false,
+  "selected_strategy": null,
+  "observation_sha256": "979d9c0c050d9faf0dafc0864cf04e1d3c195c662a754a6c496ede9b297fbb3a",
+  "source": {
+    "provider": "Yahoo Finance via yfinance",
+    "bars_sha256": "4dcf7093665ac1fc97c11c140d1360d62961abfbc95d4020439974830e1d221b",
+    "price_basis": "raw",
+    "instrument_mapping": {
+      "SPY": "SPY",
+      "SPX": "^SPX"
+    },
+    "point_in_time_availability_verified": false,
+    "corporate_actions_verified": false
+  },
+  "data_audit": {
+    "SPY": {
+      "total_expected": 751,
+      "complete": 40,
+      "missing": 711,
+      "invalid": 0,
+      "pm_available": 0,
+      "reason_counts": {
+        "atr_blocked_ex_dividend": 11,
+        "atr_warmup_unavailable": 14,
+        "complete": 39,
+        "ex_dividend_excluded": 1,
+        "missing_rth_session": 740,
+        "post_ignored": 1913,
+        "premarket_incomplete": 39,
+        "previous_session_incomplete": 1
+      },
+      "schedule_version": "exchange-calendars==4.11.2:XNYS",
+      "schedule_sha256": "3fc6c7a89432603932fe67dba20fd1a9c5caa0814507eb597cf99d27a6faf2a3",
+      "symbol": "SPY",
+      "expected_rth_bars": 58326,
+      "observed_rth_bars": 3120
+    },
+    "SPX": {
+      "total_expected": 751,
+      "complete": 40,
+      "missing": 711,
+      "invalid": 0,
+      "pm_available": 0,
+      "reason_counts": {
+        "atr_warmup_unavailable": 14,
+        "complete": 40,
+        "missing_rth_session": 740,
+        "premarket_not_applicable": 40,
+        "previous_session_incomplete": 1
+      },
+      "schedule_version": "exchange-calendars==4.11.2:XNYS",
+      "schedule_sha256": "3fc6c7a89432603932fe67dba20fd1a9c5caa0814507eb597cf99d27a6faf2a3",
+      "symbol": "SPX",
+      "expected_rth_bars": 58326,
+      "observed_rth_bars": 3120
+    }
+  },
+  "cells": [
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "orb_first_close_break",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "OBSERVED": 13
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 13,
+      "event_frequency_of_available_sessions": 0.3333333333333333,
+      "outcomes": {
+        "ADVERSE_FIRST": 6,
+        "FAVORABLE_FIRST": 4,
+        "NEITHER": 3
+      },
+      "known_outcomes": 13,
+      "success_fraction_known": 0.3076923076923077,
+      "success_fraction_ambiguity_bounds": [
+        0.3076923076923077,
+        0.3076923076923077
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.0544,
+        0.5455
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "orb_cleared_prior_boundary",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 8,
+        "OBSERVED": 5
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 5,
+      "event_frequency_of_available_sessions": 0.1282051282051282,
+      "outcomes": {
+        "ADVERSE_FIRST": 3,
+        "NEITHER": 2
+      },
+      "known_outcomes": 5,
+      "success_fraction_known": 0.0,
+      "success_fraction_ambiguity_bounds": [
+        0.0,
+        0.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "orb_cleared_premarket_boundary",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "orb_narrow_break",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 13
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "orb_wide_break",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 8,
+        "OBSERVED": 5
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 5,
+      "event_frequency_of_available_sessions": 0.1282051282051282,
+      "outcomes": {
+        "ADVERSE_FIRST": 3,
+        "NEITHER": 2
+      },
+      "known_outcomes": 5,
+      "success_fraction_known": 0.0,
+      "success_fraction_ambiguity_bounds": [
+        0.0,
+        0.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "orb_failed_break",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 5,
+        "OBSERVED": 8
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 8,
+      "event_frequency_of_available_sessions": 0.20512820512820512,
+      "outcomes": {
+        "FAVORABLE_FIRST": 3,
+        "NEITHER": 5
+      },
+      "known_outcomes": 8,
+      "success_fraction_known": 0.375,
+      "success_fraction_ambiguity_bounds": [
+        0.375,
+        0.375
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "prior_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 10,
+        "OBSERVED": 3
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 3,
+      "event_frequency_of_available_sessions": 0.07692307692307693,
+      "outcomes": {
+        "ADVERSE_FIRST": 1,
+        "FAVORABLE_FIRST": 1,
+        "NEITHER": 1
+      },
+      "known_outcomes": 3,
+      "success_fraction_known": 0.3333333333333333,
+      "success_fraction_ambiguity_bounds": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "premarket_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "contain_pdl_pmh",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "contain_pml_pdh",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "contain_pdl_pdh",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 1,
+        "NO_EVENT": 21,
+        "OBSERVED": 17
+      },
+      "ineligible_reasons": {
+        "MISSING_REQUIRED_REFERENCE_LEVEL": 1
+      },
+      "observed_events": 17,
+      "event_frequency_of_available_sessions": 0.4358974358974359,
+      "outcomes": {
+        "BREACHED": 11,
+        "CONTAINED": 6
+      },
+      "known_outcomes": 17,
+      "success_fraction_known": 0.35294117647058826,
+      "success_fraction_ambiguity_bounds": [
+        0.35294117647058826,
+        0.35294117647058826
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.125,
+        0.5883
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 15,
+      "pattern_id": "contain_pml_pmh",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "orb_first_close_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "OBSERVED": 13
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 13,
+      "event_frequency_of_available_sessions": 0.3333333333333333,
+      "outcomes": {
+        "ADVERSE_FIRST": 6,
+        "FAVORABLE_FIRST": 6,
+        "NEITHER": 1
+      },
+      "known_outcomes": 13,
+      "success_fraction_known": 0.46153846153846156,
+      "success_fraction_ambiguity_bounds": [
+        0.46153846153846156,
+        0.46153846153846156
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.1667,
+        0.8837
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "orb_cleared_prior_boundary",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 7,
+        "OBSERVED": 6
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 6,
+      "event_frequency_of_available_sessions": 0.15384615384615385,
+      "outcomes": {
+        "ADVERSE_FIRST": 4,
+        "FAVORABLE_FIRST": 2
+      },
+      "known_outcomes": 6,
+      "success_fraction_known": 0.3333333333333333,
+      "success_fraction_ambiguity_bounds": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "orb_cleared_premarket_boundary",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "orb_narrow_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 9,
+        "OBSERVED": 4
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 4,
+      "event_frequency_of_available_sessions": 0.10256410256410256,
+      "outcomes": {
+        "ADVERSE_FIRST": 3,
+        "FAVORABLE_FIRST": 1
+      },
+      "known_outcomes": 4,
+      "success_fraction_known": 0.25,
+      "success_fraction_ambiguity_bounds": [
+        0.25,
+        0.25
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "orb_wide_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 11,
+        "OBSERVED": 2
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 2,
+      "event_frequency_of_available_sessions": 0.05128205128205128,
+      "outcomes": {
+        "ADVERSE_FIRST": 1,
+        "NEITHER": 1
+      },
+      "known_outcomes": 2,
+      "success_fraction_known": 0.0,
+      "success_fraction_ambiguity_bounds": [
+        0.0,
+        0.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "orb_failed_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 4,
+        "OBSERVED": 9
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 9,
+      "event_frequency_of_available_sessions": 0.23076923076923078,
+      "outcomes": {
+        "ADVERSE_FIRST": 4,
+        "FAVORABLE_FIRST": 2,
+        "NEITHER": 3
+      },
+      "known_outcomes": 9,
+      "success_fraction_known": 0.2222222222222222,
+      "success_fraction_ambiguity_bounds": [
+        0.2222222222222222,
+        0.2222222222222222
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "prior_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 10,
+        "OBSERVED": 3
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 3,
+      "event_frequency_of_available_sessions": 0.07692307692307693,
+      "outcomes": {
+        "ADVERSE_FIRST": 1,
+        "FAVORABLE_FIRST": 1,
+        "NEITHER": 1
+      },
+      "known_outcomes": 3,
+      "success_fraction_known": 0.3333333333333333,
+      "success_fraction_ambiguity_bounds": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "premarket_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "contain_pdl_pmh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "contain_pml_pdh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "contain_pdl_pdh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 1,
+        "NO_EVENT": 20,
+        "OBSERVED": 18
+      },
+      "ineligible_reasons": {
+        "MISSING_REQUIRED_REFERENCE_LEVEL": 1
+      },
+      "observed_events": 18,
+      "event_frequency_of_available_sessions": 0.46153846153846156,
+      "outcomes": {
+        "BREACHED": 11,
+        "CONTAINED": 7
+      },
+      "known_outcomes": 18,
+      "success_fraction_known": 0.3888888888888889,
+      "success_fraction_ambiguity_bounds": [
+        0.3888888888888889,
+        0.3888888888888889
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.15,
+        0.6471
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 5,
+      "pattern_id": "contain_pml_pmh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "orb_first_close_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 2,
+        "OBSERVED": 11
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 11,
+      "event_frequency_of_available_sessions": 0.28205128205128205,
+      "outcomes": {
+        "ADVERSE_FIRST": 6,
+        "FAVORABLE_FIRST": 4,
+        "NEITHER": 1
+      },
+      "known_outcomes": 11,
+      "success_fraction_known": 0.36363636363636365,
+      "success_fraction_ambiguity_bounds": [
+        0.36363636363636365,
+        0.36363636363636365
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.0617,
+        0.5714
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "orb_cleared_prior_boundary",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 10,
+        "OBSERVED": 3
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 3,
+      "event_frequency_of_available_sessions": 0.07692307692307693,
+      "outcomes": {
+        "ADVERSE_FIRST": 3
+      },
+      "known_outcomes": 3,
+      "success_fraction_known": 0.0,
+      "success_fraction_ambiguity_bounds": [
+        0.0,
+        0.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "orb_cleared_premarket_boundary",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "orb_narrow_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 13
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "orb_wide_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 7,
+        "OBSERVED": 6
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 6,
+      "event_frequency_of_available_sessions": 0.15384615384615385,
+      "outcomes": {
+        "ADVERSE_FIRST": 5,
+        "NEITHER": 1
+      },
+      "known_outcomes": 6,
+      "success_fraction_known": 0.0,
+      "success_fraction_ambiguity_bounds": [
+        0.0,
+        0.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "orb_failed_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 9,
+        "OBSERVED": 4
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 4,
+      "event_frequency_of_available_sessions": 0.10256410256410256,
+      "outcomes": {
+        "FAVORABLE_FIRST": 2,
+        "NEITHER": 2
+      },
+      "known_outcomes": 4,
+      "success_fraction_known": 0.5,
+      "success_fraction_ambiguity_bounds": [
+        0.5,
+        0.5
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "prior_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 26,
+        "NO_EVENT": 11,
+        "OBSERVED": 2
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 26
+      },
+      "observed_events": 2,
+      "event_frequency_of_available_sessions": 0.05128205128205128,
+      "outcomes": {
+        "ADVERSE_FIRST": 1,
+        "NEITHER": 1
+      },
+      "known_outcomes": 2,
+      "success_fraction_known": 0.0,
+      "success_fraction_ambiguity_bounds": [
+        0.0,
+        0.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "premarket_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "contain_pdl_pmh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "contain_pml_pdh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "contain_pdl_pdh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 1,
+        "NO_EVENT": 23,
+        "OBSERVED": 15
+      },
+      "ineligible_reasons": {
+        "MISSING_REQUIRED_REFERENCE_LEVEL": 1
+      },
+      "observed_events": 15,
+      "event_frequency_of_available_sessions": 0.38461538461538464,
+      "outcomes": {
+        "BREACHED": 9,
+        "CONTAINED": 6
+      },
+      "known_outcomes": 15,
+      "success_fraction_known": 0.4,
+      "success_fraction_ambiguity_bounds": [
+        0.4,
+        0.4
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.125,
+        0.7143
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPY",
+      "opening_minutes": 30,
+      "pattern_id": "contain_pml_pmh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 39,
+      "statuses": {
+        "INELIGIBLE": 39
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INCOMPLETE_SPY_PREMARKET": 39
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "orb_first_close_break",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 2,
+        "OBSERVED": 23
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 23,
+      "event_frequency_of_available_sessions": 0.575,
+      "outcomes": {
+        "ADVERSE_FIRST": 6,
+        "FAVORABLE_FIRST": 10,
+        "NEITHER": 7
+      },
+      "known_outcomes": 23,
+      "success_fraction_known": 0.43478260869565216,
+      "success_fraction_ambiguity_bounds": [
+        0.43478260869565216,
+        0.43478260869565216
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.2307,
+        0.6
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "orb_cleared_prior_boundary",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 16,
+        "OBSERVED": 9
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 9,
+      "event_frequency_of_available_sessions": 0.225,
+      "outcomes": {
+        "ADVERSE_FIRST": 4,
+        "FAVORABLE_FIRST": 3,
+        "NEITHER": 2
+      },
+      "known_outcomes": 9,
+      "success_fraction_known": 0.3333333333333333,
+      "success_fraction_ambiguity_bounds": [
+        0.3333333333333333,
+        0.3333333333333333
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "orb_cleared_premarket_boundary",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "orb_narrow_break",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 24,
+        "OBSERVED": 1
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 1,
+      "event_frequency_of_available_sessions": 0.025,
+      "outcomes": {
+        "FAVORABLE_FIRST": 1
+      },
+      "known_outcomes": 1,
+      "success_fraction_known": 1.0,
+      "success_fraction_ambiguity_bounds": [
+        1.0,
+        1.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "orb_wide_break",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 19,
+        "OBSERVED": 6
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 6,
+      "event_frequency_of_available_sessions": 0.15,
+      "outcomes": {
+        "ADVERSE_FIRST": 2,
+        "FAVORABLE_FIRST": 1,
+        "NEITHER": 3
+      },
+      "known_outcomes": 6,
+      "success_fraction_known": 0.16666666666666666,
+      "success_fraction_ambiguity_bounds": [
+        0.16666666666666666,
+        0.16666666666666666
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "orb_failed_break",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 14,
+        "OBSERVED": 11
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 11,
+      "event_frequency_of_available_sessions": 0.275,
+      "outcomes": {
+        "ADVERSE_FIRST": 1,
+        "FAVORABLE_FIRST": 3,
+        "NEITHER": 7
+      },
+      "known_outcomes": 11,
+      "success_fraction_known": 0.2727272727272727,
+      "success_fraction_ambiguity_bounds": [
+        0.2727272727272727,
+        0.2727272727272727
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.0,
+        0.5
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "prior_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 21,
+        "OBSERVED": 4
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 4,
+      "event_frequency_of_available_sessions": 0.1,
+      "outcomes": {
+        "ADVERSE_FIRST": 2,
+        "NEITHER": 2
+      },
+      "known_outcomes": 4,
+      "success_fraction_known": 0.0,
+      "success_fraction_ambiguity_bounds": [
+        0.0,
+        0.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "premarket_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "contain_pdl_pmh",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "contain_pml_pdh",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "contain_pdl_pdh",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 1,
+        "NO_EVENT": 22,
+        "OBSERVED": 17
+      },
+      "ineligible_reasons": {
+        "MISSING_REQUIRED_REFERENCE_LEVEL": 1
+      },
+      "observed_events": 17,
+      "event_frequency_of_available_sessions": 0.425,
+      "outcomes": {
+        "BREACHED": 8,
+        "CONTAINED": 9
+      },
+      "known_outcomes": 17,
+      "success_fraction_known": 0.5294117647058824,
+      "success_fraction_ambiguity_bounds": [
+        0.5294117647058824,
+        0.5294117647058824
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.3529,
+        0.8
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 15,
+      "pattern_id": "contain_pml_pmh",
+      "split": "all_available_diagnostic",
+      "primary": true,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "orb_first_close_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "OBSERVED": 25
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 25,
+      "event_frequency_of_available_sessions": 0.625,
+      "outcomes": {
+        "ADVERSE_FIRST": 9,
+        "FAVORABLE_FIRST": 12,
+        "NEITHER": 4
+      },
+      "known_outcomes": 25,
+      "success_fraction_known": 0.48,
+      "success_fraction_ambiguity_bounds": [
+        0.48,
+        0.48
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.32,
+        0.6842
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "orb_cleared_prior_boundary",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 14,
+        "OBSERVED": 11
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 11,
+      "event_frequency_of_available_sessions": 0.275,
+      "outcomes": {
+        "ADVERSE_FIRST": 5,
+        "FAVORABLE_FIRST": 5,
+        "NEITHER": 1
+      },
+      "known_outcomes": 11,
+      "success_fraction_known": 0.45454545454545453,
+      "success_fraction_ambiguity_bounds": [
+        0.45454545454545453,
+        0.45454545454545453
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.2857,
+        0.6667
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "orb_cleared_premarket_boundary",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "orb_narrow_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 21,
+        "OBSERVED": 4
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 4,
+      "event_frequency_of_available_sessions": 0.1,
+      "outcomes": {
+        "ADVERSE_FIRST": 2,
+        "FAVORABLE_FIRST": 2
+      },
+      "known_outcomes": 4,
+      "success_fraction_known": 0.5,
+      "success_fraction_ambiguity_bounds": [
+        0.5,
+        0.5
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "orb_wide_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 21,
+        "OBSERVED": 4
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 4,
+      "event_frequency_of_available_sessions": 0.1,
+      "outcomes": {
+        "ADVERSE_FIRST": 2,
+        "FAVORABLE_FIRST": 1,
+        "NEITHER": 1
+      },
+      "known_outcomes": 4,
+      "success_fraction_known": 0.25,
+      "success_fraction_ambiguity_bounds": [
+        0.25,
+        0.25
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "orb_failed_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 10,
+        "OBSERVED": 15
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 15,
+      "event_frequency_of_available_sessions": 0.375,
+      "outcomes": {
+        "ADVERSE_FIRST": 6,
+        "FAVORABLE_FIRST": 4,
+        "NEITHER": 5
+      },
+      "known_outcomes": 15,
+      "success_fraction_known": 0.26666666666666666,
+      "success_fraction_ambiguity_bounds": [
+        0.26666666666666666,
+        0.26666666666666666
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.0,
+        0.4615
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "prior_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 19,
+        "OBSERVED": 6
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 6,
+      "event_frequency_of_available_sessions": 0.15,
+      "outcomes": {
+        "ADVERSE_FIRST": 3,
+        "NEITHER": 3
+      },
+      "known_outcomes": 6,
+      "success_fraction_known": 0.0,
+      "success_fraction_ambiguity_bounds": [
+        0.0,
+        0.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "premarket_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "contain_pdl_pmh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "contain_pml_pdh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "contain_pdl_pdh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 1,
+        "NO_EVENT": 21,
+        "OBSERVED": 18
+      },
+      "ineligible_reasons": {
+        "MISSING_REQUIRED_REFERENCE_LEVEL": 1
+      },
+      "observed_events": 18,
+      "event_frequency_of_available_sessions": 0.45,
+      "outcomes": {
+        "BREACHED": 9,
+        "CONTAINED": 9
+      },
+      "known_outcomes": 18,
+      "success_fraction_known": 0.5,
+      "success_fraction_ambiguity_bounds": [
+        0.5,
+        0.5
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.3077,
+        0.75
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 5,
+      "pattern_id": "contain_pml_pmh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "orb_first_close_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 6,
+        "OBSERVED": 19
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 19,
+      "event_frequency_of_available_sessions": 0.475,
+      "outcomes": {
+        "ADVERSE_FIRST": 7,
+        "FAVORABLE_FIRST": 7,
+        "NEITHER": 5
+      },
+      "known_outcomes": 19,
+      "success_fraction_known": 0.3684210526315789,
+      "success_fraction_ambiguity_bounds": [
+        0.3684210526315789,
+        0.3684210526315789
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.1498,
+        0.5556
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "orb_cleared_prior_boundary",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 17,
+        "OBSERVED": 8
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 8,
+      "event_frequency_of_available_sessions": 0.2,
+      "outcomes": {
+        "ADVERSE_FIRST": 4,
+        "FAVORABLE_FIRST": 2,
+        "NEITHER": 2
+      },
+      "known_outcomes": 8,
+      "success_fraction_known": 0.25,
+      "success_fraction_ambiguity_bounds": [
+        0.25,
+        0.25
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "orb_cleared_premarket_boundary",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "orb_narrow_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 25
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "orb_wide_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 15,
+        "OBSERVED": 10
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 10,
+      "event_frequency_of_available_sessions": 0.25,
+      "outcomes": {
+        "ADVERSE_FIRST": 5,
+        "FAVORABLE_FIRST": 1,
+        "NEITHER": 4
+      },
+      "known_outcomes": 10,
+      "success_fraction_known": 0.1,
+      "success_fraction_ambiguity_bounds": [
+        0.1,
+        0.1
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.0,
+        0.3
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "orb_failed_break",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 21,
+        "OBSERVED": 4
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 4,
+      "event_frequency_of_available_sessions": 0.1,
+      "outcomes": {
+        "FAVORABLE_FIRST": 1,
+        "NEITHER": 3
+      },
+      "known_outcomes": 4,
+      "success_fraction_known": 0.25,
+      "success_fraction_ambiguity_bounds": [
+        0.25,
+        0.25
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "prior_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 15,
+        "NO_EVENT": 22,
+        "OBSERVED": 3
+      },
+      "ineligible_reasons": {
+        "MISSING_OR_INVALID_PRIOR_ATR": 15
+      },
+      "observed_events": 3,
+      "event_frequency_of_available_sessions": 0.075,
+      "outcomes": {
+        "ADVERSE_FIRST": 2,
+        "NEITHER": 1
+      },
+      "known_outcomes": 3,
+      "success_fraction_known": 0.0,
+      "success_fraction_ambiguity_bounds": [
+        0.0,
+        0.0
+      ],
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "premarket_boundary_sweep_rejection",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "contain_pdl_pmh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "contain_pml_pdh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "contain_pdl_pdh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 1,
+        "NO_EVENT": 23,
+        "OBSERVED": 16
+      },
+      "ineligible_reasons": {
+        "MISSING_REQUIRED_REFERENCE_LEVEL": 1
+      },
+      "observed_events": 16,
+      "event_frequency_of_available_sessions": 0.4,
+      "outcomes": {
+        "BREACHED": 7,
+        "CONTAINED": 9
+      },
+      "known_outcomes": 16,
+      "success_fraction_known": 0.5625,
+      "success_fraction_ambiguity_bounds": [
+        0.5625,
+        0.5625
+      ],
+      "pointwise_block_bootstrap_95pct": [
+        0.3571,
+        0.8125
+      ],
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    },
+    {
+      "symbol": "SPX",
+      "opening_minutes": 30,
+      "pattern_id": "contain_pml_pmh",
+      "split": "all_available_diagnostic",
+      "primary": false,
+      "session_rows": 40,
+      "statuses": {
+        "INELIGIBLE": 40
+      },
+      "ineligible_reasons": {
+        "SPX_PREMARKET_NOT_APPLICABLE": 40
+      },
+      "observed_events": 0,
+      "event_frequency_of_available_sessions": 0.0,
+      "outcomes": {},
+      "known_outcomes": 0,
+      "success_fraction_known": null,
+      "success_fraction_ambiguity_bounds": null,
+      "pointwise_block_bootstrap_95pct": null,
+      "uncertainty_note": "Exploratory, five-session blocks, not multiplicity-adjusted; sparse/constant samples may give unreliable intervals.",
+      "trading_win_rate": null,
+      "net_profit": null
+    }
+  ],
+  "split_observation_counts": {
+    "development": 0,
+    "validation": 0,
+    "retrospective_test": 2844
+  }
+}

@@ -50,6 +50,7 @@ def test_concurrent_workspace_refreshes_share_one_request_batch():
     harness = r"""
 const AUTO_REFRESH_MS=120000;
 let workspaceRefreshInFlight=null,workspaceRefreshScope=null,lastWorkspaceRefreshAt=0,ownerAuthenticated=true;
+let apiRetryAt=0,workspaceRefreshFailed=false,sessionNeedsRecovery=false,activeView="signals",discoverLoaded=false;
 let calls=0;
 const status={classList:{toggle:()=>{}}};
 const label={textContent:""};
@@ -78,6 +79,7 @@ def test_failed_workspace_refresh_keeps_old_freshness_and_reports_delay():
     harness = r"""
 const AUTO_REFRESH_MS=120000;
 let workspaceRefreshInFlight=null,workspaceRefreshScope=null,lastWorkspaceRefreshAt=0,ownerAuthenticated=true;
+let apiRetryAt=0,workspaceRefreshFailed=false,sessionNeedsRecovery=false,activeView="signals",discoverLoaded=false;
 const status={classList:{toggle:()=>{}}};
 const label={textContent:""};
 const document={getElementById:(id)=>id==="refreshStatus"?status:label};
@@ -90,6 +92,8 @@ refreshWorkspace().then(result=>{
   if(result!==false) process.exit(1);
   if(lastWorkspaceRefreshAt!==0) process.exit(2);
   if(label.textContent!=="Refresh delayed") process.exit(3);
+  updateRefreshStatus();
+  if(label.textContent!=="Refresh delayed") process.exit(4);
 });
 """
     result = subprocess.run([node, "-e", harness], capture_output=True, text=True)
@@ -105,6 +109,7 @@ def test_sign_in_queues_authenticated_refresh_after_anonymous_batch():
     harness = r"""
 const AUTO_REFRESH_MS=120000;
 let workspaceRefreshInFlight=null,workspaceRefreshScope=null,lastWorkspaceRefreshAt=0,ownerAuthenticated=false;
+let apiRetryAt=0,workspaceRefreshFailed=false,sessionNeedsRecovery=false,activeView="signals",discoverLoaded=false;
 let calls=0,calibrationCalls=0,releaseCalibration;
 const status={classList:{toggle:()=>{}}};
 const label={textContent:""};

@@ -1,5 +1,326 @@
 # IntelliDhan Agent Context
 
+## 2026-10-07 — Actual SPY coverage export audited
+
+- User attached the exact SPY Trades CSV previously requested. Read only that
+  explicitly supplied Downloads path; no browser/profile/download-history
+  exploration. Original source untouched. Source basename:
+  `IntelliDhan_Coverage_only_-_no_trading_results_AMEX_SPY_2026-10-06.csv`.
+- Existing auditor accepted actual BOM/header/schema unchanged. 1,502 rows,
+  751 unique paired marker trades, embedded source `BATS:SPY` despite filename
+  AMEX. Source SHA-256:
+  `335a078388a2a410e283c46b983cb3f3c21ddfc5ca55423d2b9fb0d347ed0a83`.
+- All 751 expected sessions pass RTH metadata checks, 58,326 bars: 744 full
+  sessions × 78 and seven early closes × 42. PM passes 567/751 (75.5%); 184
+  have 58–65 bars and gap flags. 393 total PM bar-count deficit; Aug 19, 2026
+  also starts late. Cause and exact missing internal timestamps unknown.
+- Frozen split counts (RTH / PM pass / PM fail): development 375/239/136,
+  validation 125/125/0, retrospective test 251/203/48. Retain excluded-day
+  counts and coverage-matched baselines; these are not strategy sample sizes.
+  RTH-only tests need not exclude days solely for failed PM coverage.
+- Full private result saved at
+  `data/research/tradingview/2026-10-07-spy-coverage-audit.json`; committed
+  aggregate evidence records source/report/probe/calendar hashes. No raw
+  CSV or daily detailed audit is committed. README and existing research doc
+  updated to remove the now-resolved SPY export blocker.
+- CSV supplies metadata, not complete OHLCV; ignore all dummy trade returns.
+  No pattern outcomes, effectiveness claim, port, raw-data validation, ATR
+  warmup validation, or options replay completed. SPX export is still needed.
+  Strategy/execution flags remain false; no runtime or chart changes this pass.
+- Continue cohesive PR #26 / `codex/beta-reliability-strategy-gates`; original
+  shared dirty checkout remains untouched. No merge/deploy authorization.
+- Independent direct CSV/calendar audit and final documentation review cleared
+  all counts, source/report/probe/calendar hashes, and evidence boundaries.
+  Full regression: 753 passed, six opt-in network tests deselected; Ruff,
+  artifact reconciliation and whitespace checks passed. No runtime code changed.
+  Check the new PR CI after push.
+
+## 2026-10-06 — TradingView research-layout coverage probe
+
+- User supplied the external Chrome `Temp` layout at
+  `https://www.tradingview.com/chart/o6S40MDC/` for the three-year SPY/SPX study.
+  Main `SPY0DTE_1:15` layout remains untouched. Continued isolated branch
+  `codex/beta-reliability-strategy-gates` / draft PR #26; shared dirty original
+  checkout and other agents' changes remain untouched.
+- Added `scripts/tradingview/orb_coverage_probe.pine`, compiled and saved as a
+  private Pine v6 script in Temp. Standard five-minute bars; SPY extended hours;
+  raw/dividend adjustment off. Deep range September 1, 2023–October 6, 2026;
+  fixed script window October 6, 2023 inclusive–October 6, 2026 exclusive.
+  Observed 751 completed dummy markers for each instrument, endpoints October
+  6, 2023 and October 5, 2026. SPY exact source `BATS:SPY` / Cboe One; SPX cash
+  index exact source `SP_DLY:SPX`, visibly delayed, not TVC CFD or realtime SP.
+- Some sampled SPY PM windows fail: first and last study days each report
+  64/66 bars, `pg=1`; October 2, 2026 reports 66 and `pg=0`. Sampled RTH records
+  have 78 bars and `rg=0`, but this is not a full-calendar certification. The
+  chart-local counter showed 107 versus the separate Deep report's 751.
+- All marker performance is meaningless. This is NOT the frozen 12-pattern
+  Pine port, an ORB win-rate test, a raw OHLCV download, or an options replay.
+  Probe alerts disabled; no broker, order, subscription, account, runtime,
+  policy, or Live-eligibility change. Existing chart studies preserved. Final
+  saved Temp symbol is SPY. Screenshot stored privately at ignored
+  `data/research/tradingview/temp-coverage-setup.jpg`.
+- The documented browser download event did not return a CSV/path. Browser
+  security policy blocked download-history access; do not bypass that through
+  filesystem/profile inspection or another browser surface. Ask user to attach
+  SPY and SPX Trades CSV exports. Actual CSV compatibility and all-session
+  metadata audit remain unverified. No fabricated exports or results.
+- Added strict coverage auditor and CLI, checking exact source/day entry/exit
+  pairing, calendar counts/endpoints/gaps/early closes, separate PM completeness,
+  immutable source hashes and no-clobber output. It reports metadata only,
+  never validates prices/actions/ATR warmup or enables execution. Synthetic
+  fixtures cover rejection cases. Independent re-review resolved a malformed
+  BEGIN1 pairing gap; no remaining research-tooling review blockers.
+- README and research handoff updated this pass. Do not merge or deploy without
+  new user authorization. Next: real export audit, then frozen pattern port
+  with parity tests and retained development/validation/retrospective splits;
+  never optimize against the complete sample and label it out-of-sample.
+- Verification: 753 local tests passed, six opt-in network tests deselected;
+  full Ruff 0.4.10 and whitespace checks passed. Existing Starlette/httpx
+  deprecation warning is unrelated. Browser confirmed successful Pine compile,
+  deep calculation for both symbols, and the saved Temp layout. Review/tests
+  validate tooling, not a trading edge. Check new CI after pushing.
+
+## 2026-10-06 — ORB level-pattern study
+
+- User requested broad three-year SPY/SPX ORB correlation testing, especially
+  containment between premarket/prior-day levels. Continued existing cohesive
+  draft PR #26 / `codex/beta-reliability-strategy-gates`; fetched current refs.
+  Shared dirty original checkout and collaborator changes remain untouched.
+- Added isolated research modules `orb_data`, `orb_patterns`, `orb_report`, a
+  bounded Yahoo diagnostic fetcher, and archive study CLI. Frozen protocol:
+  `docs/research/orb-pattern-protocol.v1.json`. Twelve patterns × 5/15/30-minute
+  ranges × separate SPY/SPX reporting. No auto-selection, predictive model,
+  execution replay, trading win rate, or calibration/engine integration.
+- Pinned optional exchange-calendars 4.11.2 research dependency and added it to
+  the main CI test job. Historical schedule covers holidays/early closes/DST,
+  avoiding the production clock's pre-2026 holes. No production clock change.
+  Complete five-minute RTH grids; SPY premarket strictly 04:00–09:30; SPX PM always
+  unavailable. Prior levels require immediately preceding session; ATR14 uses
+  15 prior complete sessions, using the arithmetic mean of 14 true ranges rather
+  than Wilder smoothing. Supplied SPY action dates exclude event day and
+  conservatively block crossing ATR windows. No fabricated data or proxy index.
+- Actual fixed 59-day Yahoo download: 7,549 SPY bars including extended hours,
+  3,120 SPX bars; 40 complete RTH sessions each (Aug 10–Oct 5), versus 751 needed.
+  Zero malformed returned rows does not prove completeness. No SPY PM window
+  passed completeness. SPY Sept 18 dividend exclusion/warmup leaves 13 directional
+  eligible sessions; SPX 25. Primary first-break labels: SPY 4 favorable/6 adverse/
+  3 neither, SPX 10/6/7. Not fills, options results, or dependable probabilities.
+- Raw bars, full manifest/report and event ledger are private ignored files in
+  `data/research/orb/`. Committed aggregate evidence retains all 72 diagnostic
+  cells, hashes, no-event/ineligible counts, ambiguity bounds and pointwise
+  five-session bootstrap intervals. No multiplicity-adjusted significance claim.
+- Fixed 18/6/12-month splits: all available data is in retrospective test; no
+  development/validation history. Prior project exposure to Jul–Sep 2026 means
+  this is not an untouched holdout. Require fresh prospective confirmation and
+  separate net execution/option replay. `three_year_test_complete=false` is
+  deliberate even if someone later supplies a complete archive to this screen.
+- Data blocker: no local multi-year archive or usable moomoo connection/SDK.
+  Asked user for provider/export, not secrets. Official Alpaca FAQ documents
+  historical SIP without paid subscription when end is 15+ minutes old, a possible
+  free SPY path subject to coverage verification; SPX access is not established.
+  Do not repeat the old blanket claim that all free Alpaca historical data is IEX-only.
+- README updated. No merge, deployment, broker call, account creation, paid
+  subscription, mode change, or live promotion. Full regression and peer-review
+  checks: 705 local tests passed, six opt-in network tests deselected; Ruff 0.4.10
+  and whitespace checks passed. Existing Starlette/httpx deprecation warning
+  remains unrelated. Independent reviews covered causal labels, calendar/data
+  checks, protocol alignment, reporting and artifact preservation; review fixes
+  include action-day PM coverage, source/output alias guards, explicit overwrite
+  controls and runtime constants checks. No inference of trading effectiveness
+  follows from the software tests. Check the new CI run after push.
+
+## 2026-10-06 — Wheel Deal source research
+
+- User asked to parse https://tjtherealwheeldeal.com/ and shape its knowledge into
+  auto-trading strategies. Read all 12 public decks (151 slides) in external
+  Chrome and all four pages of its October 5 Micron PDF using text plus visual
+  PDF review. Inventoried, but did not watch/transcribe, the 24 YouTube broadcasts.
+  No book purchase, private account access, current-price verification, or
+  performance verification was performed.
+- Added `docs/research/2026-10-06-wheel-deal-research.md` and
+  `docs/research/wheel-deal-candidates.v1.json`. Source practice, proposed test
+  parameters, audit corrections, and unresolved protocol fields are distinct.
+  Three strategy candidates: cash-secured acquisition put, fully covered call,
+  and their fully funded wheel lifecycle. Separate LEAPS analysis checklist is
+  not an entry model. Nothing is runtime-loaded or registered; all execution
+  flags remain false and performance remains null.
+- Important source caveats: coverage must be totaled across expirations; future
+  repurchases do not cover calls; current theta cannot be annualized as earned
+  return; EP16's stated call debit/strike do not match displayed breakeven.
+  Use provider evidence, not source snapshots, for market inputs. No transfer
+  of leveraged/naked structures, source allocation levels, or AI overrides.
+- Data/implementation blockers: historical option quote coverage, share/cash
+  reservations, assignment/settlement ledger, fixed complete protocols, and
+  independent out-of-sample plus forward evidence. The generic underlying-R
+  paper executor is not an options/wheel backtester.
+- Corrected doc 08's claim that the entire design catalog is implemented and
+  that naked legs are structurally unrepresentable; execution gates, not enum
+  vocabulary, enforce the current boundary. Updated README this pass.
+- Continued cohesive draft PR #26 / `codex/beta-reliability-strategy-gates` in
+  the isolated beta worktree. Original shared dirty checkout remains untouched.
+  No broker action, mode change, merge, deployment, or live promotion authorized.
+- Verification: 610 local tests passed, six opt-in network tests deselected;
+  Ruff 0.4.10 and diff checks passed. Two independent agents reviewed the actual
+  patch and cleared the amended research-only handoff. Review fixes added
+  complete prose-source lineage, slide locators/PDF hash, explicit unresolved
+  lifecycle/cost tables, and benchmark-design versus result separation. Their
+  review did not independently repeat the complete source curriculum review.
+  New CI must be checked after push. No backtest or profitability validation
+  was performed by these software checks.
+
+## 2026-09-24 — Beginner signal/analyst refactor
+
+- User requested a plain-language signal generator and stock analyst for 0DTE,
+  2–5-day Swing, and LEAPS, informed by three Money Talk Rashad resources in an
+  external browser. Continued isolated `codex/beta-reliability-strategy-gates`
+  / draft PR #26; original shared dirty checkout remains untouched. No merge,
+  deployment, strategy promotion, new real account, or trading action authorized.
+- Reviewed external Chrome course indexes, written simplified-stop and paper
+  lessons, selected video-caption passages (0DTE, LEAPS, strike selection), and
+  embedded TradeFormIQ UI. This was targeted, not all 80 general lessons or a
+  complete/current entry-rule transcription. Doc 36 records precise scope,
+  references, implementation decisions, and testable follow-up contracts.
+- New default shell: `web/desk.html`, isolated `desk.js`/`desk.css`; three tasks
+  Signals / Stock analyst / My journal. Old tools retained at `/advanced`.
+  Navy/orange owl-lotus brand, responsive card hierarchy, details-on-demand,
+  source timestamps, no trading controls. Uses accessible focus/text labels and
+  progressive disclosure from the UI/UX skill, not its generic template palette.
+- Added typed pure decision summaries: trend, descriptive buy/sell/hold/wait,
+  next step, horizon coverage, source/packet age distinction, explicit stock vs
+  option units, execution_authorized=false. Independent review tightened
+  alert-specific sample/calibration/expectancy checks; an unrelated sufficient
+  bucket cannot label a weak alert reviewable. Missing/stale evidence means wait.
+- `/api/state.signal_desk` and `/api/dossier/{symbol}.decision` are additive.
+  `include_review=false` skips paid Claude for background dossier refresh;
+  explicit analysis retains multi-brain/advisory review. `/api/playbooks` is a
+  public educational catalog, including unsupported credit spreads, available
+  even during DB cooldown. It cannot change policy or produce broker intents.
+- Browser controller refreshes every two minutes while visible, handles 401
+  versus 503, honors retry cooldowns, aborts stale searches, clears private data
+  on verified logout/expiry, queues navigation refreshes, preserves open details,
+  and uses HttpOnly account sessions. Watchlist writes stay user-initiated.
+- Current strategy boundaries remain: Swing has no uniform 2–5-session exit;
+  LEAPS has no registered entry/exit strategy; daily forecast is 21/63 sessions;
+  source-course spreads are not supported by the long-option executor. Audit
+  found fixed eight-hour Swing entry expiry can preclude the next-day fill; doc 36 schedules
+  a separate causal lifecycle change, not a display-layer permission bypass.
+- Fixed two existing wall-clock-dependent paper test fixtures to known regular
+  session timestamps, with fill time before exit bar; kept every assertion.
+  Intermediate full regression: 591 passed / 6 network tests deselected. Later UI
+  source-age and navigation tests were added; record final validation below.
+- Backed up local SQLite before restarting port 8321. New default page verified there;
+  user still needs local account setup, no password fabricated. Isolated
+  `scripts/preview_signal_desk.py` on port 8322 provides explicitly DEMO synthetic
+  data for filled-screen visual QA, no real stack/database/provider imports,
+  all mutations blocked. Stop the temporary preview at the end of QA. Keep the
+  actual port 8321 runtime in local-only Simulation; do not conflate preview results
+  with market observations or performance.
+- Final local verification: 605 passed, 6 opt-in network tests deselected; pinned
+  Ruff 0.4.10, JavaScript parsing, and diff checks passed. Independent reviewers
+  cleared both backend and frontend readiness/source-age fixes plus the preview
+  boundaries. Responsive DOM bounds showed no horizontal overflow at 320, 375,
+  768, 1024, or 1440px; actual SPY public analysis rendered WAIT with explicit
+  stale/missing coverage. Local health remained READY. No live-strategy efficacy
+  claim follows from these software tests. Check the new PR CI after pushing.
+
+## 2026-09-24 — Private local research runtime
+
+- User chose local operation. Continue the existing cohesive branch
+  `codex/beta-reliability-strategy-gates` in
+  `/Users/dhanvin/Documents/IntelliDhan-beta-optimize`, draft PR #26. Latest
+  fetched main is still `26dd83f`; no other open PR was present. Original dirty
+  `/Users/dhanvin/Documents/IntelliDhan` checkout remains untouched.
+- Added `scripts/local_runtime.py`: start/run/status/stop/create-admin/backup;
+  uses private persistent storage outside Git, isolated credentials and source
+  paths, loopback binding, verified process identity, and SQLite online backups.
+  It drops inherited cloud/provider credentials and prevents `.env` loading.
+  Local-only mode is enforced server-side; Live cannot be selected/activated.
+- Local server was started at `http://127.0.0.1:8321` using the existing original
+  checkout's dependency venv with worktree-specific PYTHONPATH. Private data:
+  `~/Library/Application Support/IntelliDhan/local`. No passwords/tokens were
+  displayed or committed. Cloud accounts/history were not imported; user must
+  run `create-admin` in their terminal and sign in. No account was fabricated.
+- Actual smoke: liveness, health, auth session, authenticated state/status/trade
+  log returned 200; health READY, durable SQLite restored, current SPY/QQQ Yahoo
+  bars observed. Local-only=true, effective mode SIMULATION, no option fills.
+  Verified online backup and graceful immediate stop/start with retained state.
+  TIME_WAIT initially caused a false occupied-port error; SO_REUSEADDR (not
+  REUSEPORT) fixed it, with a regression that an active listener still blocks.
+  UI rendered in the in-app browser; signed-in UI was not tested with a newly
+  created personal account. No auto-login/service/keep-awake was installed.
+- Fixed research 9EMA admission deadlock (confidence capped at 0.74 vs 0.75
+  minimum) only for its Simulation path. Live threshold/calibration unchanged.
+  Fresh option Simulation entry now rechecks actual debit and original/current
+  capital ceilings. Daily premium usage and open-position limits are tracked
+  separately from Live, using actual entry debit/date, including closed trades.
+  No implicit resizing or policy-cap increase. Independent review also fixed
+  Simulation risk leaking into Live's admission reservation sum.
+- Underlying paper cutoff is session close minus five minutes (including
+  half-days). Missing trustworthy cutoff bars leave open trades UNRESOLVED_DATA
+  without invented return; pending trades expire unfilled. UI shows unknown
+  outcomes and the underlying-model/option-performance distinction. This does
+  not validate actual v2 full-position option exits or broker protection.
+- Verification: 508 tests passed, 6 live-network integration tests deselected;
+  Ruff, both inline JS parse checks, JS behavior tests, and diff check passed.
+  One existing Starlette/httpx deprecation warning remains. Separate independent
+  agents reviewed launcher, local-only gates, admission, paper cutoffs, risk
+  accounting, and docs. Check PR CI after this checkpoint.
+  Initial local lint used Ruff 0.15.21 while CI pins 0.4.10; CI caught E721 in
+  the strict quantity check. Follow-up uses explicit integer/boolean checks
+  with a boolean regression; pinned Ruff 0.4.10 and independent re-review pass.
+  Use the pinned version for subsequent lint runs. PostgreSQL CI passed on
+  the initial checkpoint; verify the new CI run after this lint correction.
+- Actual strategy remains HISTORICAL_RESEARCH, live_eligible=false, no qualified
+  MTF winner. September tests are known/negative, not a fresh holdout. Do not
+  conflate raw EMA or underlying tranche returns with MTF option profitability.
+  Swing replay's causal fills/costs/gaps/splits and LEAPS data remain blockers.
+  Optional Yahoo-option Composer is not connected to LiveLoop; its premium-zone
+  mapping must be fixed before dynamic intent use, not bypassed with larger caps.
+- No official Robinhood MCP tools were available in this agent session. CLI
+  shows an OAuth-configured `robinhood` alias and a project `robinhood-trading`
+  alias requiring login; neither proves current account/tool access here.
+  User must authenticate/reconnect and tools must be discovered before quotes.
+  Starting the app does not start a quote collector. No real orders, calibration
+  promotion, cloud decommission, merge, or deployment were performed.
+- Next: local admin setup, verified official MCP read-only quote access, then a
+  frozen forward Simulation study of the actual MTF+v2 lifecycle including
+  bid/ask costs, gaps, all skips, and uncertainty. See doc 35. Preserve explicit
+  promotion, mode activation, pre-trade review and per-order confirmation gates.
+
+## 2026-09-24 — Beta cost, recovery, and strategy evidence
+
+- Worktree `/Users/dhanvin/Documents/IntelliDhan-beta-optimize`, branch
+  `codex/beta-reliability-strategy-gates`, based on `origin/main` `26dd83f`.
+  Original shared checkout's unrelated modifications remain untouched.
+- User chose to retain Koyeb; no ChatGPT Sites migration. Free PostgreSQL's
+  five-hour monthly active allowance cannot support a 6.5-hour trading day.
+  Production quota failure is not cured by this code; no billing changes made.
+- Added sanitized store 503/circuit recovery, off-thread boot/account work,
+  session preservation, no actionability during storage failure, and quiet
+  recovery replay. Hidden tabs pause polling/WS; Home levels avoid optional AI.
+- Optional research option plans enforce horizon/quote rules and full-premium
+  risk; Yahoo legs remain SHADOW. Production composer still uses underlying
+  plans; official-MCP Live rules, Simulation default, and calibration unchanged.
+- Frozen later-period tests lose after costs: ORR control 48 trades/-0.4843R,
+  ORR July shadow candidate 36/-0.6321R, 30m EMA crossover 43/-0.2896R at
+  2 bps/side, Jul 27–Sep 23. This is not a test of production EMA9_MTF options.
+  Daily trend filters reduced drawdown but lagged buy-and-hold. Read the full
+  limitations in `docs/research/2026-09-24-beta-validation.md`.
+- Independent option/reliability/UI re-reviews found no remaining blockers in
+  this patch. Review fixed a schema-init race, a recovery-reconciliation race,
+  explicit logout during cooldown, and early-close option expiry handling.
+  The store generation latch survives successful browser probes until the
+  engine restores its durable state. Existing paper-executor 15:55 flatten
+  behavior remains a documented half-day readiness blocker.
+- Verification: 430 tests passed, 6 live integration tests deselected; Ruff,
+  inline JavaScript behavior/parse checks, and `git diff --check` passed.
+  PostgreSQL integration checks run separately in PR CI. One existing
+  Starlette/httpx deprecation warning remains.
+  Tests use an explicit worktree PYTHONPATH with the original venv; do not let
+  its editable install accidentally test the older shared checkout.
+- Next operator action is PR review/merge authorization; no deployment or
+  broker action is authorized by this implementation pass.
+
 ## 2026-07-24 — Responsive overlap guard
 
 - Follow-up branch `codex/overlap-fix` is based on merged `main` commit
