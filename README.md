@@ -2,7 +2,20 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-10-06 · **Status:** Research beta; live profitability unvalidated
 
-**Last system pass:** added a research-only SPY/SPX opening-range pattern screen:
+**Last system pass:** added and browser-verified a private TradingView coverage
+probe in the user-supplied `Temp` layout, plus a strict local Trades CSV auditor.
+Deep reports displayed 751 SPY and 751 SPX session markers for the frozen
+three-year window. This does **not** certify complete bars: sampled SPY premarket
+windows have gaps, and the full CSV exports have not been retrieved or audited.
+Exact feed identities are preserved, including the delayed `SP_DLY:SPX` source.
+Dummy marker profit/win-rate figures are meaningless, not ORB results. The main
+TradingView layout, platform runtime, strategy eligibility, and execution policy
+were not changed. See [TradingView coverage and export handoff](docs/research/2026-10-06-tradingview-orb-coverage.md).
+Verification: 753 local tests passed (six opt-in network tests excluded), full
+Ruff and whitespace checks passed, and independent review cleared the coverage
+tooling. These checks do not establish strategy effectiveness.
+
+**Previous ORB research pass:** added a research-only SPY/SPX opening-range pattern screen:
 12 frozen patterns × 5/15/30-minute ranges, separate asset results, prior-session
 levels/ATR, SPY premarket containment/rejection checks, complete-session calendar
 validation, ambiguity tracking, fixed date splits, and reproducible aggregate
@@ -292,6 +305,8 @@ requires the same-commit README update.
 | 39 | [Local Research Desk](docs/35-local-research-desk.md) | Private durable local setup, backups, evidence boundaries, remaining broker/data prerequisites, and forward-validation plan |
 | 40 | [Beginner Signal Desk](docs/36-beginner-signal-desk.md) | Three-task UI, explicit decision semantics, course research, horizon gaps, and additive display-only APIs |
 | 41 | [Wheel Deal Research](docs/research/2026-10-06-wheel-deal-research.md) | Public-curriculum audit, disabled candidate manifest, coverage/accounting corrections, data needs, and chronological validation plan |
+| 42 | [ORB Pattern Study](docs/research/2026-10-06-orb-pattern-study.md) | Frozen 72-cell pattern screen, recent diagnostic results, calendar validation, and three-year data requirements |
+| 43 | [TradingView Coverage Probe](docs/research/2026-10-06-tradingview-orb-coverage.md) | Private research-layout setup, observed deep-history markers, feed/PM gaps, strict CSV audit, and unresolved export handoff |
 
 ## Core Product Tenets
 

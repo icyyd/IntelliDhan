@@ -1,5 +1,50 @@
 # IntelliDhan Agent Context
 
+## 2026-10-06 — TradingView research-layout coverage probe
+
+- User supplied the external Chrome `Temp` layout at
+  `https://www.tradingview.com/chart/o6S40MDC/` for the three-year SPY/SPX study.
+  Main `SPY0DTE_1:15` layout remains untouched. Continued isolated branch
+  `codex/beta-reliability-strategy-gates` / draft PR #26; shared dirty original
+  checkout and other agents' changes remain untouched.
+- Added `scripts/tradingview/orb_coverage_probe.pine`, compiled and saved as a
+  private Pine v6 script in Temp. Standard five-minute bars; SPY extended hours;
+  raw/dividend adjustment off. Deep range September 1, 2023–October 6, 2026;
+  fixed script window October 6, 2023 inclusive–October 6, 2026 exclusive.
+  Observed 751 completed dummy markers for each instrument, endpoints October
+  6, 2023 and October 5, 2026. SPY exact source `BATS:SPY` / Cboe One; SPX cash
+  index exact source `SP_DLY:SPX`, visibly delayed, not TVC CFD or realtime SP.
+- Some sampled SPY PM windows fail: first and last study days each report
+  64/66 bars, `pg=1`; October 2, 2026 reports 66 and `pg=0`. Sampled RTH records
+  have 78 bars and `rg=0`, but this is not a full-calendar certification. The
+  chart-local counter showed 107 versus the separate Deep report's 751.
+- All marker performance is meaningless. This is NOT the frozen 12-pattern
+  Pine port, an ORB win-rate test, a raw OHLCV download, or an options replay.
+  Probe alerts disabled; no broker, order, subscription, account, runtime,
+  policy, or Live-eligibility change. Existing chart studies preserved. Final
+  saved Temp symbol is SPY. Screenshot stored privately at ignored
+  `data/research/tradingview/temp-coverage-setup.jpg`.
+- The documented browser download event did not return a CSV/path. Browser
+  security policy blocked download-history access; do not bypass that through
+  filesystem/profile inspection or another browser surface. Ask user to attach
+  SPY and SPX Trades CSV exports. Actual CSV compatibility and all-session
+  metadata audit remain unverified. No fabricated exports or results.
+- Added strict coverage auditor and CLI, checking exact source/day entry/exit
+  pairing, calendar counts/endpoints/gaps/early closes, separate PM completeness,
+  immutable source hashes and no-clobber output. It reports metadata only,
+  never validates prices/actions/ATR warmup or enables execution. Synthetic
+  fixtures cover rejection cases. Independent re-review resolved a malformed
+  BEGIN1 pairing gap; no remaining research-tooling review blockers.
+- README and research handoff updated this pass. Do not merge or deploy without
+  new user authorization. Next: real export audit, then frozen pattern port
+  with parity tests and retained development/validation/retrospective splits;
+  never optimize against the complete sample and label it out-of-sample.
+- Verification: 753 local tests passed, six opt-in network tests deselected;
+  full Ruff 0.4.10 and whitespace checks passed. Existing Starlette/httpx
+  deprecation warning is unrelated. Browser confirmed successful Pine compile,
+  deep calculation for both symbols, and the saved Temp layout. Review/tests
+  validate tooling, not a trading edge. Check new CI after pushing.
+
 ## 2026-10-06 — ORB level-pattern study
 
 - User requested broad three-year SPY/SPX ORB correlation testing, especially
