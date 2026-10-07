@@ -1,6 +1,6 @@
 # TradingView ORB research coverage
 
-Date: 2026-10-06. Status: research tooling; historical coverage not yet certified.
+Updated: 2026-10-07. Status: SPY coverage metadata audited; SPX export pending.
 
 The user supplied the TradingView `Temp` layout for this work. The main
 `SPY0DTE_1:15` layout remains outside the edit scope. Premium access, standard
@@ -8,7 +8,66 @@ five-minute candles, an available CSV export dialog, and the Cboe One SPY feed
 were verified in the browser. No broker orders, alerts, subscriptions, or
 execution settings are part of this workflow.
 
-## Browser findings
+## SPY CSV audit, October 7
+
+The user supplied `IntelliDhan_Coverage_only_-_no_trading_results_AMEX_SPY_2026-10-06.csv`.
+The existing reader accepted the real export without a schema change: UTF-8 BOM,
+named `Type`/`Signal` columns, and 751 paired `Entry long`/`Exit long` markers
+(1,502 data rows). Every source record identifies `BATS:SPY`; the AMEX filename
+does not override the embedded identity. The original file was not edited.
+
+| Check | Result |
+| --- | --- |
+| Study sessions | 751 expected and observed, October 6, 2023–October 5, 2026 |
+| Complete regular-session metadata | 751; no missing or invalid days |
+| Regular-session bars | 58,326 expected and reported; 744 full days at 78 bars and seven early closes at 42 bars |
+| Complete 04:00–09:30 premarket metadata | 567 days (75.5%) |
+| Incomplete premarket metadata | 184 days (24.5%); each has a count mismatch and gap flag |
+| Premarket bar-count deficit | 393: 49,173 reported versus 49,566 expected |
+| SPX CSV | Not supplied; prior UI marker count is not a completed audit |
+
+The incomplete premarket windows contain 58–65 bars, rather than the expected
+66. One day, August 19, 2026, also fails the first-open timestamp check. The
+metadata does not identify the missing internal timestamps or establish why
+bars are absent. Do not fill gaps, change the 04:00 boundary after seeing these
+results, or assume a count deficit is necessarily a provider malfunction.
+
+Coverage differs across the predeclared date splits:
+
+| Split | Regular-session days passing | Premarket days passing | Premarket days excluded |
+| --- | ---: | ---: | ---: |
+| Development, 2023-10-06 to 2025-04-06 exclusive | 375 | 239 | 136 |
+| Validation, 2025-04-06 to 2025-10-06 exclusive | 125 | 125 | 0 |
+| Retrospective test, 2025-10-06 to 2026-10-06 exclusive | 251 | 203 | 48 |
+
+This is an input-coverage result, not the final eligible strategy sample.
+Price validation, prior-session levels, ATR warmup, corporate-action exclusions,
+event availability, and ambiguous outcomes can reduce eligibility further.
+Premarket-dependent patterns must exclude the 184 failed days. Their results
+must retain excluded-day counts and matched-coverage comparisons because
+missingness varies across periods. RTH-only patterns do not need to discard a
+day solely because its premarket window failed.
+
+The export contains daily marker metadata and dummy entry/exit prices, not each
+five-minute candle's open, high, low, close, and volume. It cannot be passed to
+the Python ORB price-path screen as an OHLCV archive. The next implementation
+step remains the frozen Pine pattern port with parity checks, or a separately
+validated raw archive. No ORB success rate or profitability is calculated here.
+
+Provenance and reproducibility:
+
+- Source SHA-256: `335a078388a2a410e283c46b983cb3f3c21ddfc5ca55423d2b9fb0d347ed0a83`.
+- Calendar: `exchange-calendars==4.11.2:XNYS`; schedule hash is retained in the
+  [aggregate evidence](tradingview-spy-coverage-evidence.v1.json).
+- Full private audit: `data/research/tradingview/2026-10-07-spy-coverage-audit.json`.
+  It retains each passing/failed day and the reasons. Source and report hashes
+  are recorded in the aggregate evidence; raw CSV and detailed audit stay out of Git.
+- Actual SPY export compatibility is verified. SPX compatibility and coverage
+  remain unverified until its own file is supplied. Warmup remains unvalidated,
+  and `three_year_test_complete`, `live_eligible`, and `execution_authorized`
+  remain false.
+
+## Browser findings, October 6
 
 The private script `IntelliDhan Coverage only - no trading results` compiled
 and ran in `Temp`. Deep calculation was set to September 1, 2023–October 6,
@@ -34,14 +93,11 @@ Deep report displayed 751 markers. This is expected: the chart calculation and
 Deep report have different history scopes. Do not use the chart counter as
 the full-study denominator.
 
-The browser download interface did not return a Trades CSV or a local path.
-No real CSV has been parsed, and no full coverage audit or raw OHLCV archive
-has been obtained. The new CSV reader is tested with synthetic fixtures;
-compatibility with the actual TradingView export still needs verification.
-Next handoff: attach the full Trades CSV for each symbol after updating its
-Deep report. The reader deliberately rejects unknown column/schema shapes
-rather than guessing them. Preserve the original exports if adaptation is
-needed.
+During browser setup, the download interface did not return a Trades CSV or a
+local path. The user-supplied SPY file subsequently resolved that blocker for
+SPY only, as documented above. SPX still needs its full Trades CSV after updating
+the Deep report. No raw OHLCV archive has been obtained. The reader deliberately
+rejects unknown column/schema shapes rather than guessing them.
 
 `Temp` was saved with SPY selected again. Existing Volume, AlphaTrend, hidden
 VWAP, and MACD+RSI studies were preserved. Their displayed buy/sell labels are

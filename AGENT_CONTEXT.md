@@ -1,5 +1,40 @@
 # IntelliDhan Agent Context
 
+## 2026-10-07 — Actual SPY coverage export audited
+
+- User attached the exact SPY Trades CSV previously requested. Read only that
+  explicitly supplied Downloads path; no browser/profile/download-history
+  exploration. Original source untouched. Source basename:
+  `IntelliDhan_Coverage_only_-_no_trading_results_AMEX_SPY_2026-10-06.csv`.
+- Existing auditor accepted actual BOM/header/schema unchanged. 1,502 rows,
+  751 unique paired marker trades, embedded source `BATS:SPY` despite filename
+  AMEX. Source SHA-256:
+  `335a078388a2a410e283c46b983cb3f3c21ddfc5ca55423d2b9fb0d347ed0a83`.
+- All 751 expected sessions pass RTH metadata checks, 58,326 bars: 744 full
+  sessions × 78 and seven early closes × 42. PM passes 567/751 (75.5%); 184
+  have 58–65 bars and gap flags. 393 total PM bar-count deficit; Aug 19, 2026
+  also starts late. Cause and exact missing internal timestamps unknown.
+- Frozen split counts (RTH / PM pass / PM fail): development 375/239/136,
+  validation 125/125/0, retrospective test 251/203/48. Retain excluded-day
+  counts and coverage-matched baselines; these are not strategy sample sizes.
+  RTH-only tests need not exclude days solely for failed PM coverage.
+- Full private result saved at
+  `data/research/tradingview/2026-10-07-spy-coverage-audit.json`; committed
+  aggregate evidence records source/report/probe/calendar hashes. No raw
+  CSV or daily detailed audit is committed. README and existing research doc
+  updated to remove the now-resolved SPY export blocker.
+- CSV supplies metadata, not complete OHLCV; ignore all dummy trade returns.
+  No pattern outcomes, effectiveness claim, port, raw-data validation, ATR
+  warmup validation, or options replay completed. SPX export is still needed.
+  Strategy/execution flags remain false; no runtime or chart changes this pass.
+- Continue cohesive PR #26 / `codex/beta-reliability-strategy-gates`; original
+  shared dirty checkout remains untouched. No merge/deploy authorization.
+- Independent direct CSV/calendar audit and final documentation review cleared
+  all counts, source/report/probe/calendar hashes, and evidence boundaries.
+  Full regression: 753 passed, six opt-in network tests deselected; Ruff,
+  artifact reconciliation and whitespace checks passed. No runtime code changed.
+  Check the new PR CI after push.
+
 ## 2026-10-06 — TradingView research-layout coverage probe
 
 - User supplied the external Chrome `Temp` layout at

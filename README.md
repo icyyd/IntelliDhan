@@ -1,16 +1,26 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-10-06 · **Status:** Research beta; live profitability unvalidated
+**Version:** 0.2 alpha · **Date:** 2026-10-07 · **Status:** Research beta; live profitability unvalidated
 
-**Last system pass:** added and browser-verified a private TradingView coverage
-probe in the user-supplied `Temp` layout, plus a strict local Trades CSV auditor.
-Deep reports displayed 751 SPY and 751 SPX session markers for the frozen
-three-year window. This does **not** certify complete bars: sampled SPY premarket
-windows have gaps, and the full CSV exports have not been retrieved or audited.
-Exact feed identities are preserved, including the delayed `SP_DLY:SPX` source.
-Dummy marker profit/win-rate figures are meaningless, not ORB results. The main
-TradingView layout, platform runtime, strategy eligibility, and execution policy
-were not changed. See [TradingView coverage and export handoff](docs/research/2026-10-06-tradingview-orb-coverage.md).
+**Last system pass:** audited the user-supplied SPY TradingView coverage export.
+All 751 expected regular sessions passed the metadata check: 58,326 reported
+five-minute bars, including seven early closes. Premarket coverage passed on
+567 days (75.5%); 184 days failed and must be excluded from premarket-dependent
+tests under the frozen rules. The export contains `BATS:SPY` metadata despite
+the AMEX filename. It is not a raw OHLCV archive or an ORB performance test.
+SPX still needs its CSV audit. Saved source/report hashes and aggregate evidence;
+no runtime, strategy, execution policy, or chart change in this audit pass.
+See [TradingView coverage findings](docs/research/2026-10-06-tradingview-orb-coverage.md)
+and [SPY aggregate evidence](docs/research/tradingview-spy-coverage-evidence.v1.json).
+Independent direct CSV/calendar review matched the findings and hashes. The
+753-test local suite, full Ruff, evidence reconciliation, and whitespace checks
+passed again; six opt-in network tests were excluded. No runtime code changed.
+
+**Previous coverage-tooling pass:** added and browser-verified the private Pine
+probe in `Temp` and a strict local Trades CSV auditor. Deep UI reports displayed
+751 markers for both SPY and delayed `SP_DLY:SPX`; those counts alone did not
+certify within-session coverage. Marker performance is meaningless. The main
+TradingView layout, runtime, strategy eligibility, and execution policy stayed unchanged.
 Verification: 753 local tests passed (six opt-in network tests excluded), full
 Ruff and whitespace checks passed, and independent review cleared the coverage
 tooling. These checks do not establish strategy effectiveness.
