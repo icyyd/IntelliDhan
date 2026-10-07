@@ -2,7 +2,22 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-10-06 · **Status:** Research beta; live profitability unvalidated
 
-**Last system pass:** reviewed TJ The Wheel Deal's 12 public lesson decks
+**Last system pass:** added a research-only SPY/SPX opening-range pattern screen:
+12 frozen patterns × 5/15/30-minute ranges, separate asset results, prior-session
+levels/ATR, SPY premarket containment/rejection checks, complete-session calendar
+validation, ambiguity tracking, fixed date splits, and reproducible aggregate
+evidence. The requested three-year study is **not complete**: the recent Yahoo
+diagnostic supplies 40 of 751 sessions per asset, with no complete SPY premarket
+windows. Its small price-path samples do not establish a profitable entry rule.
+No winner selection, trading win-rate claim, strategy promotion, live execution,
+or runtime UI change was made. See the [ORB pattern study and data handoff](docs/research/2026-10-06-orb-pattern-study.md)
+and [frozen agent-readable protocol](docs/research/orb-pattern-protocol.v1.json).
+The optional `research` dependency pins the historical exchange calendar;
+CI installs it to exercise the new research tests without changing runtime dependencies.
+Verification: 705 local tests passed (six opt-in network tests excluded), with
+pinned lint and whitespace checks clean. These validate the software, not a trading edge.
+
+**Previous research pass:** reviewed TJ The Wheel Deal's 12 public lesson decks
 (151 slides) and four-page position summary. Added a source-attributed research
 plan and disabled, machine-readable candidates for cash-secured puts, covered
 calls, a fully funded wheel, and a separate LEAPS analysis check. The 24 linked

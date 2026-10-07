@@ -1,5 +1,54 @@
 # IntelliDhan Agent Context
 
+## 2026-10-06 — ORB level-pattern study
+
+- User requested broad three-year SPY/SPX ORB correlation testing, especially
+  containment between premarket/prior-day levels. Continued existing cohesive
+  draft PR #26 / `codex/beta-reliability-strategy-gates`; fetched current refs.
+  Shared dirty original checkout and collaborator changes remain untouched.
+- Added isolated research modules `orb_data`, `orb_patterns`, `orb_report`, a
+  bounded Yahoo diagnostic fetcher, and archive study CLI. Frozen protocol:
+  `docs/research/orb-pattern-protocol.v1.json`. Twelve patterns × 5/15/30-minute
+  ranges × separate SPY/SPX reporting. No auto-selection, predictive model,
+  execution replay, trading win rate, or calibration/engine integration.
+- Pinned optional exchange-calendars 4.11.2 research dependency and added it to
+  the main CI test job. Historical schedule covers holidays/early closes/DST,
+  avoiding the production clock's pre-2026 holes. No production clock change.
+  Complete five-minute RTH grids; SPY premarket strictly 04:00–09:30; SPX PM always
+  unavailable. Prior levels require immediately preceding session; ATR14 uses
+  15 prior complete sessions, using the arithmetic mean of 14 true ranges rather
+  than Wilder smoothing. Supplied SPY action dates exclude event day and
+  conservatively block crossing ATR windows. No fabricated data or proxy index.
+- Actual fixed 59-day Yahoo download: 7,549 SPY bars including extended hours,
+  3,120 SPX bars; 40 complete RTH sessions each (Aug 10–Oct 5), versus 751 needed.
+  Zero malformed returned rows does not prove completeness. No SPY PM window
+  passed completeness. SPY Sept 18 dividend exclusion/warmup leaves 13 directional
+  eligible sessions; SPX 25. Primary first-break labels: SPY 4 favorable/6 adverse/
+  3 neither, SPX 10/6/7. Not fills, options results, or dependable probabilities.
+- Raw bars, full manifest/report and event ledger are private ignored files in
+  `data/research/orb/`. Committed aggregate evidence retains all 72 diagnostic
+  cells, hashes, no-event/ineligible counts, ambiguity bounds and pointwise
+  five-session bootstrap intervals. No multiplicity-adjusted significance claim.
+- Fixed 18/6/12-month splits: all available data is in retrospective test; no
+  development/validation history. Prior project exposure to Jul–Sep 2026 means
+  this is not an untouched holdout. Require fresh prospective confirmation and
+  separate net execution/option replay. `three_year_test_complete=false` is
+  deliberate even if someone later supplies a complete archive to this screen.
+- Data blocker: no local multi-year archive or usable moomoo connection/SDK.
+  Asked user for provider/export, not secrets. Official Alpaca FAQ documents
+  historical SIP without paid subscription when end is 15+ minutes old, a possible
+  free SPY path subject to coverage verification; SPX access is not established.
+  Do not repeat the old blanket claim that all free Alpaca historical data is IEX-only.
+- README updated. No merge, deployment, broker call, account creation, paid
+  subscription, mode change, or live promotion. Full regression and peer-review
+  checks: 705 local tests passed, six opt-in network tests deselected; Ruff 0.4.10
+  and whitespace checks passed. Existing Starlette/httpx deprecation warning
+  remains unrelated. Independent reviews covered causal labels, calendar/data
+  checks, protocol alignment, reporting and artifact preservation; review fixes
+  include action-day PM coverage, source/output alias guards, explicit overwrite
+  controls and runtime constants checks. No inference of trading effectiveness
+  follows from the software tests. Check the new CI run after push.
+
 ## 2026-10-06 — Wheel Deal source research
 
 - User asked to parse https://tjtherealwheeldeal.com/ and shape its knowledge into
