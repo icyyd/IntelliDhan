@@ -672,3 +672,58 @@ For each coherent work unit:
   approved the refresh, authentication, automation, mobile-nav, and live-region
   corrections. PR `#16` remains draft, mergeable, and awaiting user approval;
   no merge or deployment is authorized for this branch yet.
+
+## 2026-11-19 — isolated forward-paper session and journal
+
+- Active request: prepare a paper-only agent and web ledger for November 20,
+  2026, starting with $1,000. User selected a $500 premium ceiling in the
+  follow-up; one contract/position, at most two daily entries, $500 daily
+  worst-case risk budget, no averaging down or recovery sizing. Daily green P/L
+  is a goal, not guaranteed or demonstrated.
+- Branch `codex/paper-trading-journal` is based on refreshed `origin/main`
+  `26dd83f` in `data/worktrees/paper-journal` under the primary checkout.
+  Primary dirty changes and the other agent's draft PR #26 remain untouched.
+  This narrow standalone pilot does not require or compete with the broader
+  signal-desk PR. No merge or cloud deployment is authorized.
+- Local portal: `http://127.0.0.1:8330/`. Runtime data lives at
+  `/Users/dhanvin/Documents/IntelliDhan/data/paper-journal-2026-11-20`.
+  Commands in doc37 must include that `--data-dir` for this prepared instance.
+  Never reset/reinitialize the account to hide losses or resolve pending exits.
+- The local runner is deterministic, date-fenced and paper-only. It uses
+  OpenD quote context only; no trading context, Robinhood order path, real
+  account data, API keys or LLM discretionary execution. Existing auth,
+  account and broker-intent modules are untouched. Read docs 27/28 and doc 37.
+- OpenD is signed in at 127.0.0.1:11111. SDK 10.8.6808. Actual read-only probes
+  confirmed chains and 987 completed five-minute bars for each ticker. General
+  quota: 100; option quota: 20. The adapter discloses its nearest-30-strike
+  metadata scope, at most eight feasible books per scan and 20 owned option
+  slots, without unsubscribing others.
+- Readiness is conditional: after-hours SPY option book lacked authoritative
+  bid/ask timestamps; fills stay blocked when absent. Latest bounded preflight
+  found no currently affordable eligible calls. Do not imply today's 1DTE quote
+  cost proves tomorrow's 0DTE affordability or that socket connectivity is enough.
+- Strategy: first 15-minute range, first completed five-minute breakout, retest
+  within three candles, EMA9/session-VWAP alignment, next-bar trigger,
+  ATR-buffered invalidation, underlying 2R target, 60-minute/time/data exits,
+  entries 9:45–10:30 ET, flatten by 11:30 ET.
+  It is experimental with no positive-expectancy claim or Live promotion.
+- Ledger uses integer cents, immutable events, idempotent signals, T+1 cash,
+  ask plus one cent / bid minus one cent fill assumptions and 65-cent fees per
+  side. Missing marks are unknown, not zero; exit decisions persist and require
+  genuine quote evidence.
+- Independent agents reviewed actual patches. Corrected quote timing after
+  network calls, stale-underlying exit blocking, duplicate signal state,
+  range completion timestamp, durable pre-entry invalidation, process identity,
+  logged-out health handling and symlink-safe runtime writes. Final test counts,
+  commit/PR/CI and review state are recorded at handoff.
+- Browser computer-use and native scheduled-task connectors were unavailable.
+  No visual browser verification or Codex scheduled task is claimed. The local
+  process itself waits for its explicit session and requires an awake Mac with
+  OpenD running; do not stop it as a disposable preview.
+- Final local regression: 456 passed, six integration tests deselected. The
+  shared primary-checkout virtualenv was unsuitable because its editable
+  imports pointed at another checkout; the passing run used this worktree's
+  isolated environment. Ruff, JS syntax and local HTTP/session/account/asset
+  checks passed. The running account was $1,000 with zero trades; no broker
+  orders were sent. Independent cross-review covered each agent's non-owned
+  implementation; review is not an assertion of strategy profitability.

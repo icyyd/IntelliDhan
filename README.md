@@ -1,8 +1,15 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-25 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-11-19 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** five-pane, signals-first Today workspace with strategy-plane
+**Last system pass:** isolated local forward-paper agent and trade journal with a
+$1,000 virtual account, user-selected $500 premium ceiling, immutable entry/exit
+reasoning, conservative costs, read-only OpenD data, and a date-fenced session.
+This experiment cannot submit broker orders or promote a strategy to Live.
+Fresh option bid/ask timestamps remain a readiness gate; a connected OpenD
+session alone is not trading readiness. See [Paper session journal](docs/37-paper-session-journal.md).
+
+The existing five-pane, signals-first Today workspace retains strategy-plane
 evidence objects, net-expectancy gating, responsive overlap guards, simplified
 navigation, and a visible two-minute single-flight refresh cycle for market data
 and analysis. Real-time state and the faster automation safety poll remain
@@ -194,6 +201,7 @@ requires the same-commit README update.
 | 34 | [Opening Range Reversal Backtest](docs/32-opening-range-reversal-backtest.md) | Deterministic 15m opening-range reversal rules, ATR manipulation gate, prior-day level experiment, slippage-aware walk-forward diagnostics |
 | 35 | [ORR Five-Year Fine-Tuning Model](docs/33-orr-five-year-fine-tuning-model.md) | SPY/SPX point-in-time data contract, interpretable meta-labeler, purged walk-forward tuning, robustness score, and promotion gates |
 | 36 | [UX Signals-First Simplicity](docs/32-ux-signals-first-simplicity.md) | Signals-first Today hierarchy, density reduction, progressive disclosure; logo/colors unchanged |
+| 37 | [Paper Session Journal](docs/37-paper-session-journal.md) | Isolated $1,000 virtual account, $500 risk ceilings, deterministic ORB pilot, OpenD readiness gates, and local ledger operations |
 
 ## Core Product Tenets
 
