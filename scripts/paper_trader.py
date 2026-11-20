@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import getpass
 import json
 import os
 import secrets
@@ -95,6 +96,7 @@ def serve(data_dir: Path, session_date: str, instance: str | None = None) -> int
     from paper_trading.feed import OpenDFeed
     from paper_trading.portal import PaperPortal
     from paper_trading.runner import PaperRunner, atomic_json
+    from paper_trading.site_sync import SiteSync, load_config
 
     prepare(data_dir, session_date)
     # The process owns this lock for its entire lifetime, including startup.
@@ -114,6 +116,15 @@ def serve(data_dir: Path, session_date: str, instance: str | None = None) -> int
                                                "data_dir": str(data_dir), "instance": instance})
         worker = threading.Thread(target=runner.run, name="paper-observer", daemon=True)
         worker.start()
+        site_sync = None
+        try:
+            sync_config = load_config(data_dir)
+            if sync_config is not None:
+                site_sync = SiteSync(lambda: runner.snapshot(full_history=True), sync_config)
+                site_sync.start()
+        except ValueError:
+            # Hosting is optional and cannot disable local observation/exits.
+            print("Hosted journal sync is disabled: private configuration needs review.", file=sys.stderr)
 
         def shutdown(_number, _frame):
             runner.stop_event.set()
@@ -125,6 +136,8 @@ def serve(data_dir: Path, session_date: str, instance: str | None = None) -> int
             portal.serve_forever(poll_interval=0.5)
         finally:
             runner.stop_event.set()
+            if site_sync is not None:
+                site_sync.stop()
             worker.join(timeout=15)
             portal.server_close()
             # Unresolved positions and durable exit requests are never cleared.
@@ -189,12 +202,22 @@ def preflight(data_dir: Path, session_date: str) -> int:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("start", "serve", "status", "stop", "preflight"))
+    parser.add_argument("command", choices=("start", "serve", "status", "stop", "preflight", "configure-site"))
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--session-date", help="Explicit YYYY-MM-DD; a restart never changes it")
     parser.add_argument("--instance", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     data_dir = args.data_dir.expanduser().absolute()
+    if args.command == "configure-site":
+        from paper_trading.site_sync import SITE_URL, configure_sync
+
+        # getpass refuses to put the service credential in argv, URLs, or logs.
+        if not sys.stdin.isatty():
+            raise ValueError("Use an interactive terminal for the hidden Site credential prompt")
+        token = getpass.getpass("Private Site service credential (hidden): ")
+        configure_sync(data_dir, SITE_URL, token)
+        print("Private Site sync configured. Restart the owned paper observer to apply it.")
+        return 0
     if args.command in {"start", "serve", "preflight"}:
         if not args.session_date:
             parser.error("--session-date is required; no implicit next-day rollover")

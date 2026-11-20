@@ -1,5 +1,32 @@
 # IntelliDhan Agent Context
 
+## 2026-11-19 — Private ChatGPT paper journal
+
+- The user requested that the local paper portal become a ChatGPT website.
+  A separate owner-private Sites source checkout lives at
+  `data/sites/intellidhan-paper-journal`; it is not the IntelliDhan/Koyeb deployment.
+- Local branch remains `codex/paper-trading-journal` / draft PR 27. Preserve the
+  dirty main checkout and unrelated PR 26. No live orders or strategy promotion.
+- `site_sync.py` sends read-only snapshots in a daemon thread to one fixed HTTPS
+  Site origin. The credential is configured through a hidden terminal prompt
+  into the existing private runtime directory; it is never committed.
+- Hosted D1 persists the current session and immutable events. The browser
+  auto-polls; stale local heartbeat/capture/receive times suppress current P/L.
+- The Mac and OpenD still must stay running. The hosted website cannot reach
+  local OpenD, change the strategy, place orders, or operate the local process.
+- The session remains 2026-11-20, virtual capital $1,000, max premium $500,
+  one position, max two entries, and $500 full-risk daily ceiling including fees.
+- Site publication succeeded at
+  `https://intellidhan-paper-journal.dhanvinnraval.chatgpt.site`, source
+  `2280ebe047922d7189251aace4fd0223eb5ce56c`. Actual-ledger service sync/readback
+  passed; unauthenticated requests are rejected. No seeded/demo trades.
+- The existing observer was not interrupted. A separate read-only sidecar
+  supports initial sync without a restart and retires when observer identity
+  changes. Future starts use the integrated sync worker.
+- Validation: 512 Python tests passed (6 deselected), 16 hosted tests passed,
+  TypeScript/build and Ruff passed. Hosted stale masking and browser-write
+  rejection were exercised against production. Visual browser QA was unavailable.
+
 ## 2026-07-24 — Responsive overlap guard
 
 - Follow-up branch `codex/overlap-fix` is based on merged `main` commit

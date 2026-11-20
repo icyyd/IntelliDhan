@@ -2,7 +2,16 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-11-19 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** isolated local forward-paper agent and trade journal with a
+**Last system pass:** private ChatGPT-hosted paper journal with one-way HTTPS
+sync from the local observer, durable cloud audit history, and a 30-second
+freshness cutoff. The hosted site is read-only; OpenD and all paper decisions
+remain on the Mac. Service credentials never enter browser data or version control.
+See [Paper session journal](docs/37-paper-session-journal.md) for setup and limits.
+The private [ChatGPT journal](https://intellidhan-paper-journal.dhanvinnraval.chatgpt.site)
+is published. A read-only sidecar can sync an already-running observer without
+stopping it; future observer starts use the integrated sync worker.
+
+The isolated local forward-paper agent and trade journal use a
 $1,000 virtual account, user-selected $500 premium ceiling, immutable entry/exit
 reasoning, conservative costs, read-only OpenD data, and a date-fenced session.
 This experiment cannot submit broker orders or promote a strategy to Live.

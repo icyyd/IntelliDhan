@@ -141,3 +141,44 @@ References: [NYSE calendar](https://www.nyse.com/trade/hours-calendars),
 [OpenD order-book API](https://openapi.moomoo.com/moomoo-api-doc/en/quote/get-order-book.html),
 [OpenD book callbacks](https://openapi.moomoo.com/moomoo-api-doc/en/quote/update-order-book.html),
 [local scheduled-task requirements](https://learn.chatgpt.com/docs/automations?surface=app).
+
+## Private ChatGPT website
+
+The journal also has a private ChatGPT-hosted mirror at
+[IntelliDhan Paper Journal](https://intellidhan-paper-journal.dhanvinnraval.chatgpt.site).
+Sign in with the owning ChatGPT account. The hosted UI is read-only and updates
+automatically; it cannot start trading, alter risk, or access a brokerage.
+
+OpenD and the date-fenced observer still run on the Mac. Outbound HTTPS sync
+runs in a separate daemon thread with a two-second network timeout, no
+redirects, bounded payloads, and retry backoff. Cloud failure does not change
+local decisions or stop local exits. Mac sleep or lost connectivity makes the
+site stale; after 30 seconds, current equity and P/L are unavailable rather
+than presented as fresh. Recorded entries, exits, and reasons remain durable.
+
+Configure service access using `scripts/paper_trader.py configure-site
+--data-dir <private-runtime-directory>` in an interactive terminal. Paste only
+the existing Site service credential into its hidden prompt. Never put the
+credential in command arguments, browser code, environment dumps, or Git. The
+configuration is written mode 0600 inside the owned 0700 runtime directory.
+Restart only the owned observer with the same explicit session date/data path;
+the existing ledger is retained. The destination is pinned to the Site above.
+For an observer that is already running without integrated sync, use
+`scripts/paper_site_sync.py start --data-dir <private-runtime-directory>`.
+This starts a read-only sidecar; it never stops or modifies the observer.
+It exits when that observer's process identity changes, allowing the next
+observer start to own the integrated sync worker without duplicate uploaders.
+
+The Site relies on its confirmed owner-private platform access boundary.
+Do not make it public without implementing and reviewing separate service
+authorization. Source lives in a separate Sites-managed Git repository at
+`data/sites/intellidhan-paper-journal`; D1 migrations are published with it.
+The source is independent of the existing Koyeb app and does not change its
+deployment. A ChatGPT website is not a cloud-hosted OpenD process.
+
+Published Site source checkpoint: `2280ebe047922d7189251aace4fd0223eb5ce56c`.
+Verification: 512 Python tests (6 deselected), 16 hosted persistence/freshness
+tests, Ruff and TypeScript/build checks,
+independent review, service-authenticated live readback of the actual $1,000
+zero-trade account, and rejection of unauthenticated API access. The browser
+automation bridge was unavailable, so visual browser QA remains unverified.
