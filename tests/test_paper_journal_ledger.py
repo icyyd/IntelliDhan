@@ -1,12 +1,15 @@
 """Synthetic accounting tests; these fixtures are not market evidence."""
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
+from pathlib import Path
 import sqlite3
+import sys
 from zoneinfo import ZoneInfo
 
 import pytest
 
-from scripts.paper_trading.ledger import Ledger, fill_cents
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+from paper_trading.ledger import Ledger, fill_cents  # noqa: E402
 
 
 ET = ZoneInfo("America/New_York")

@@ -1,8 +1,11 @@
 """Frozen ORB-retest rules against synthetic candles, not performance evidence."""
 from datetime import datetime, timedelta
+from pathlib import Path
+import sys
 from zoneinfo import ZoneInfo
 
-from scripts.paper_trading.strategy import evaluate, exit_reason
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+from paper_trading.strategy import evaluate, exit_reason  # noqa: E402
 
 
 ET = ZoneInfo("America/New_York")

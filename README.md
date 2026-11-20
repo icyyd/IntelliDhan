@@ -8,6 +8,8 @@ reasoning, conservative costs, read-only OpenD data, and a date-fenced session.
 This experiment cannot submit broker orders or promote a strategy to Live.
 Fresh option bid/ask timestamps remain a readiness gate; a connected OpenD
 session alone is not trading readiness. See [Paper session journal](docs/37-paper-session-journal.md).
+The paper tests resolve their standalone script package explicitly, so both the
+`pytest` console command used in CI and `python -m pytest` exercise the same code.
 
 The existing five-pane, signals-first Today workspace retains strategy-plane
 evidence objects, net-expectancy gating, responsive overlap guards, simplified

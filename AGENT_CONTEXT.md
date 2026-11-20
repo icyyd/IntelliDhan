@@ -727,3 +727,7 @@ For each coherent work unit:
   checks passed. The running account was $1,000 with zero trades; no broker
   orders were sent. Independent cross-review covered each agent's non-owned
   implementation; review is not an assertion of strategy profitability.
+- Checkpoint `a6f41f8`, draft PR #27. Initial CI test collection exposed a
+  `pytest` console entry-point import-path difference in two new test files;
+  fixed explicit standalone package resolution and reran the console command.
+  Runtime behavior is unchanged. PostgreSQL CI passed on the first checkpoint.
