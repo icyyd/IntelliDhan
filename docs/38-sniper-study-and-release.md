@@ -129,7 +129,8 @@ subgroups. The subgroups describe where trades occurred; they were not used to
 select another cutoff. Before reconsidering 11:15, a separate forward observer
 would need to capture the late triggers and the timestamped bid/ask of options
 that meet the paper account's limits; the current 10:30 baseline cannot supply
-those missing fills.
+those missing fills. The separate [late-window option recorder](39-late-option-observations.md)
+collects this evidence prospectively without extending the primary account.
 
 ## Reproduce and monitor
 

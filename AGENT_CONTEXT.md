@@ -1,5 +1,17 @@
 # IntelliDhan Agent Context
 
+## 2026-11-20 — options are the pilot's trade vehicle
+
+SPY/QQQ price action establishes direction and levels. Only a verified
+same-day call or put supplies a modeled premium or P/L. No ETF-to-option
+conversion, SPX substitution, 1DTE fallback or synthetic exit. The primary
+account's 10:30 ET cutoff, cash limits, hosted mirror and paper-only mode are
+unchanged. The approved November 20 late-window recorder is a **separate local
+observation journal**; this approval does not recur. The recorder started at
+09:17 ET with a fresh heartbeat and no active polls or modeled trades. That
+startup check is not evidence of options quote coverage or profitability. Consult the
+[runbook](docs/39-late-option-observations.md) before interpreting any result.
+
 ## 2026-11-20 — 11:15 ET cutoff tested, not activated
 
 The offline SPY/QQQ comparison retained the 11:30 ET flatten, matched all

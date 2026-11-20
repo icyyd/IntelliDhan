@@ -2,7 +2,14 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-11-20 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** tested an 11:15 ET entry cutoff against 10:30 across
+**Last system pass:** the sniper uses SPY/QQQ to identify a setup, but the
+instrument being evaluated is the **option**, not ETF shares. A separate,
+single-session [option quote recorder](docs/39-late-option-observations.md)
+can follow 10:30–11:15 ET setups and record the selected 0DTE call or put,
+its quoted costs, and the reason for entry and exit. The primary paper ledger
+still stops taking entries at 10:30; the recorder cannot write to it.
+
+We tested an 11:15 ET entry cutoff against 10:30 across
 753 SPY/QQQ sessions, with the same 11:30 exit. Extra trades improved the later
 period but lost money in the earlier one; across both they averaged −0.88 bps
 per added trade after modeled ETF costs. The paper cutoff stays at 10:30 ET.
@@ -224,6 +231,7 @@ requires the same-commit README update.
 | 36 | [UX Signals-First Simplicity](docs/32-ux-signals-first-simplicity.md) | Signals-first Today hierarchy, density reduction, progressive disclosure; logo/colors unchanged |
 | 37 | [Paper Session Journal](docs/37-paper-session-journal.md) | Isolated $1,000 virtual account, $500 risk ceilings, deterministic ORB pilot, OpenD readiness gates, and local ledger operations |
 | 38 | [Sniper research and release gates](docs/38-sniper-study-and-release.md) | Repeating entries, three-year SPY/QQQ replay, paired 10:30 vs 11:15 cutoff comparison and release gates |
+| 39 | [Late-window option observations](docs/39-late-option-observations.md) | Local one-session research recorder; actual quote requirements, simulated costs, and how to read results |
 
 ## Core Product Tenets
 
