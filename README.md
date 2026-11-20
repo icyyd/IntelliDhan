@@ -2,14 +2,18 @@
 
 **Version:** 0.2 alpha · **Date:** 2026-11-19 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** private ChatGPT-hosted paper journal with one-way HTTPS
-sync from the local observer, durable cloud audit history, and a 30-second
-freshness cutoff. The hosted site is read-only; OpenD and all paper decisions
-remain on the Mac. Service credentials never enter browser data or version control.
-See [Paper session journal](docs/37-paper-session-journal.md) for setup and limits.
-The private [ChatGPT journal](https://intellidhan-paper-journal.dhanvinnraval.chatgpt.site)
-is published. A read-only sidecar can sync an already-running observer without
-stopping it; future observer starts use the integrated sync worker.
+**Last system pass:** the SPY/QQQ opening-range paper sniper has no daily
+trade-count cap. After an exit, it can take another independent breakout and
+retest before 10:30 ET; it cannot re-buy the same setup or reuse unsettled
+proceeds. OpenD five-minute candles are normalized from end labels. A separate
+observer records opening volume and the previous VIX close for comparison
+without changing fills. Gross gamma is optional context, not a directional signal.
+See the [three-year replay, limitations and release gates](docs/38-sniper-study-and-release.md).
+
+The [private ChatGPT journal](https://intellidhan-paper-journal.dhanvinnraval.chatgpt.site)
+mirrors the local observer over one-way HTTPS. History persists and live values
+expire after 30 seconds without fresh data. No broker or subscriber execution
+runs in the website. See [Paper session journal](docs/37-paper-session-journal.md).
 
 The isolated local forward-paper agent and trade journal use a
 $1,000 virtual account, user-selected $500 premium ceiling, immutable entry/exit
@@ -213,6 +217,7 @@ requires the same-commit README update.
 | 35 | [ORR Five-Year Fine-Tuning Model](docs/33-orr-five-year-fine-tuning-model.md) | SPY/SPX point-in-time data contract, interpretable meta-labeler, purged walk-forward tuning, robustness score, and promotion gates |
 | 36 | [UX Signals-First Simplicity](docs/32-ux-signals-first-simplicity.md) | Signals-first Today hierarchy, density reduction, progressive disclosure; logo/colors unchanged |
 | 37 | [Paper Session Journal](docs/37-paper-session-journal.md) | Isolated $1,000 virtual account, $500 risk ceilings, deterministic ORB pilot, OpenD readiness gates, and local ledger operations |
+| 38 | [Sniper research and release gates](docs/38-sniper-study-and-release.md) | Repeating paper entries, three-year SPY/QQQ ablation, forward comparisons and prerequisites for named seats |
 
 ## Core Product Tenets
 

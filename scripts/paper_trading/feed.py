@@ -223,10 +223,13 @@ class OpenDFeed:
         for row in rows:
             if row.get("code") != code:
                 raise FeedError("OpenD returned bars for a different underlying.")
-            started = _timestamp(row.get("time_key"), "bar timestamp").astimezone(ET)
+            # OpenD US RTH K_5M is end-labelled (09:35 ... 16:00). Convert
+            # exactly once at the adapter boundary; the strategy uses starts.
+            ended = _timestamp(row.get("time_key"), "bar timestamp").astimezone(ET)
+            started = ended - timedelta(minutes=5)
             if not day_time(9, 30) <= started.time() < day_time(16, 0):
                 continue
-            if started + timedelta(minutes=5) > now:
+            if ended > now:
                 continue
             if started.minute % 5 or started.second or started.microsecond or started in seen:
                 raise FeedError("OpenD returned duplicate or misaligned five-minute bars.")

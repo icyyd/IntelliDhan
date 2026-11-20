@@ -1,6 +1,40 @@
 # IntelliDhan Agent Context
 
-## 2026-11-19 — Private ChatGPT paper journal
+## 2026-11-19 — November 20 V2 paper pilot: current contract
+
+- `ORB_RETEST_SNIPER_V2` removes the fixed two-entry quota. `null` in
+  `max_entries_per_day` means no numeric cap, **not** unlimited buying power.
+  Keep one SPY/QQQ 0DTE contract at a time, $1,000 starting cash, $500 premium
+  ceiling, $500 daily full-risk budget including fees, no recycling of unsettled
+  proceeds, 10:30 ET last-entry cutoff and 11:30 ET flatten. No SPX substitute
+  or option fill inferred from ETF returns.
+- The initial opening range, completed EMA9/VWAP-aligned retest and next-bar
+  trigger remain. After any portfolio exit, a new candidate symbol must have a
+  full five-minute bar start at/after the exit and close inside its range,
+  followed by a separate breakout/retest/trigger. Stops and reached targets
+  observed pre-entry consume the setup ID, including at the final quote recheck.
+- Persisted V1 policy is not rewritten on normal startup. Only the explicit
+  pre-open, exclusive-lock migration may change the exact, untraded original
+  $1,000 policy. It appends `PAPER_POLICY_MIGRATION`; it does not erase receipts
+  or change capital. Never reset the account or replace that journal.
+- Historical inputs: three years of OpenD SPY/QQQ underlying five-minute bars
+  and Cboe daily VIX. Normalize OpenD's close-labeled bars to start times
+  before testing completion. The shared RVOL/prior-VIX rules are observational.
+  No usable historical chain-GEX or executable options replay; no live promotion.
+  On 223 held-later sessions V2 recorded 26/75 positive baseline outcomes and
+  17/35 combined-filter outcomes after modeled underlying costs. The combined
+  filter had negative mean net basis points per trade in development. This is
+  not an estimate of profitable days or 0DTE profitability.
+- Separate comparison sidecar observes only actual baseline paper receipts.
+  Freeze factors before 9:55 ET; late/missing inputs stay unknown. Do not
+  backfill, infer dealer positioning from unsigned OI, use the sidecar to block
+  exits, or synthesize opportunities skipped by the baseline.
+- Source of truth: [paper operations](docs/37-paper-session-journal.md),
+  [V2 evidence, limitations and release gates](docs/38-sniper-study-and-release.md),
+  [go-live checklist](GO-LIVE.md). The private Site is an observation surface,
+  not a licensed paid-seat launch; broker execution remains `OFF`.
+
+## 2026-11-19 — Private ChatGPT paper journal (initial V1 checkpoint)
 
 - The user requested that the local paper portal become a ChatGPT website.
   A separate owner-private Sites source checkout lives at
@@ -14,8 +48,10 @@
   auto-polls; stale local heartbeat/capture/receive times suppress current P/L.
 - The Mac and OpenD still must stay running. The hosted website cannot reach
   local OpenD, change the strategy, place orders, or operate the local process.
-- The session remains 2026-11-20, virtual capital $1,000, max premium $500,
-  one position, max two entries, and $500 full-risk daily ceiling including fees.
+- At this V1 checkpoint the session was 2026-11-20, virtual capital $1,000,
+  max premium $500, one position, max two entries, and $500 daily full-risk
+  ceiling including fees. Only the strategy version and numeric quota change
+  in the V2 policy above.
 - Site publication succeeded at
   `https://intellidhan-paper-journal.dhanvinnraval.chatgpt.site`, source
   `2280ebe047922d7189251aace4fd0223eb5ce56c`. Actual-ledger service sync/readback
@@ -700,9 +736,9 @@ For each coherent work unit:
   corrections. PR `#16` remains draft, mergeable, and awaiting user approval;
   no merge or deployment is authorized for this branch yet.
 
-## 2026-11-19 — isolated forward-paper session and journal
+## 2026-11-19 — isolated forward-paper session and journal (historical V1)
 
-- Active request: prepare a paper-only agent and web ledger for November 20,
+- Original request: prepare a paper-only agent and web ledger for November 20,
   2026, starting with $1,000. User selected a $500 premium ceiling in the
   follow-up; one contract/position, at most two daily entries, $500 daily
   worst-case risk budget, no averaging down or recovery sizing. Daily green P/L

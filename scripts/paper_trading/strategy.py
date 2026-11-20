@@ -6,6 +6,8 @@ import hashlib
 
 from .ledger import ET, number, session_dates, timestamp
 
+SNIPER_VERSION = "ORB_RETEST_SNIPER_V2"
+
 
 def _bars(raw, now):
     bars = []
@@ -55,6 +57,21 @@ def _bars(raw, now):
 
 def evaluate(symbol, bars, underlying_quote, now):
     """Return WAIT/BLOCKED/ARMED/ENTRY plus a deterministic, expiring signal."""
+    return _evaluate(symbol, bars, underlying_quote, now, sniper=False)
+
+
+def evaluate_sniper(symbol, bars, underlying_quote, now, *, last_exit_at=None, invalidated_signal_ids=()):
+    """Re-arm only after a completed return inside the original opening range.
+
+    Following a portfolio exit, the reset candle must *start* at/after that
+    exit. A breakout, retest and trigger must then occur on three distinct bars.
+    No new breakout is inferred from a stale above-range price.
+    """
+    return _evaluate(symbol, bars, underlying_quote, now, sniper=True, last_exit_at=last_exit_at,
+                     invalidated_signal_ids=invalidated_signal_ids)
+
+
+def _evaluate(symbol, bars, underlying_quote, now, *, sniper, last_exit_at=None, invalidated_signal_ids=()):
     now = timestamp(now)
     result = {"status": "WAIT", "reason": "Waiting for the 15-minute opening range.", "signal": None, "evidence": {}}
     if symbol not in {"SPY", "QQQ"}:
@@ -73,7 +90,18 @@ def evaluate(symbol, bars, underlying_quote, now):
         low = min(row["low"] for row in today[:3])
         evidence = {"opening_range_high": high, "opening_range_low": low, "range_completed_at": (today[2]["at"] + timedelta(minutes=5)).isoformat(), "research_only": True}
         result["evidence"] = evidence
-        breakout_index = next((i for i in range(3, len(today)) if today[i]["close"] > high or today[i]["close"] < low), None)
+        begin = 3
+        if sniper:
+            cutoff = timestamp(last_exit_at) if last_exit_at is not None else None
+            reset = next((i for i in range(len(today)-1, 2, -1)
+                          if low <= today[i]["close"] <= high and (cutoff is None or today[i]["at"] >= cutoff)), None)
+            if cutoff is not None and reset is None:
+                return {**result, "reason": "After an exit, wait for a full candle to close back inside the opening range."}
+            if reset is not None:
+                evidence["reset_bar_at"] = today[reset]["at"].isoformat()
+                begin = reset + 1
+            evidence["strategy"] = SNIPER_VERSION
+        breakout_index = next((i for i in range(begin, len(today)) if today[i]["close"] > high or today[i]["close"] < low), None)
         if breakout_index is None:
             return {**result, "reason": "Waiting for a completed candle to close outside the opening range."}
         direction = "CALL" if today[breakout_index]["close"] > high else "PUT"
@@ -105,12 +133,15 @@ def evaluate(symbol, bars, underlying_quote, now):
         risk = abs(trigger - stop)
         target = trigger + 2 * risk if direction == "CALL" else trigger - 2 * risk
         evidence.update(retest_at=retest["at"].isoformat(), ema9=retest["ema9"], vwap=retest["vwap"], atr14=atr)
-        identity = f"ORB_RETEST_PAPER_V1|{day}|{symbol}|{direction}|{retest['at'].isoformat()}"
+        version = SNIPER_VERSION if sniper else "ORB_RETEST_PAPER_V1"
+        identity = f"{version}|{day}|{symbol}|{direction}|{retest['at'].isoformat()}"
         reason = f"{symbol} held its opening-range {'high' if direction == 'CALL' else 'low'} on a completed retest, aligned with 9EMA and session VWAP; next-candle {'high' if direction == 'CALL' else 'low'} break. Experimental, not a proven win rate."
         signal = {"signal_id": hashlib.sha256(identity.encode()).hexdigest(), "symbol": symbol,
                   "direction": direction, "trigger": trigger, "stop": stop, "target": target,
                   "created_at": created.isoformat(), "expires_at": expires.isoformat(),
                   "reason": reason, "evidence": evidence}
+        if sniper and signal["signal_id"] in invalidated_signal_ids:
+            return {**result, "reason": "This setup was invalidated; a new opening-range reset is required."}
         result.update(status="ARMED", reason="Retest confirmed; waiting for the next candle to break its trigger.", signal=signal)
         if underlying_quote is None:
             return result
@@ -127,7 +158,8 @@ def evaluate(symbol, bars, underlying_quote, now):
         triggered = price > trigger if direction == "CALL" else price < trigger
         if triggered:
             if price >= target if direction == "CALL" else price <= target:
-                return {**result, "status": "WAIT", "signal": None, "reason": "Move already reached its target; do not chase."}
+                no_chase = {"invalidated_signal_id": signal["signal_id"]} if sniper else {}
+                return {**result, **no_chase, "status": "WAIT", "signal": None, "reason": "Move already reached its target; do not chase."}
             result.update(status="ENTRY", reason=reason)
         return result
     except (ValueError, TypeError, KeyError) as exc:

@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from pathlib import Path
+import json
 import sqlite3
 import sys
 from zoneinfo import ZoneInfo
@@ -9,7 +10,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from paper_trading.ledger import Ledger, fill_cents  # noqa: E402
+from paper_trading.ledger import DEFAULT_POLICY, LEGACY_V1_POLICY, Ledger, fill_cents  # noqa: E402
 
 
 ET = ZoneInfo("America/New_York")
@@ -21,7 +22,8 @@ def signal(identity="a", now=NOW):
             "trigger": 600, "stop": 599, "target": 602,
             "created_at": (now - timedelta(seconds=5)).isoformat(),
             "expires_at": (now + timedelta(minutes=4)).isoformat(),
-            "reason": "Synthetic completed retest followed by trigger break.", "evidence": {"synthetic": True}}
+            "reason": "Synthetic completed retest followed by trigger break.",
+            "evidence": {"synthetic": True, "strategy": DEFAULT_POLICY["strategy"]}}
 
 
 def underlying(now=NOW, price=600.1):
@@ -61,6 +63,14 @@ def test_pre_entry_invalidation_is_durable_and_cannot_be_revived(tmp_path):
     with pytest.raises(ValueError, match="invalidated before entry"):
         Ledger(path).enter(signal(), option(), underlying(), NOW)
     assert Ledger(path).snapshot(NOW)["trades"] == []
+
+
+@pytest.mark.parametrize("evidence", [None, {}, {"strategy": "ORB_RETEST_PAPER_V1"}])
+def test_first_entry_cannot_relabel_legacy_signal_as_sniper(tmp_path, evidence):
+    ledger = Ledger(tmp_path / "paper.sqlite3")
+    with pytest.raises(ValueError, match="identify the active sniper"):
+        ledger.enter({**signal(), "evidence": evidence}, option(), underlying(), NOW)
+    assert not ledger.snapshot(NOW)["trades"]
 
 
 def test_bid_ask_slippage_fees_and_unsettled_cash(tmp_path):
@@ -156,18 +166,84 @@ def test_same_day_proceeds_cannot_be_reused(tmp_path):
         ledger.enter(signal("b", next_time), option(next_time), underlying(next_time), next_time)
 
 
-def test_one_position_and_two_entries_per_day(tmp_path):
+def test_one_position_multiple_fresh_opportunities_until_budget_runs_out(tmp_path):
     ledger = Ledger(tmp_path / "paper.sqlite3")
-    first = ledger.enter(signal(), option(), underlying(), NOW)
+    assert ledger.policy["max_entries_per_day"] is None
+    first_at = NOW - timedelta(minutes=5)
+    first = ledger.enter(signal(now=first_at), option(first_at), underlying(first_at), first_at)
     with pytest.raises(ValueError, match="already exists"):
         ledger.enter(signal("b"), option(), underlying(), NOW)
-    close(ledger, first)
-    next_time = NOW + timedelta(minutes=2)
-    second = ledger.enter(signal("b", next_time), option(next_time), underlying(next_time), next_time)
-    close(ledger, second, now=next_time + timedelta(minutes=1))
-    last = next_time + timedelta(minutes=2)
-    with pytest.raises(ValueError, match="daily entry limit"):
-        ledger.enter(signal("c", last), option(last), underlying(last), last)
+    close(ledger, first, now=first_at+timedelta(seconds=10))
+    with pytest.raises(ValueError, match="fresh post-exit"):
+        ledger.enter(signal("b"), option(), underlying(), NOW)
+    # Close first trade exactly at/before available reset boundaries. The
+    # early 10:30 cutoff leaves room for three only under favorable timing.
+    def fresh(identity, created):
+        obs = signal(identity, created)
+        obs["created_at"] = created.isoformat()
+        obs["evidence"] = {"strategy": DEFAULT_POLICY["strategy"],
+                           "reset_bar_at": (created-timedelta(minutes=15)).isoformat(),
+                           "breakout_at": (created-timedelta(minutes=10)).isoformat(),
+                           "retest_at": (created-timedelta(minutes=5)).isoformat()}
+        return obs
+    # Direct ledger test at 5-minute boundaries (runner tests separately cover market setup).
+    next_time = NOW.replace(minute=15, second=0)
+    second = ledger.enter(fresh("b", next_time), option(next_time), underlying(next_time), next_time)
+    close(ledger, second, now=next_time)
+    # A third is possible if the first exit is at 09:55, then 10:10 and 10:25.
+    # Here 10:30 is outside the window: cash is not an excuse to enter late.
+    with pytest.raises(ValueError, match="entry window"):
+        last = next_time + timedelta(minutes=15)
+        ledger.enter(fresh("c", last), option(last), underlying(last), last)
+    early = Ledger(tmp_path / "early.sqlite3")
+    first_at = first_at.replace(second=0)
+    t = early.enter(signal(now=first_at), option(first_at), underlying(first_at), first_at)
+    close(early, t, now=first_at)
+    for i in (1, 2):
+        later = first_at + timedelta(minutes=i*15)
+        t = early.enter(fresh(f"new{i}", later), option(later), underlying(later), later)
+        close(early, t, now=later)
+    state = early.snapshot(later)
+    assert state["account"]["entries_today"] == 3 and len(state["trades"]) == 3
+    assert 0 < state["account"]["settled_cash"] < 400
+
+
+def test_empty_legacy_account_migration_is_atomic_and_audited_only_once(tmp_path):
+    path = tmp_path / "v1.sqlite"
+    old = Ledger(path, policy=LEGACY_V1_POLICY)
+    old.record_event("PREFLIGHT", "existing immutable diagnostic", NOW)
+    with pytest.raises(ValueError, match="persisted capital/policy differs"):
+        Ledger(path)
+    for _ in range(2):
+        new = Ledger(path, upgrade_empty_v1=True).snapshot(NOW)
+        assert new["policy"] == DEFAULT_POLICY
+        assert new["account"]["cash"] == 1000 and new["trades"] == []
+        assert {e["kind"] for e in new["events"]} == {"PREFLIGHT", "PAPER_POLICY_MIGRATION"}
+        assert len(new["events"]) == 2
+        event = next(e for e in new["events"] if e["kind"] == "PAPER_POLICY_MIGRATION")
+        assert event["details"]["previous"]["policy"] == LEGACY_V1_POLICY
+    with pytest.raises(ValueError, match="persisted capital/policy differs"):
+        Ledger(path, policy=LEGACY_V1_POLICY)
+
+
+@pytest.mark.parametrize("kind", ["OPEN", "CLOSED", "custom", "capital", "receipt", "conflicting_id"])
+def test_migration_preserves_and_rejects_nonempty_or_custom_legacy_account(tmp_path, kind):
+    path = tmp_path / "legacy.sqlite"
+    ledger = Ledger(path, initial_capital=900 if kind == "capital" else 1000,
+                    policy={**LEGACY_V1_POLICY, **({"max_premium": 499} if kind == "custom" else {})})
+    if kind in {"OPEN", "CLOSED"}:
+        trade = ledger.enter(signal(), option(), underlying(), NOW)
+        if kind == "CLOSED":
+            close(ledger, trade)
+    if kind == "receipt":
+        ledger.record_event("ENTRY", "orphan receipt", NOW)
+    if kind == "conflicting_id":
+        ledger.record_event("OTHER", "unexpected existing identity", NOW,
+                            event_id="policy:ORB_RETEST_PAPER_V1:ORB_RETEST_SNIPER_V2")
+    before = json.dumps(ledger.snapshot(NOW), sort_keys=True)
+    with pytest.raises(ValueError, match="persisted capital/policy differs"):
+        Ledger(path, upgrade_empty_v1=True)
+    assert json.dumps(ledger.snapshot(NOW), sort_keys=True) == before
 
 
 def test_exit_request_survives_failure_and_restart_and_never_uses_next_day_quote(tmp_path):

@@ -105,7 +105,8 @@
     const policy = state.policy || {};
     set("max-premium", money(first(policy.max_premium, policy.max_premium_per_trade)));
     set("max-loss", money(first(policy.max_daily_loss, policy.daily_loss_limit)));
-    set("max-entries", first(policy.max_entries, policy.max_entries_per_day, "—"));
+    set("max-entries", policy.strategy === "ORB_RETEST_SNIPER_V2" && policy.max_entries_per_day === null
+      ? "No count cap · risk limits apply" : first(policy.max_entries, policy.max_entries_per_day, "—"));
   }
 
   function renderAgent(state) {

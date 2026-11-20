@@ -1,0 +1,448 @@
+{
+  "rule_version": "ORB_RVOL_PRIOR_VIX_V1",
+  "evidence": "UNDERLYING_ONLY",
+  "live_eligible": false,
+  "setup_model": "V2_REPEATING_SNIPER",
+  "study_start": "2023-11-20",
+  "held_later_start": "2026-01-02",
+  "end": "2026-11-19",
+  "input_sha256": {
+    "SPY_2023-10-19_2026-11-19.csv": "1f1a2a23be5be2e3e67d9ea7442fd47ca515f3b5b016a8456f4f62cb66d6e486",
+    "QQQ_2023-10-19_2026-11-19.csv": "22787c1c19a864e779f92c593139a82021d18d7e752eb6006a9a58cbdba47581",
+    "VIX_History.csv": "0d9c033a1ee06d41832ef98ce17d84910c8c386d890daca5cb24bbf9cd4af8d5"
+  },
+  "input_bars": {
+    "SPY": 60198,
+    "QQQ": 60198
+  },
+  "usable_sessions": 753,
+  "missing_mornings_excluded": [],
+  "factor_symbol_session_counts": {
+    "rvol": {
+      "FAIL": 744,
+      "PASS": 762
+    },
+    "vix": {
+      "PASS": 1468,
+      "FAIL": 38
+    },
+    "gex": {
+      "UNKNOWN": 1506
+    }
+  },
+  "method": {
+    "entry": "shared 15m ORB/retest EMA9 + VWAP; next five-minute candle break; gap fill at worse open, no chase at target",
+    "exit": "same-bar ties stop first; count ambiguous entry/stop as loss; EMA9 exit next open, max 60min or 11:30 ET",
+    "costs": "2 bps round trip underlying, stress 5 bps; not option returns or account equity",
+    "portfolio": "at most one overlapping underlying position; SPY first on ties, reject a same-bar exit/re-entry",
+    "rearm": "Uncapped count; after each position exit, require a complete fresh 5m inside-range bar then a fresh breakout/retest/trigger in the original window.",
+    "split_interpretation": "Calendar holdout reused after the V1 results were seen; comparative, not a fresh untouched test.",
+    "volume": "09:30-09:45 vs trailing 20 XNYS sessions, median; minimum five complete openings",
+    "vix": "exact previous XNYS daily close, modeled known at midnight ET after close; no intraday or same-day VIX",
+    "data": "OpenD 5m RTH QFQ end labels minus 5m; Cboe daily VIX historical download; no archived as-published revisions",
+    "gex": "unavailable: no archived time-matched complete chain + published open interest; never assign dealer sign",
+    "net_bps": "fixed unit notional, additive non-compounded. No 0DTE greeks, NBBO, affordability, settlement or capital modeled."
+  },
+  "development": {
+    "from": "2023-11-20",
+    "through": "2025-12-31",
+    "arms": {
+      "baseline": {
+        "sessions": 530,
+        "trades": 193,
+        "flat_sessions": 338,
+        "repeat_entry_sessions": 1,
+        "maximum_entries_one_session": 2,
+        "green_sessions": 78,
+        "red_sessions": 114,
+        "win_pct": 40.415,
+        "mean_net_bps_per_trade": -0.439,
+        "mean_net_bps_per_session": -0.16,
+        "total_net_bps": -84.665,
+        "max_drawdown_daily_additive_bps": 251.331,
+        "net_total_at_5bps_round_trip": -663.665,
+        "by_symbol": {
+          "SPY": {
+            "trades": 97,
+            "net_bps": -60.76,
+            "mean_net_bps": -0.626
+          },
+          "QQQ": {
+            "trades": 96,
+            "net_bps": -23.905,
+            "mean_net_bps": -0.249
+          }
+        },
+        "exit_counts": {
+          "EMA9": 52,
+          "TARGET": 45,
+          "STOP": 82,
+          "TIME": 14
+        }
+      },
+      "rvol": {
+        "sessions": 530,
+        "trades": 93,
+        "flat_sessions": 437,
+        "repeat_entry_sessions": 0,
+        "maximum_entries_one_session": 1,
+        "green_sessions": 38,
+        "red_sessions": 55,
+        "win_pct": 40.86,
+        "mean_net_bps_per_trade": 0.278,
+        "mean_net_bps_per_session": 0.049,
+        "total_net_bps": 25.862,
+        "max_drawdown_daily_additive_bps": 152.22,
+        "net_total_at_5bps_round_trip": -253.138,
+        "by_symbol": {
+          "SPY": {
+            "trades": 47,
+            "net_bps": 70.906,
+            "mean_net_bps": 1.509
+          },
+          "QQQ": {
+            "trades": 46,
+            "net_bps": -45.045,
+            "mean_net_bps": -0.979
+          }
+        },
+        "exit_counts": {
+          "EMA9": 30,
+          "TARGET": 24,
+          "STOP": 35,
+          "TIME": 4
+        }
+      },
+      "vix": {
+        "sessions": 530,
+        "trades": 185,
+        "flat_sessions": 346,
+        "repeat_entry_sessions": 1,
+        "maximum_entries_one_session": 2,
+        "green_sessions": 76,
+        "red_sessions": 108,
+        "win_pct": 41.081,
+        "mean_net_bps_per_trade": -0.444,
+        "mean_net_bps_per_session": -0.155,
+        "total_net_bps": -82.187,
+        "max_drawdown_daily_additive_bps": 230.302,
+        "net_total_at_5bps_round_trip": -637.187,
+        "by_symbol": {
+          "SPY": {
+            "trades": 92,
+            "net_bps": -73.708,
+            "mean_net_bps": -0.801
+          },
+          "QQQ": {
+            "trades": 93,
+            "net_bps": -8.478,
+            "mean_net_bps": -0.091
+          }
+        },
+        "exit_counts": {
+          "EMA9": 50,
+          "TARGET": 44,
+          "STOP": 78,
+          "TIME": 13
+        }
+      },
+      "combined": {
+        "sessions": 530,
+        "trades": 90,
+        "flat_sessions": 440,
+        "repeat_entry_sessions": 0,
+        "maximum_entries_one_session": 1,
+        "green_sessions": 37,
+        "red_sessions": 53,
+        "win_pct": 41.111,
+        "mean_net_bps_per_trade": -0.162,
+        "mean_net_bps_per_session": -0.028,
+        "total_net_bps": -14.611,
+        "max_drawdown_daily_additive_bps": 187.989,
+        "net_total_at_5bps_round_trip": -284.611,
+        "by_symbol": {
+          "SPY": {
+            "trades": 45,
+            "net_bps": 10.088,
+            "mean_net_bps": 0.224
+          },
+          "QQQ": {
+            "trades": 45,
+            "net_bps": -24.699,
+            "mean_net_bps": -0.549
+          }
+        },
+        "exit_counts": {
+          "EMA9": 29,
+          "TARGET": 23,
+          "STOP": 34,
+          "TIME": 4
+        }
+      }
+    },
+    "matched_baseline_combined_diagnostic": {
+      "sessions": 530,
+      "trades": 87,
+      "flat_sessions": 443,
+      "repeat_entry_sessions": 0,
+      "maximum_entries_one_session": 1,
+      "green_sessions": 36,
+      "red_sessions": 51,
+      "win_pct": 41.379,
+      "mean_net_bps_per_trade": -0.234,
+      "mean_net_bps_per_session": -0.038,
+      "total_net_bps": -20.362,
+      "max_drawdown_daily_additive_bps": 169.022,
+      "net_total_at_5bps_round_trip": -281.362,
+      "by_symbol": {
+        "SPY": {
+          "trades": 44,
+          "net_bps": 21.634,
+          "mean_net_bps": 0.492
+        },
+        "QQQ": {
+          "trades": 43,
+          "net_bps": -41.996,
+          "mean_net_bps": -0.977
+        }
+      },
+      "exit_counts": {
+        "EMA9": 29,
+        "TARGET": 23,
+        "STOP": 32,
+        "TIME": 3
+      }
+    },
+    "paired_vs_baseline": {
+      "rvol": {
+        "mean_bps_per_session": 0.209,
+        "paired_95pct_block5_bps": [
+          -0.533,
+          0.955
+        ]
+      },
+      "vix": {
+        "mean_bps_per_session": 0.005,
+        "paired_95pct_block5_bps": [
+          -0.443,
+          0.403
+        ]
+      },
+      "combined": {
+        "mean_bps_per_session": 0.132,
+        "paired_95pct_block5_bps": [
+          -0.686,
+          0.957
+        ]
+      }
+    },
+    "combined_vs_cash": {
+      "mean_bps_per_session": -0.028,
+      "paired_95pct_block5_bps": [
+        -0.797,
+        0.803
+      ]
+    }
+  },
+  "held_later": {
+    "from": "2026-01-02",
+    "through": "2026-11-19",
+    "arms": {
+      "baseline": {
+        "sessions": 223,
+        "trades": 75,
+        "flat_sessions": 152,
+        "repeat_entry_sessions": 4,
+        "maximum_entries_one_session": 2,
+        "green_sessions": 26,
+        "red_sessions": 45,
+        "win_pct": 34.667,
+        "mean_net_bps_per_trade": 0.486,
+        "mean_net_bps_per_session": 0.163,
+        "total_net_bps": 36.457,
+        "max_drawdown_daily_additive_bps": 442.131,
+        "net_total_at_5bps_round_trip": -188.543,
+        "by_symbol": {
+          "SPY": {
+            "trades": 41,
+            "net_bps": 232.81,
+            "mean_net_bps": 5.678
+          },
+          "QQQ": {
+            "trades": 34,
+            "net_bps": -196.353,
+            "mean_net_bps": -5.775
+          }
+        },
+        "exit_counts": {
+          "STOP": 23,
+          "TARGET": 21,
+          "EMA9": 28,
+          "TIME": 3
+        }
+      },
+      "rvol": {
+        "sessions": 223,
+        "trades": 36,
+        "flat_sessions": 187,
+        "repeat_entry_sessions": 0,
+        "maximum_entries_one_session": 1,
+        "green_sessions": 17,
+        "red_sessions": 19,
+        "win_pct": 47.222,
+        "mean_net_bps_per_trade": 8.926,
+        "mean_net_bps_per_session": 1.441,
+        "total_net_bps": 321.331,
+        "max_drawdown_daily_additive_bps": 128.94,
+        "net_total_at_5bps_round_trip": 213.331,
+        "by_symbol": {
+          "SPY": {
+            "trades": 21,
+            "net_bps": 222.012,
+            "mean_net_bps": 10.572
+          },
+          "QQQ": {
+            "trades": 15,
+            "net_bps": 99.319,
+            "mean_net_bps": 6.621
+          }
+        },
+        "exit_counts": {
+          "STOP": 8,
+          "TARGET": 14,
+          "EMA9": 12,
+          "TIME": 2
+        }
+      },
+      "vix": {
+        "sessions": 223,
+        "trades": 74,
+        "flat_sessions": 153,
+        "repeat_entry_sessions": 4,
+        "maximum_entries_one_session": 2,
+        "green_sessions": 26,
+        "red_sessions": 44,
+        "win_pct": 35.135,
+        "mean_net_bps_per_trade": 0.741,
+        "mean_net_bps_per_session": 0.246,
+        "total_net_bps": 54.819,
+        "max_drawdown_daily_additive_bps": 423.769,
+        "net_total_at_5bps_round_trip": -167.181,
+        "by_symbol": {
+          "SPY": {
+            "trades": 41,
+            "net_bps": 232.81,
+            "mean_net_bps": 5.678
+          },
+          "QQQ": {
+            "trades": 33,
+            "net_bps": -177.991,
+            "mean_net_bps": -5.394
+          }
+        },
+        "exit_counts": {
+          "STOP": 22,
+          "TARGET": 21,
+          "EMA9": 28,
+          "TIME": 3
+        }
+      },
+      "combined": {
+        "sessions": 223,
+        "trades": 35,
+        "flat_sessions": 188,
+        "repeat_entry_sessions": 0,
+        "maximum_entries_one_session": 1,
+        "green_sessions": 17,
+        "red_sessions": 18,
+        "win_pct": 48.571,
+        "mean_net_bps_per_trade": 9.706,
+        "mean_net_bps_per_session": 1.523,
+        "total_net_bps": 339.693,
+        "max_drawdown_daily_additive_bps": 110.578,
+        "net_total_at_5bps_round_trip": 234.693,
+        "by_symbol": {
+          "SPY": {
+            "trades": 21,
+            "net_bps": 222.012,
+            "mean_net_bps": 10.572
+          },
+          "QQQ": {
+            "trades": 14,
+            "net_bps": 117.681,
+            "mean_net_bps": 8.406
+          }
+        },
+        "exit_counts": {
+          "STOP": 7,
+          "TARGET": 14,
+          "EMA9": 12,
+          "TIME": 2
+        }
+      }
+    },
+    "matched_baseline_combined_diagnostic": {
+      "sessions": 223,
+      "trades": 32,
+      "flat_sessions": 191,
+      "repeat_entry_sessions": 0,
+      "maximum_entries_one_session": 1,
+      "green_sessions": 16,
+      "red_sessions": 16,
+      "win_pct": 50.0,
+      "mean_net_bps_per_trade": 9.71,
+      "mean_net_bps_per_session": 1.393,
+      "total_net_bps": 310.726,
+      "max_drawdown_daily_additive_bps": 109.2,
+      "net_total_at_5bps_round_trip": 214.726,
+      "by_symbol": {
+        "SPY": {
+          "trades": 20,
+          "net_bps": 234.446,
+          "mean_net_bps": 11.722
+        },
+        "QQQ": {
+          "trades": 12,
+          "net_bps": 76.28,
+          "mean_net_bps": 6.357
+        }
+      },
+      "exit_counts": {
+        "STOP": 5,
+        "TARGET": 13,
+        "EMA9": 12,
+        "TIME": 2
+      }
+    },
+    "paired_vs_baseline": {
+      "rvol": {
+        "mean_bps_per_session": 1.277,
+        "paired_95pct_block5_bps": [
+          0.029,
+          2.73
+        ]
+      },
+      "vix": {
+        "mean_bps_per_session": 0.082,
+        "paired_95pct_block5_bps": [
+          0.0,
+          0.247
+        ]
+      },
+      "combined": {
+        "mean_bps_per_session": 1.36,
+        "paired_95pct_block5_bps": [
+          0.108,
+          2.8
+        ]
+      }
+    },
+    "combined_vs_cash": {
+      "mean_bps_per_session": 1.523,
+      "paired_95pct_block5_bps": [
+        -0.002,
+        3.153
+      ]
+    }
+  }
+}

@@ -11,7 +11,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .ledger import Ledger
-from .strategy import evaluate, exit_reason
+from .strategy import evaluate_sniper, exit_reason
 
 ET = ZoneInfo("America/New_York")
 UTC = timezone.utc
@@ -93,6 +93,13 @@ class PaperRunner:
                 self.agent["feed_status"] = feed_status
             atomic_json(self.data_dir / "heartbeat.json", self.agent)
 
+    def _observe_invalidation(self, symbol, decision, now):
+        identity = decision.get("invalidated_signal_id")
+        if identity:
+            self.ledger.record_event("SIGNAL_INVALIDATED", decision["reason"], now,
+                                     details={"symbol": symbol, "signal_id": identity},
+                                     event_id=identity + ":invalidated")
+
     def snapshot(self, *, full_history=False) -> dict:
         now = self.clock()
         result = self.ledger.snapshot(now, full_history=full_history)
@@ -107,7 +114,7 @@ class PaperRunner:
             **result, "mode": "SIMULATION", "session_date": self.session_date,
             "now": now.isoformat(), "agent": agent, "watchlist": watchlist,
             "validation": "RESEARCH_ONLY",
-            "strategy": "15-minute opening-range break and retest",
+            "strategy": "15-minute opening-range break, retest and fresh-reset re-entry",
             "schedule": {
                 "timezone": "America/New_York", "open": self.open_at.isoformat(),
                 "close": self.close_at.isoformat(), "entry_start": "09:45",
@@ -243,16 +250,18 @@ class PaperRunner:
                 underlying = self.feed.underlying(symbol)
                 bars = self.feed.bars(symbol, self.clock())
                 now = self.clock()
-                decision = evaluate(symbol, bars, underlying, now)
+                prior_exits = [datetime.fromisoformat(t["exited_at"]) for t in snapshot["trades"]
+                               if t["status"] == "CLOSED" and t["session_date"] == self.session_date]
+                invalidated = {event["details"].get("signal_id") for event in snapshot["events"]
+                               if event["kind"] == "SIGNAL_INVALIDATED"}
+                context = {"last_exit_at": max(prior_exits, default=None), "invalidated_signal_ids": invalidated}
+                decision = evaluate_sniper(symbol, bars, underlying, now, **context)
                 watchlist.append({"symbol": symbol, "price": underlying["price"],
                                   "observed_at": underlying["observed_at"],
                                   "status": decision["status"], "reason": decision["reason"]})
                 signal = decision.get("signal")
                 self.event("SIGNAL_CHECK", decision["reason"], now, {"symbol": symbol, "evidence": decision.get("evidence")})
-                if decision.get("invalidated_signal_id"):
-                    self.ledger.record_event("SIGNAL_INVALIDATED", decision["reason"], now,
-                                             details={"symbol": symbol, "signal_id": decision["invalidated_signal_id"]},
-                                             event_id=decision["invalidated_signal_id"] + ":invalidated")
+                self._observe_invalidation(symbol, decision, now)
                 if signal is None or decision["status"] != "ENTRY":
                     continue
                 if any(trade["signal_id"] == signal["signal_id"] for trade in snapshot["trades"]):
@@ -268,7 +277,14 @@ class PaperRunner:
                         # Fetch underlying again after a chain scan; never reuse a stale trigger.
                         current_option = self.feed.option_quote(quote)
                         current_underlying = self.feed.underlying(symbol)
-                        entered = self.ledger.enter(signal, current_option, current_underlying, self.clock())
+                        now = self.clock()
+                        refreshed = evaluate_sniper(symbol, bars, current_underlying, now, **context)
+                        self._observe_invalidation(symbol, refreshed, now)
+                        if (refreshed["status"] != "ENTRY" or
+                                refreshed["signal"]["signal_id"] != signal["signal_id"]):
+                            rejection = refreshed["reason"]
+                            break  # back off until the next poll; an invalidated ID stays consumed
+                        entered = self.ledger.enter(signal, current_option, current_underlying, now)
                         if entered["status"] == "CLOSED":
                             rejection = "This setup has already closed; no duplicate entry."
                             break

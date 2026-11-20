@@ -249,12 +249,16 @@ def test_bars_exclude_open_bar_and_extended_hours(connected):
     ctx.bar_rows = [
         {"code": "US.SPY", "time_key": stamp, "open": 600, "high": 601,
          "low": 599, "close": 600.5, "volume": 1000}
-        for stamp in ("2026-11-19 15:55:00", "2026-11-20 09:25:00",
-                      "2026-11-20 09:55:00", "2026-11-20 10:00:00")
+        for stamp in ("2026-11-19 16:00:00", "2026-11-20 09:30:00",
+                      "2026-11-20 09:35:00", "2026-11-20 09:40:00",
+                      "2026-11-20 09:45:00", "2026-11-20 10:00:00",
+                      "2026-11-20 10:05:00")
     ]
     result = adapter.bars("SPY", NOW)
     assert [row["started_at"] for row in result] == [
-        "2026-11-19T15:55:00-05:00", "2026-11-20T09:55:00-05:00",
+        "2026-11-19T15:55:00-05:00", "2026-11-20T09:30:00-05:00",
+        "2026-11-20T09:35:00-05:00", "2026-11-20T09:40:00-05:00",
+        "2026-11-20T09:55:00-05:00",
     ]
     subscription = next(call for call in ctx.calls if call[0] == "subscribe")
     assert subscription[3]["session"] == "RTH"

@@ -7,9 +7,10 @@ once and cannot be reset by restarting a process.
 from __future__ import annotations
 
 from contextlib import contextmanager
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP
 import hashlib
+from functools import lru_cache
 import json
 import math
 import os
@@ -20,7 +21,7 @@ from zoneinfo import ZoneInfo
 
 
 ET = ZoneInfo("America/New_York")
-DEFAULT_POLICY = {
+LEGACY_V1_POLICY = {
     "mode": "SIMULATION", "strategy": "ORB_RETEST_PAPER_V1",
     "symbols": ["SPY", "QQQ"], "max_contracts": 1, "max_entries_per_day": 2,
     "max_premium": 500.0, "max_daily_loss": 500.0,
@@ -32,6 +33,7 @@ DEFAULT_POLICY = {
     "settlement": "T+1 exchange session; no same-day proceeds reuse",
     "live_eligible": False,
 }
+DEFAULT_POLICY = {**LEGACY_V1_POLICY, "strategy": "ORB_RETEST_SNIPER_V2", "max_entries_per_day": None}
 
 
 def timestamp(value) -> datetime:
@@ -78,8 +80,14 @@ def fill_cents(price, slippage, *, entry):
 
 def session_dates(now: datetime) -> tuple[str, str]:
     """Fail closed if the installed exchange calendar cannot establish a session."""
-    import exchange_calendars as xcals
     day = now.astimezone(ET).date().isoformat()
+    return _calendar_sessions(day)
+
+
+@lru_cache(maxsize=2048)
+def _calendar_sessions(day):
+    import exchange_calendars as xcals
+
     calendar = xcals.get_calendar("XNYS")
     # exchange_calendars 4.11.x's is_session/next_session compare raw integer
     # units and are incompatible with pandas 3's microsecond DatetimeIndex.
@@ -95,7 +103,7 @@ def session_dates(now: datetime) -> tuple[str, str]:
 
 
 class Ledger:
-    def __init__(self, path, initial_capital=1000, policy=None):
+    def __init__(self, path, initial_capital=1000, policy=None, *, upgrade_empty_v1=False):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         try:
@@ -129,7 +137,20 @@ class Ledger:
             if prior is None:
                 db.execute("INSERT INTO metadata VALUES('account', ?)", (json.dumps(config, sort_keys=True),))
             elif json.loads(prior[0]) != config:
-                raise ValueError("persisted capital/policy differs; never reset an existing paper account")
+                old = json.loads(prior[0])
+                empty = not db.execute("SELECT 1 FROM trades LIMIT 1").fetchone()
+                migration_id = "policy:ORB_RETEST_PAPER_V1:ORB_RETEST_SNIPER_V2"
+                no_fills = not db.execute(
+                    "SELECT 1 FROM events WHERE kind IN ('ENTRY','EXIT','EXIT_REQUESTED','PAPER_POLICY_MIGRATION')"
+                    " OR event_id=? LIMIT 1", (migration_id,)
+                ).fetchone()
+                if not (upgrade_empty_v1 is True and old == {"initial_cents": 100000, "policy": LEGACY_V1_POLICY}
+                        and config == {"initial_cents": 100000, "policy": DEFAULT_POLICY} and empty and no_fills):
+                    raise ValueError("persisted capital/policy differs; never reset an existing paper account")
+                db.execute("UPDATE metadata SET value=? WHERE key='account'", (json.dumps(config, sort_keys=True),))
+                self._event(db, "PAPER_POLICY_MIGRATION", "Empty V1 paper pilot upgraded to V2 clean re-entries without a trade-count cap.",
+                            datetime.now(timezone.utc), {"previous": old, "next": config, "trade_count": 0},
+                            migration_id)
         self.initial_cents = initial
 
     @contextmanager
@@ -247,6 +268,10 @@ class Ledger:
         symbol = signal.get("symbol")
         if not signal.get("signal_id") or not signal.get("reason"):
             raise ValueError("signal identity and entry reasoning are required")
+        if self.policy["strategy"] == "ORB_RETEST_SNIPER_V2" and (
+                not isinstance(signal.get("evidence"), dict) or
+                signal["evidence"].get("strategy") != self.policy["strategy"]):
+            raise ValueError("signal evidence must identify the active sniper strategy")
         if not timestamp(signal.get("created_at")) <= now < timestamp(signal.get("expires_at")):
             raise ValueError("signal is expired or future-dated")
         direction = signal.get("direction")
@@ -278,7 +303,7 @@ class Ledger:
             if any(t["status"] != "CLOSED" for t in trades):
                 raise ValueError("an open or unresolved paper position already exists")
             account = self._account(trades, now)
-            if account["entries_today"] >= self.policy["max_entries_per_day"]:
+            if self.policy["max_entries_per_day"] is not None and account["entries_today"] >= self.policy["max_entries_per_day"]:
                 raise ValueError("daily entry limit reached")
             if premium > cents(self.policy["max_premium"]):
                 raise ValueError("contract premium exceeds the paper cap")
@@ -288,6 +313,19 @@ class Ledger:
                 raise ValueError("full premium plus fees exceeds remaining daily loss budget")
             if debit + fee > account["settled_cents"]:
                 raise ValueError("insufficient settled paper cash; same-day proceeds cannot be reused")
+            prior_exits = [timestamp(t["exited_at"]) for t in trades if t["session_date"] == today]
+            if self.policy["strategy"] == "ORB_RETEST_SNIPER_V2" and prior_exits:
+                ev = signal.get("evidence") or {}
+                try:
+                    reset, breakout, retest = (timestamp(ev[k]) for k in ("reset_bar_at", "breakout_at", "retest_at"))
+                    five = timedelta(minutes=5)
+                    valid = (max(prior_exits) <= reset and reset + five <= breakout and
+                             breakout + five <= retest <= breakout + 3 * five and
+                             retest + five == timestamp(signal["created_at"]))
+                except (KeyError, ValueError, TypeError):
+                    valid = False
+                if not valid:
+                    raise ValueError("sniper re-entry requires a fresh post-exit range reset, breakout and retest")
             trade_id = "paper_" + hashlib.sha256(str(signal["signal_id"]).encode()).hexdigest()[:24]
             trade = {"trade_id": trade_id, "signal_id": signal["signal_id"], "symbol": symbol,
                      "direction": direction, "status": "OPEN", "simulated": True,

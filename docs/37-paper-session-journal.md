@@ -1,6 +1,6 @@
 # Local forward-paper agent and journal
 
-Status: implemented research pilot; not a validated profitable strategy.
+Status: paper-only research pilot, `ORB_RETEST_SNIPER_V2`; not live-qualified.
 Session: Friday, November 20, 2026, America/New_York.
 
 The pilot observes SPY and QQQ prices and writes hypothetical option trades to
@@ -16,9 +16,10 @@ paper dependencies (the gateway dependencies are unnecessary for this portal):
 ```bash
 python3.11 -m venv .venv
 .venv/bin/pip install moomoo-api==10.8.6808 exchange-calendars==4.11.2
-.venv/bin/python scripts/paper_trader.py preflight --session-date 2026-11-20
-.venv/bin/python scripts/paper_trader.py start --session-date 2026-11-20
-.venv/bin/python scripts/paper_trader.py status
+DATA=/Users/dhanvin/Documents/IntelliDhan/data/paper-journal-2026-11-20
+.venv/bin/python scripts/paper_trader.py preflight --data-dir "$DATA" --session-date 2026-11-20
+.venv/bin/python scripts/paper_trader.py start --data-dir "$DATA" --session-date 2026-11-20
+.venv/bin/python scripts/paper_trader.py status --data-dir "$DATA"
 ```
 
 Open <http://127.0.0.1:8330/>. The journal updates every five seconds. To use a
@@ -38,6 +39,15 @@ resolve a missing exit. Do not stop a session with an open paper position unless
 you accept an interrupted/unresolved result. Restarting with the same data
 directory restores that position and services its exit before considering entries.
 
+Normal startup **does not migrate V1**. If the prepared runtime still reports
+V1, use `check-empty-session-upgrade --data-dir "$DATA" --session-date 2026-11-20`
+with `scripts/paper_trader.py` for a read-only check. The explicit
+`upgrade-empty-session` command with those arguments requires the owned runner to
+be stopped, the exchange not yet open, exact V1 defaults, $1,000 unchanged and
+zero trades or fill receipts. It appends a policy-change event to the existing
+journal; it never erases events or resets money. If a check fails, preserve the
+runtime and investigate. Do not point the runner at a new directory to bypass it.
+
 ## Frozen pilot rules
 
 | Control | Value |
@@ -46,7 +56,7 @@ directory restores that position and services its exit before considering entrie
 | Premium ceiling | $500 per entry, including modeled entry slippage |
 | Daily risk budget | $500; full premium plus both fees must fit remaining budget |
 | Exposure | One standard 100-share SPY or QQQ long call/put contract; no margin |
-| Maximum entries | Two across the portfolio; one position at a time |
+| Entry count | No numeric daily quota; one open or unresolved position across both symbols |
 | Expiry | Same session only; no 1DTE fallback or SPX substitution |
 | Delta | Absolute delta 0.50–0.80; highest affordable verified candidate first |
 | Liquidity | Volume and open interest at least 100; spread at most 10% of midpoint |
@@ -61,21 +71,57 @@ a target to spend. It exposes up to approximately half the virtual account on
 one option. Profits do not replenish the daily risk budget; losing closed trades
 consume it. Stops cannot guarantee a particular loss.
 
-The strategy observes the 9:30–9:45 opening range, waits for the first completed
-five-minute close outside it, then requires a retest within three completed
-candles. The retest must touch the boundary, close outside, and align with the
-9-period EMA and that session's VWAP. Entry requires a break of the retest
-extreme during the immediately following candle. A completed close back through
-the boundary cancels the breakout. An observed pre-entry stop violation is
-durably invalidated; a rebound cannot resurrect that signal.
+The strategy fixes the high and low of the first three completed five-minute
+candles (9:30–9:45 ET). A close outside that range starts a setup. Within the
+next three candles, price must retest the broken edge, close outside in the
+breakout direction, and agree with both the nine-period exponential moving
+average (EMA) and the session's volume-weighted average price (VWAP). Only
+a break of the retest candle's extreme during the very next candle can enter.
+The earliest possible trigger is 9:55 ET. Missing bars block a setup.
+
+A close back inside the range (either boundary counts) resets the search.
+Once a position exits, neither symbol can re-enter until its own **entire new
+five-minute candle** starts at or after that portfolio exit and closes back
+inside its opening range. A later breakout, retest and trigger are all required.
+A stale extension is not a new setup. A stop or target observed before entry
+consumes the setup ID, including on the price recheck after a contract scan.
+Five-second polling can miss a crossing between observations.
 
 The initial stop is beyond the retest extreme by 0.1 times the completed-bar
 14-period mean true range. The target is 2R in the **underlying**, not a promised
 option return. Exit also occurs on an opposing completed five-minute EMA break,
 data-health failure, a 60-minute holding limit, or 11:30 ET. New entries stop at
-10:30 ET. The first-breakout-only rule permits at most one unique setup per
-symbol per day. Missing bars block a signal. Five-second polling is not tick
-replay and can miss an intrapoll crossing.
+10:30 ET. Removing the two-entry quota does not extend that window, allow an
+overlapping trade, reuse unsettled cash, or increase the loss budget.
+
+## What the read-only research observer adds
+
+The paper ledger uses the V2 baseline above. A separate observer freezes two
+candidate filters for each symbol before its first possible trigger:
+
+- Opening relative volume: first 15-minute volume divided by the median for the
+  same 15 minutes over the preceding 20 exchange sessions. At least five
+  complete comparison openings are required. A ratio of 1.0 or higher passes.
+- VIX regime: the preceding exchange session's Cboe VIX close, at least 12 and
+  below 30. This is broad volatility context, not today's 0DTE implied move.
+
+Neither filter changes entries or exits. The observer records which actual
+baseline paper fills passed each filter. It cannot price a hypothetical trade
+the baseline skipped. Missing or late observations stay unknown. Optional,
+timestamped, complete 0DTE chain data can describe gross gamma sensitivity
+per 1% underlying move; open interest alone does not reveal dealers' positions.
+Gamma has no vote in the strategy and was not tested as a historical edge.
+
+To start or inspect this comparison from the same checkout:
+
+```bash
+.venv/bin/python scripts/paper_regime_shadow.py start --data-dir "$DATA" --session-date 2026-11-20
+.venv/bin/python scripts/paper_regime_shadow.py report --data-dir "$DATA" --session-date 2026-11-20
+```
+
+Use `--history-dir` on start if the private OpenD/Cboe research cache is not
+the default `data/orb-study`. This experiment has its own local SQLite file.
+It is distinct from the Site-sync sidecar, which only mirrors the journal.
 
 ## Data readiness and bounded scanning
 
@@ -127,7 +173,15 @@ They establish implementation behavior, not a win rate. This is the first
 forward-paper collection for the exact frozen strategy and fill assumptions.
 There is no demonstrated positive expectancy or daily-profit guarantee.
 
-Verification on November 19: the complete non-integration suite passed (456
+The [V2 regression and release gates](38-sniper-study-and-release.md) distinguish
+historical **underlying** price outcomes from observed paper **option** returns.
+Across 223 held-later sessions, 26 of 75 unfiltered V2 setups and 17 of 35
+combined-filter V2 setups finished positive after the modeled underlying cost.
+The latter is not a 0DTE win-rate estimate. Combined-filter expectancy was
+negative in development, and the reused comparison period is not a new
+holdout. Keep this filter observational until independent evidence supports it.
+
+Original V1 verification on November 19: the complete non-integration suite passed (456
 tests, six integration tests deselected), Ruff and JavaScript syntax checks
 passed, and local HTTP/session/account/asset smoke checks passed. Independent
 agents reviewed the actual implementation and corrections. Native browser
@@ -176,7 +230,7 @@ authorization. Source lives in a separate Sites-managed Git repository at
 The source is independent of the existing Koyeb app and does not change its
 deployment. A ChatGPT website is not a cloud-hosted OpenD process.
 
-Published Site source checkpoint: `2280ebe047922d7189251aace4fd0223eb5ce56c`.
+Original V1 Site source checkpoint: `2280ebe047922d7189251aace4fd0223eb5ce56c`.
 Verification: 512 Python tests (6 deselected), 16 hosted persistence/freshness
 tests, Ruff and TypeScript/build checks,
 independent review, service-authenticated live readback of the actual $1,000

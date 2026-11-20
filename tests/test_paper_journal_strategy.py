@@ -5,7 +5,8 @@ import sys
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from paper_trading.strategy import evaluate, exit_reason  # noqa: E402
+from paper_trading.strategy import evaluate, evaluate_sniper, exit_reason  # noqa: E402
+from paper_trading.runner import PaperRunner  # noqa: E402
 
 
 ET = ZoneInfo("America/New_York")
@@ -49,6 +50,43 @@ def test_confirmed_retest_next_candle_trigger_is_deterministic():
     assert signal["target"] == signal["trigger"] + 2 * (signal["trigger"] - signal["stop"])
     assert signal["signal_id"] == evaluate("SPY", candles(), quote(), NOW)["signal"]["signal_id"]
     assert signal["expires_at"] == datetime(2026, 11, 20, 15, 0, tzinfo=ZoneInfo("UTC")).isoformat()
+
+
+def test_quote_invalidated_during_chain_scan_cannot_revive_on_restart(tmp_path):
+    class Feed:
+        def __init__(self):
+            self.prices = iter([100.51, 98, 100.52])
+            self.scans = 0
+
+        def connect(self):
+            pass
+
+        def health(self):
+            return {"status": "CONNECTED", "quote_logged_in": True}
+
+        def underlying(self, symbol):
+            if symbol != "SPY":
+                raise ValueError("synthetic SPY-only feed")
+            return quote(next(self.prices))
+
+        def bars(self, *_):
+            return candles()
+
+        def candidates(self, *_):
+            self.scans += 1
+            return [{"delta": .6, "ask": 2., "bid": 1.96}]
+
+        def option_quote(self, candidate):
+            return candidate
+
+    feed = Feed()
+    for _ in range(2):
+        runner = PaperRunner(tmp_path, "2026-11-20", feed, clock=lambda: NOW)
+        runner.step()
+        state = runner.snapshot()
+        assert not state["trades"]
+        assert len([e for e in state["events"] if e["kind"] == "SIGNAL_INVALIDATED"]) == 1
+    assert feed.scans == 1
 
 
 def test_unbroken_trigger_is_armed_not_entered():
@@ -154,3 +192,33 @@ def test_non_session_and_naive_candles_do_not_create_signal():
     rows = candles()
     rows[-1]["started_at"] = "2026-11-20T09:50:00"
     assert evaluate("SPY", rows, quote(), NOW)["status"] == "BLOCKED"
+
+
+def test_sniper_requires_new_post_exit_reset_then_new_break_retest_and_trigger():
+    rows = candles()
+    first = evaluate_sniper("SPY", rows, quote(), NOW)["signal"]
+    assert first and first["signal_id"] != evaluate("SPY", rows, quote(), NOW)["signal"]["signal_id"]
+    t = NOW.replace(second=0)
+    rows.extend([bar(t, 100.2, 100.8, 100.1, 100.6),
+                 bar(t+timedelta(minutes=5), 100.3, 100.4, 99.9, 100),  # boundary reset
+                 bar(t+timedelta(minutes=10), 100, 101, 100, 100.8),
+                 bar(t+timedelta(minutes=15), 100.8, 100.85, 99.99, 100.7)])
+    now = t+timedelta(minutes=20, seconds=2)
+    for symbol in ("QQQ", "SPY"):
+        q = {**quote(100.9, now), "symbol": symbol}
+        result = evaluate_sniper(symbol, rows, q, now, last_exit_at=t+timedelta(minutes=4))
+        assert result["status"] == "ENTRY"
+        sig = result["signal"]
+        assert sig["signal_id"] != first["signal_id"]
+        assert datetime.fromisoformat(sig["evidence"]["reset_bar_at"]) == t+timedelta(minutes=5)
+        assert evaluate_sniper(symbol, rows, q, now, last_exit_at=t+timedelta(minutes=5, seconds=1))["signal"] is None
+        assert evaluate_sniper(symbol, rows, q, now, invalidated_signal_ids=[sig["signal_id"]])["signal"] is None
+
+
+def test_sniper_missing_inside_reset_cannot_recycle_and_chased_target_is_consumed():
+    first = evaluate_sniper("SPY", candles(), quote(), NOW)
+    chased = evaluate_sniper("SPY", candles(), quote(110), NOW)
+    assert chased["invalidated_signal_id"] == first["signal"]["signal_id"]
+    assert evaluate_sniper("SPY", candles(), quote(), NOW,
+                           invalidated_signal_ids=[chased["invalidated_signal_id"]])["signal"] is None
+    assert evaluate_sniper("SPY", candles(), quote(), NOW, last_exit_at=NOW)["signal"] is None
