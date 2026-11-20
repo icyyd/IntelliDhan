@@ -71,18 +71,21 @@ def evaluate_sniper(symbol, bars, underlying_quote, now, *, last_exit_at=None, i
                      invalidated_signal_ids=invalidated_signal_ids)
 
 
-def _evaluate(symbol, bars, underlying_quote, now, *, sniper, last_exit_at=None, invalidated_signal_ids=()):
+def _evaluate(symbol, bars, underlying_quote, now, *, sniper, last_exit_at=None, invalidated_signal_ids=(),
+              entry_cutoff=time(10, 30)):
     now = timestamp(now)
     result = {"status": "WAIT", "reason": "Waiting for the 15-minute opening range.", "signal": None, "evidence": {}}
     if symbol not in {"SPY", "QQQ"}:
         return {**result, "status": "BLOCKED", "reason": "Only SPY and QQQ belong to this paper pilot."}
+    if entry_cutoff != time(10, 30) and (not sniper or entry_cutoff != time(11, 15) or underlying_quote is not None):
+        return {**result, "status": "BLOCKED", "reason": "Alternative entry windows are restricted to the offline bar study."}
     try:
         day, _ = session_dates(now)
         local = now.astimezone(ET)
         if local.time() < time(9, 45):
             return result
-        if local.time() >= time(10, 30):
-            return {**result, "reason": "New entries stop at 10:30 ET."}
+        if local.time() >= entry_cutoff:
+            return {**result, "reason": f"New entries stop at {entry_cutoff:%H:%M} ET."}
         today = _bars(bars, now)
         if len(today) < 3:
             return result

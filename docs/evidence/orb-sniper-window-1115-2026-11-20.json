@@ -1,0 +1,1827 @@
+{
+  "study": "ORB_RETEST_SNIPER_V2_PAIRED_1030_VS_1115",
+  "evidence": "UNDERLYING_ONLY",
+  "live_eligible": false,
+  "symbols": [
+    "SPY",
+    "QQQ"
+  ],
+  "input_sha256": {
+    "SPY_2023-10-19_2026-11-19.csv": "1f1a2a23be5be2e3e67d9ea7442fd47ca515f3b5b016a8456f4f62cb66d6e486",
+    "QQQ_2023-10-19_2026-11-19.csv": "22787c1c19a864e779f92c593139a82021d18d7e752eb6006a9a58cbdba47581",
+    "VIX_History.csv": "0d9c033a1ee06d41832ef98ce17d84910c8c386d890daca5cb24bbf9cd4af8d5"
+  },
+  "control_reference": {
+    "file": "orb-sniper-v2-2026-11-19.json",
+    "sha256": "d6e2059ec638f1599b54b9c4122ddfbbc967f6aa405bec29b05034a5c5993992",
+    "all_arms_metrics_match": true,
+    "all_session_early_trade_paths_match": true
+  },
+  "usable_sessions": 753,
+  "expected_sessions": 753,
+  "missing_mornings_excluded": [],
+  "factor_symbol_session_counts": {
+    "rvol": {
+      "FAIL": 744,
+      "PASS": 762
+    },
+    "vix": {
+      "PASS": 1468,
+      "FAIL": 38
+    },
+    "gex": {
+      "UNKNOWN": 1506
+    }
+  },
+  "method": {
+    "entry": "shared 15m ORB/retest EMA9 + VWAP; next five-minute candle break; gap fill at worse open, no chase at target",
+    "exit": "same-bar ties stop first; count ambiguous entry/stop as loss; EMA9 exit next open, max 60min or 11:30 ET",
+    "costs": "2 bps round trip underlying, stress 5 bps; not option returns or account equity",
+    "portfolio": "at most one overlapping underlying position; SPY first on ties, reject a same-bar exit/re-entry",
+    "rearm": "Neither arm has a count quota; after each exit require a full new 5m inside-range bar, fresh breakout/retest and trigger before that arm's own cutoff.",
+    "split_interpretation": "Calendar holdout reused after the V1 results were seen; comparative, not a fresh untouched test.",
+    "volume": "09:30-09:45 vs trailing 20 XNYS sessions, median; minimum five complete openings",
+    "vix": "exact previous XNYS daily close, modeled known at midnight ET after close; no intraday or same-day VIX",
+    "data": "OpenD 5m RTH QFQ end labels minus 5m; Cboe daily VIX historical download; no archived as-published revisions",
+    "gex": "unavailable: no archived time-matched complete chain + published open interest; never assign dealer sign",
+    "net_bps": "fixed unit notional, additive non-compounded. No 0DTE greeks, NBBO, affordability, settlement or capital modeled.",
+    "only_difference": "Last new-entry bar: 10:25 ET control, 11:10 ET extended. Both flatten by the 11:30 open.",
+    "paired": "Extended minus same arm at 10:30 on every session, including flat days. 2,000 five-session moving-block bootstrap resamples. Same fixed seed at 2 and 5 bps round trip.",
+    "added": "10:30 through 11:10 entry starts only, even when a prior trade exits later; first/repeat determined by sequence within the extended arm. Bins have exclusive upper bounds.",
+    "scope": "One additional cutoff, not parameter optimization. Previously inspected periods; intervals descriptive, not simultaneous or independent confirmation. SPY/QQQ only. No SPX, option chain or brokerage orders."
+  },
+  "development": {
+    "from": "2023-11-20",
+    "through": "2025-12-31",
+    "sessions": 530,
+    "arms": {
+      "baseline": {
+        "control": {
+          "sessions": 530,
+          "trades": 193,
+          "flat_sessions": 338,
+          "repeat_entry_sessions": 1,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 78,
+          "red_sessions": 114,
+          "win_pct": 40.415,
+          "mean_net_bps_per_trade": -0.439,
+          "mean_net_bps_per_session": -0.16,
+          "total_net_bps": -84.665,
+          "max_drawdown_daily_additive_bps": 251.331,
+          "net_total_at_5bps_round_trip": -663.665,
+          "by_symbol": {
+            "SPY": {
+              "trades": 97,
+              "net_bps": -60.76,
+              "mean_net_bps": -0.626
+            },
+            "QQQ": {
+              "trades": 96,
+              "net_bps": -23.905,
+              "mean_net_bps": -0.249
+            }
+          },
+          "exit_counts": {
+            "EMA9": 52,
+            "TARGET": 45,
+            "STOP": 82,
+            "TIME": 14
+          }
+        },
+        "extended": {
+          "sessions": 530,
+          "trades": 308,
+          "flat_sessions": 256,
+          "repeat_entry_sessions": 34,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 108,
+          "red_sessions": 166,
+          "win_pct": 37.013,
+          "mean_net_bps_per_trade": -1.374,
+          "mean_net_bps_per_session": -0.798,
+          "total_net_bps": -423.189,
+          "max_drawdown_daily_additive_bps": 465.346,
+          "net_total_at_5bps_round_trip": -1347.189,
+          "by_symbol": {
+            "SPY": {
+              "trades": 160,
+              "net_bps": -258.3,
+              "mean_net_bps": -1.614
+            },
+            "QQQ": {
+              "trades": 148,
+              "net_bps": -164.889,
+              "mean_net_bps": -1.114
+            }
+          },
+          "exit_counts": {
+            "EMA9": 90,
+            "STOP": 124,
+            "TARGET": 66,
+            "TIME": 28
+          }
+        },
+        "added": {
+          "sessions": 530,
+          "trades": 115,
+          "flat_sessions": 418,
+          "repeat_entry_sessions": 3,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 36,
+          "red_sessions": 76,
+          "win_pct": 31.304,
+          "mean_net_bps_per_trade": -2.944,
+          "mean_net_bps_per_session": -0.639,
+          "total_net_bps": -338.523,
+          "max_drawdown_daily_additive_bps": 355.149,
+          "net_total_at_5bps_round_trip": -683.523,
+          "by_symbol": {
+            "SPY": {
+              "trades": 63,
+              "net_bps": -197.539,
+              "mean_net_bps": -3.136
+            },
+            "QQQ": {
+              "trades": 52,
+              "net_bps": -140.984,
+              "mean_net_bps": -2.711
+            }
+          },
+          "exit_counts": {
+            "STOP": 42,
+            "EMA9": 38,
+            "TARGET": 21,
+            "TIME": 14
+          }
+        },
+        "newly_active_sessions": 82,
+        "added_first": {
+          "trades": 82,
+          "flat_sessions": 448,
+          "win_pct": 32.927,
+          "mean_net_bps_per_trade": -1.405,
+          "total_net_bps": -115.19,
+          "net_total_at_5bps_round_trip": -361.19,
+          "by_symbol": {
+            "SPY": {
+              "trades": 44,
+              "net_bps": -107.399,
+              "mean_net_bps": -2.441
+            },
+            "QQQ": {
+              "trades": 38,
+              "net_bps": -7.791,
+              "mean_net_bps": -0.205
+            }
+          }
+        },
+        "added_repeat": {
+          "trades": 33,
+          "flat_sessions": 497,
+          "win_pct": 27.273,
+          "mean_net_bps_per_trade": -6.768,
+          "total_net_bps": -223.333,
+          "net_total_at_5bps_round_trip": -322.333,
+          "by_symbol": {
+            "SPY": {
+              "trades": 19,
+              "net_bps": -90.14,
+              "mean_net_bps": -4.744
+            },
+            "QQQ": {
+              "trades": 14,
+              "net_bps": -133.193,
+              "mean_net_bps": -9.514
+            }
+          }
+        },
+        "added_by_entry_ET": {
+          "10:30\u201310:45": {
+            "trades": 47,
+            "flat_sessions": 483,
+            "win_pct": 25.532,
+            "mean_net_bps_per_trade": -4.809,
+            "total_net_bps": -226.011,
+            "net_total_at_5bps_round_trip": -367.011,
+            "by_symbol": {
+              "SPY": {
+                "trades": 22,
+                "net_bps": -155.858,
+                "mean_net_bps": -7.084
+              },
+              "QQQ": {
+                "trades": 25,
+                "net_bps": -70.153,
+                "mean_net_bps": -2.806
+              }
+            }
+          },
+          "10:45\u201311:00": {
+            "trades": 35,
+            "flat_sessions": 495,
+            "win_pct": 45.714,
+            "mean_net_bps_per_trade": 1.523,
+            "total_net_bps": 53.302,
+            "net_total_at_5bps_round_trip": -51.698,
+            "by_symbol": {
+              "SPY": {
+                "trades": 22,
+                "net_bps": 62.76,
+                "mean_net_bps": 2.853
+              },
+              "QQQ": {
+                "trades": 13,
+                "net_bps": -9.458,
+                "mean_net_bps": -0.728
+              }
+            }
+          },
+          "11:00\u201311:15": {
+            "trades": 33,
+            "flat_sessions": 497,
+            "win_pct": 24.242,
+            "mean_net_bps_per_trade": -5.025,
+            "total_net_bps": -165.814,
+            "net_total_at_5bps_round_trip": -264.814,
+            "by_symbol": {
+              "SPY": {
+                "trades": 19,
+                "net_bps": -104.441,
+                "mean_net_bps": -5.497
+              },
+              "QQQ": {
+                "trades": 14,
+                "net_bps": -61.373,
+                "mean_net_bps": -4.384
+              }
+            }
+          }
+        },
+        "paired_extended_minus_control": {
+          "cost_2bps": {
+            "mean_bps_per_session": -0.639,
+            "paired_95pct_block5_bps": [
+              -1.361,
+              0.073
+            ]
+          },
+          "cost_5bps": {
+            "mean_bps_per_session": -1.29,
+            "paired_95pct_block5_bps": [
+              -2.042,
+              -0.556
+            ]
+          }
+        }
+      },
+      "rvol": {
+        "control": {
+          "sessions": 530,
+          "trades": 93,
+          "flat_sessions": 437,
+          "repeat_entry_sessions": 0,
+          "maximum_entries_one_session": 1,
+          "green_sessions": 38,
+          "red_sessions": 55,
+          "win_pct": 40.86,
+          "mean_net_bps_per_trade": 0.278,
+          "mean_net_bps_per_session": 0.049,
+          "total_net_bps": 25.862,
+          "max_drawdown_daily_additive_bps": 152.22,
+          "net_total_at_5bps_round_trip": -253.138,
+          "by_symbol": {
+            "SPY": {
+              "trades": 47,
+              "net_bps": 70.906,
+              "mean_net_bps": 1.509
+            },
+            "QQQ": {
+              "trades": 46,
+              "net_bps": -45.045,
+              "mean_net_bps": -0.979
+            }
+          },
+          "exit_counts": {
+            "EMA9": 30,
+            "TARGET": 24,
+            "STOP": 35,
+            "TIME": 4
+          }
+        },
+        "extended": {
+          "sessions": 530,
+          "trades": 153,
+          "flat_sessions": 396,
+          "repeat_entry_sessions": 19,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 53,
+          "red_sessions": 81,
+          "win_pct": 35.948,
+          "mean_net_bps_per_trade": -1.106,
+          "mean_net_bps_per_session": -0.319,
+          "total_net_bps": -169.27,
+          "max_drawdown_daily_additive_bps": 231.431,
+          "net_total_at_5bps_round_trip": -628.27,
+          "by_symbol": {
+            "SPY": {
+              "trades": 80,
+              "net_bps": -58.638,
+              "mean_net_bps": -0.733
+            },
+            "QQQ": {
+              "trades": 73,
+              "net_bps": -110.631,
+              "mean_net_bps": -1.515
+            }
+          },
+          "exit_counts": {
+            "EMA9": 51,
+            "TARGET": 36,
+            "STOP": 58,
+            "TIME": 8
+          }
+        },
+        "added": {
+          "sessions": 530,
+          "trades": 60,
+          "flat_sessions": 471,
+          "repeat_entry_sessions": 1,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 17,
+          "red_sessions": 42,
+          "win_pct": 28.333,
+          "mean_net_bps_per_trade": -3.252,
+          "mean_net_bps_per_session": -0.368,
+          "total_net_bps": -195.131,
+          "max_drawdown_daily_additive_bps": 202.059,
+          "net_total_at_5bps_round_trip": -375.131,
+          "by_symbol": {
+            "SPY": {
+              "trades": 33,
+              "net_bps": -129.544,
+              "mean_net_bps": -3.926
+            },
+            "QQQ": {
+              "trades": 27,
+              "net_bps": -65.587,
+              "mean_net_bps": -2.429
+            }
+          },
+          "exit_counts": {
+            "STOP": 23,
+            "EMA9": 21,
+            "TARGET": 12,
+            "TIME": 4
+          }
+        },
+        "newly_active_sessions": 41,
+        "added_first": {
+          "trades": 41,
+          "flat_sessions": 489,
+          "win_pct": 29.268,
+          "mean_net_bps_per_trade": -2.294,
+          "total_net_bps": -94.034,
+          "net_total_at_5bps_round_trip": -217.034,
+          "by_symbol": {
+            "SPY": {
+              "trades": 22,
+              "net_bps": -88.178,
+              "mean_net_bps": -4.008
+            },
+            "QQQ": {
+              "trades": 19,
+              "net_bps": -5.856,
+              "mean_net_bps": -0.308
+            }
+          }
+        },
+        "added_repeat": {
+          "trades": 19,
+          "flat_sessions": 511,
+          "win_pct": 26.316,
+          "mean_net_bps_per_trade": -5.321,
+          "total_net_bps": -101.097,
+          "net_total_at_5bps_round_trip": -158.097,
+          "by_symbol": {
+            "SPY": {
+              "trades": 11,
+              "net_bps": -41.366,
+              "mean_net_bps": -3.761
+            },
+            "QQQ": {
+              "trades": 8,
+              "net_bps": -59.731,
+              "mean_net_bps": -7.466
+            }
+          }
+        },
+        "added_by_entry_ET": {
+          "10:30\u201310:45": {
+            "trades": 26,
+            "flat_sessions": 504,
+            "win_pct": 23.077,
+            "mean_net_bps_per_trade": -4.396,
+            "total_net_bps": -114.304,
+            "net_total_at_5bps_round_trip": -192.304,
+            "by_symbol": {
+              "SPY": {
+                "trades": 11,
+                "net_bps": -68.404,
+                "mean_net_bps": -6.219
+              },
+              "QQQ": {
+                "trades": 15,
+                "net_bps": -45.899,
+                "mean_net_bps": -3.06
+              }
+            }
+          },
+          "10:45\u201311:00": {
+            "trades": 15,
+            "flat_sessions": 515,
+            "win_pct": 53.333,
+            "mean_net_bps_per_trade": 4.633,
+            "total_net_bps": 69.501,
+            "net_total_at_5bps_round_trip": 24.501,
+            "by_symbol": {
+              "SPY": {
+                "trades": 11,
+                "net_bps": 15.753,
+                "mean_net_bps": 1.432
+              },
+              "QQQ": {
+                "trades": 4,
+                "net_bps": 53.748,
+                "mean_net_bps": 13.437
+              }
+            }
+          },
+          "11:00\u201311:15": {
+            "trades": 19,
+            "flat_sessions": 511,
+            "win_pct": 15.789,
+            "mean_net_bps_per_trade": -7.912,
+            "total_net_bps": -150.328,
+            "net_total_at_5bps_round_trip": -207.328,
+            "by_symbol": {
+              "SPY": {
+                "trades": 11,
+                "net_bps": -76.893,
+                "mean_net_bps": -6.99
+              },
+              "QQQ": {
+                "trades": 8,
+                "net_bps": -73.435,
+                "mean_net_bps": -9.179
+              }
+            }
+          }
+        },
+        "paired_extended_minus_control": {
+          "cost_2bps": {
+            "mean_bps_per_session": -0.368,
+            "paired_95pct_block5_bps": [
+              -0.853,
+              0.138
+            ]
+          },
+          "cost_5bps": {
+            "mean_bps_per_session": -0.708,
+            "paired_95pct_block5_bps": [
+              -1.218,
+              -0.179
+            ]
+          }
+        }
+      },
+      "vix": {
+        "control": {
+          "sessions": 530,
+          "trades": 185,
+          "flat_sessions": 346,
+          "repeat_entry_sessions": 1,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 76,
+          "red_sessions": 108,
+          "win_pct": 41.081,
+          "mean_net_bps_per_trade": -0.444,
+          "mean_net_bps_per_session": -0.155,
+          "total_net_bps": -82.187,
+          "max_drawdown_daily_additive_bps": 230.302,
+          "net_total_at_5bps_round_trip": -637.187,
+          "by_symbol": {
+            "SPY": {
+              "trades": 92,
+              "net_bps": -73.708,
+              "mean_net_bps": -0.801
+            },
+            "QQQ": {
+              "trades": 93,
+              "net_bps": -8.478,
+              "mean_net_bps": -0.091
+            }
+          },
+          "exit_counts": {
+            "EMA9": 50,
+            "TARGET": 44,
+            "STOP": 78,
+            "TIME": 13
+          }
+        },
+        "extended": {
+          "sessions": 530,
+          "trades": 296,
+          "flat_sessions": 265,
+          "repeat_entry_sessions": 31,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 106,
+          "red_sessions": 159,
+          "win_pct": 37.838,
+          "mean_net_bps_per_trade": -1.179,
+          "mean_net_bps_per_session": -0.659,
+          "total_net_bps": -349.07,
+          "max_drawdown_daily_additive_bps": 425.647,
+          "net_total_at_5bps_round_trip": -1237.07,
+          "by_symbol": {
+            "SPY": {
+              "trades": 152,
+              "net_bps": -212.075,
+              "mean_net_bps": -1.395
+            },
+            "QQQ": {
+              "trades": 144,
+              "net_bps": -136.994,
+              "mean_net_bps": -0.951
+            }
+          },
+          "exit_counts": {
+            "EMA9": 86,
+            "STOP": 118,
+            "TARGET": 65,
+            "TIME": 27
+          }
+        },
+        "added": {
+          "sessions": 530,
+          "trades": 111,
+          "flat_sessions": 422,
+          "repeat_entry_sessions": 3,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 36,
+          "red_sessions": 72,
+          "win_pct": 32.432,
+          "mean_net_bps_per_trade": -2.404,
+          "mean_net_bps_per_session": -0.504,
+          "total_net_bps": -266.883,
+          "max_drawdown_daily_additive_bps": 337.097,
+          "net_total_at_5bps_round_trip": -599.883,
+          "by_symbol": {
+            "SPY": {
+              "trades": 60,
+              "net_bps": -138.367,
+              "mean_net_bps": -2.306
+            },
+            "QQQ": {
+              "trades": 51,
+              "net_bps": -128.516,
+              "mean_net_bps": -2.52
+            }
+          },
+          "exit_counts": {
+            "STOP": 40,
+            "EMA9": 36,
+            "TARGET": 21,
+            "TIME": 14
+          }
+        },
+        "newly_active_sessions": 81,
+        "added_first": {
+          "trades": 81,
+          "flat_sessions": 449,
+          "win_pct": 33.333,
+          "mean_net_bps_per_trade": -1.353,
+          "total_net_bps": -109.606,
+          "net_total_at_5bps_round_trip": -352.606,
+          "by_symbol": {
+            "SPY": {
+              "trades": 43,
+              "net_bps": -101.815,
+              "mean_net_bps": -2.368
+            },
+            "QQQ": {
+              "trades": 38,
+              "net_bps": -7.791,
+              "mean_net_bps": -0.205
+            }
+          }
+        },
+        "added_repeat": {
+          "trades": 30,
+          "flat_sessions": 500,
+          "win_pct": 30.0,
+          "mean_net_bps_per_trade": -5.243,
+          "total_net_bps": -157.277,
+          "net_total_at_5bps_round_trip": -247.277,
+          "by_symbol": {
+            "SPY": {
+              "trades": 17,
+              "net_bps": -36.552,
+              "mean_net_bps": -2.15
+            },
+            "QQQ": {
+              "trades": 13,
+              "net_bps": -120.725,
+              "mean_net_bps": -9.287
+            }
+          }
+        },
+        "added_by_entry_ET": {
+          "10:30\u201310:45": {
+            "trades": 46,
+            "flat_sessions": 484,
+            "win_pct": 26.087,
+            "mean_net_bps_per_trade": -4.282,
+            "total_net_bps": -196.991,
+            "net_total_at_5bps_round_trip": -334.991,
+            "by_symbol": {
+              "SPY": {
+                "trades": 21,
+                "net_bps": -126.838,
+                "mean_net_bps": -6.04
+              },
+              "QQQ": {
+                "trades": 25,
+                "net_bps": -70.153,
+                "mean_net_bps": -2.806
+              }
+            }
+          },
+          "10:45\u201311:00": {
+            "trades": 33,
+            "flat_sessions": 497,
+            "win_pct": 48.485,
+            "mean_net_bps_per_trade": 2.738,
+            "total_net_bps": 90.338,
+            "net_total_at_5bps_round_trip": -8.662,
+            "by_symbol": {
+              "SPY": {
+                "trades": 21,
+                "net_bps": 87.328,
+                "mean_net_bps": 4.158
+              },
+              "QQQ": {
+                "trades": 12,
+                "net_bps": 3.01,
+                "mean_net_bps": 0.251
+              }
+            }
+          },
+          "11:00\u201311:15": {
+            "trades": 32,
+            "flat_sessions": 498,
+            "win_pct": 25.0,
+            "mean_net_bps_per_trade": -5.007,
+            "total_net_bps": -160.23,
+            "net_total_at_5bps_round_trip": -256.23,
+            "by_symbol": {
+              "SPY": {
+                "trades": 18,
+                "net_bps": -98.857,
+                "mean_net_bps": -5.492
+              },
+              "QQQ": {
+                "trades": 14,
+                "net_bps": -61.373,
+                "mean_net_bps": -4.384
+              }
+            }
+          }
+        },
+        "paired_extended_minus_control": {
+          "cost_2bps": {
+            "mean_bps_per_session": -0.504,
+            "paired_95pct_block5_bps": [
+              -1.21,
+              0.213
+            ]
+          },
+          "cost_5bps": {
+            "mean_bps_per_session": -1.132,
+            "paired_95pct_block5_bps": [
+              -1.863,
+              -0.404
+            ]
+          }
+        }
+      },
+      "combined": {
+        "control": {
+          "sessions": 530,
+          "trades": 90,
+          "flat_sessions": 440,
+          "repeat_entry_sessions": 0,
+          "maximum_entries_one_session": 1,
+          "green_sessions": 37,
+          "red_sessions": 53,
+          "win_pct": 41.111,
+          "mean_net_bps_per_trade": -0.162,
+          "mean_net_bps_per_session": -0.028,
+          "total_net_bps": -14.611,
+          "max_drawdown_daily_additive_bps": 187.989,
+          "net_total_at_5bps_round_trip": -284.611,
+          "by_symbol": {
+            "SPY": {
+              "trades": 45,
+              "net_bps": 10.088,
+              "mean_net_bps": 0.224
+            },
+            "QQQ": {
+              "trades": 45,
+              "net_bps": -24.699,
+              "mean_net_bps": -0.549
+            }
+          },
+          "exit_counts": {
+            "EMA9": 29,
+            "TARGET": 23,
+            "STOP": 34,
+            "TIME": 4
+          }
+        },
+        "extended": {
+          "sessions": 530,
+          "trades": 149,
+          "flat_sessions": 399,
+          "repeat_entry_sessions": 18,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 52,
+          "red_sessions": 79,
+          "win_pct": 36.242,
+          "mean_net_bps_per_trade": -1.243,
+          "mean_net_bps_per_session": -0.349,
+          "total_net_bps": -185.174,
+          "max_drawdown_daily_additive_bps": 247.335,
+          "net_total_at_5bps_round_trip": -632.174,
+          "by_symbol": {
+            "SPY": {
+              "trades": 77,
+              "net_bps": -94.889,
+              "mean_net_bps": -1.232
+            },
+            "QQQ": {
+              "trades": 72,
+              "net_bps": -90.285,
+              "mean_net_bps": -1.254
+            }
+          },
+          "exit_counts": {
+            "EMA9": 49,
+            "TARGET": 35,
+            "STOP": 57,
+            "TIME": 8
+          }
+        },
+        "added": {
+          "sessions": 530,
+          "trades": 59,
+          "flat_sessions": 472,
+          "repeat_entry_sessions": 1,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 17,
+          "red_sessions": 41,
+          "win_pct": 28.814,
+          "mean_net_bps_per_trade": -2.891,
+          "mean_net_bps_per_session": -0.322,
+          "total_net_bps": -170.563,
+          "max_drawdown_daily_additive_bps": 202.059,
+          "net_total_at_5bps_round_trip": -347.563,
+          "by_symbol": {
+            "SPY": {
+              "trades": 32,
+              "net_bps": -104.976,
+              "mean_net_bps": -3.281
+            },
+            "QQQ": {
+              "trades": 27,
+              "net_bps": -65.587,
+              "mean_net_bps": -2.429
+            }
+          },
+          "exit_counts": {
+            "STOP": 23,
+            "EMA9": 20,
+            "TARGET": 12,
+            "TIME": 4
+          }
+        },
+        "newly_active_sessions": 41,
+        "added_first": {
+          "trades": 41,
+          "flat_sessions": 489,
+          "win_pct": 29.268,
+          "mean_net_bps_per_trade": -2.294,
+          "total_net_bps": -94.034,
+          "net_total_at_5bps_round_trip": -217.034,
+          "by_symbol": {
+            "SPY": {
+              "trades": 22,
+              "net_bps": -88.178,
+              "mean_net_bps": -4.008
+            },
+            "QQQ": {
+              "trades": 19,
+              "net_bps": -5.856,
+              "mean_net_bps": -0.308
+            }
+          }
+        },
+        "added_repeat": {
+          "trades": 18,
+          "flat_sessions": 512,
+          "win_pct": 27.778,
+          "mean_net_bps_per_trade": -4.252,
+          "total_net_bps": -76.529,
+          "net_total_at_5bps_round_trip": -130.529,
+          "by_symbol": {
+            "SPY": {
+              "trades": 10,
+              "net_bps": -16.798,
+              "mean_net_bps": -1.68
+            },
+            "QQQ": {
+              "trades": 8,
+              "net_bps": -59.731,
+              "mean_net_bps": -7.466
+            }
+          }
+        },
+        "added_by_entry_ET": {
+          "10:30\u201310:45": {
+            "trades": 26,
+            "flat_sessions": 504,
+            "win_pct": 23.077,
+            "mean_net_bps_per_trade": -4.396,
+            "total_net_bps": -114.304,
+            "net_total_at_5bps_round_trip": -192.304,
+            "by_symbol": {
+              "SPY": {
+                "trades": 11,
+                "net_bps": -68.404,
+                "mean_net_bps": -6.219
+              },
+              "QQQ": {
+                "trades": 15,
+                "net_bps": -45.899,
+                "mean_net_bps": -3.06
+              }
+            }
+          },
+          "10:45\u201311:00": {
+            "trades": 14,
+            "flat_sessions": 516,
+            "win_pct": 57.143,
+            "mean_net_bps_per_trade": 6.719,
+            "total_net_bps": 94.069,
+            "net_total_at_5bps_round_trip": 52.069,
+            "by_symbol": {
+              "SPY": {
+                "trades": 10,
+                "net_bps": 40.321,
+                "mean_net_bps": 4.032
+              },
+              "QQQ": {
+                "trades": 4,
+                "net_bps": 53.748,
+                "mean_net_bps": 13.437
+              }
+            }
+          },
+          "11:00\u201311:15": {
+            "trades": 19,
+            "flat_sessions": 511,
+            "win_pct": 15.789,
+            "mean_net_bps_per_trade": -7.912,
+            "total_net_bps": -150.328,
+            "net_total_at_5bps_round_trip": -207.328,
+            "by_symbol": {
+              "SPY": {
+                "trades": 11,
+                "net_bps": -76.893,
+                "mean_net_bps": -6.99
+              },
+              "QQQ": {
+                "trades": 8,
+                "net_bps": -73.435,
+                "mean_net_bps": -9.179
+              }
+            }
+          }
+        },
+        "paired_extended_minus_control": {
+          "cost_2bps": {
+            "mean_bps_per_session": -0.322,
+            "paired_95pct_block5_bps": [
+              -0.805,
+              0.177
+            ]
+          },
+          "cost_5bps": {
+            "mean_bps_per_session": -0.656,
+            "paired_95pct_block5_bps": [
+              -1.164,
+              -0.132
+            ]
+          }
+        }
+      }
+    }
+  },
+  "held_later": {
+    "from": "2026-01-02",
+    "through": "2026-11-19",
+    "sessions": 223,
+    "arms": {
+      "baseline": {
+        "control": {
+          "sessions": 223,
+          "trades": 75,
+          "flat_sessions": 152,
+          "repeat_entry_sessions": 4,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 26,
+          "red_sessions": 45,
+          "win_pct": 34.667,
+          "mean_net_bps_per_trade": 0.486,
+          "mean_net_bps_per_session": 0.163,
+          "total_net_bps": 36.457,
+          "max_drawdown_daily_additive_bps": 442.131,
+          "net_total_at_5bps_round_trip": -188.543,
+          "by_symbol": {
+            "SPY": {
+              "trades": 41,
+              "net_bps": 232.81,
+              "mean_net_bps": 5.678
+            },
+            "QQQ": {
+              "trades": 34,
+              "net_bps": -196.353,
+              "mean_net_bps": -5.775
+            }
+          },
+          "exit_counts": {
+            "STOP": 23,
+            "TARGET": 21,
+            "EMA9": 28,
+            "TIME": 3
+          }
+        },
+        "extended": {
+          "sessions": 223,
+          "trades": 125,
+          "flat_sessions": 113,
+          "repeat_entry_sessions": 15,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 49,
+          "red_sessions": 61,
+          "win_pct": 42.4,
+          "mean_net_bps_per_trade": 1.833,
+          "mean_net_bps_per_session": 1.027,
+          "total_net_bps": 229.099,
+          "max_drawdown_daily_additive_bps": 320.847,
+          "net_total_at_5bps_round_trip": -145.901,
+          "by_symbol": {
+            "SPY": {
+              "trades": 69,
+              "net_bps": 358.529,
+              "mean_net_bps": 5.196
+            },
+            "QQQ": {
+              "trades": 56,
+              "net_bps": -129.43,
+              "mean_net_bps": -2.311
+            }
+          },
+          "exit_counts": {
+            "STOP": 36,
+            "TIME": 18,
+            "TARGET": 31,
+            "EMA9": 40
+          }
+        },
+        "added": {
+          "sessions": 223,
+          "trades": 50,
+          "flat_sessions": 175,
+          "repeat_entry_sessions": 2,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 26,
+          "red_sessions": 22,
+          "win_pct": 54.0,
+          "mean_net_bps_per_trade": 3.853,
+          "mean_net_bps_per_session": 0.864,
+          "total_net_bps": 192.642,
+          "max_drawdown_daily_additive_bps": 106.939,
+          "net_total_at_5bps_round_trip": 42.642,
+          "by_symbol": {
+            "SPY": {
+              "trades": 28,
+              "net_bps": 125.719,
+              "mean_net_bps": 4.49
+            },
+            "QQQ": {
+              "trades": 22,
+              "net_bps": 66.923,
+              "mean_net_bps": 3.042
+            }
+          },
+          "exit_counts": {
+            "STOP": 13,
+            "TIME": 15,
+            "EMA9": 12,
+            "TARGET": 10
+          }
+        },
+        "newly_active_sessions": 39,
+        "added_first": {
+          "trades": 39,
+          "flat_sessions": 184,
+          "win_pct": 48.718,
+          "mean_net_bps_per_trade": 2.218,
+          "total_net_bps": 86.501,
+          "net_total_at_5bps_round_trip": -30.499,
+          "by_symbol": {
+            "SPY": {
+              "trades": 20,
+              "net_bps": 76.308,
+              "mean_net_bps": 3.815
+            },
+            "QQQ": {
+              "trades": 19,
+              "net_bps": 10.193,
+              "mean_net_bps": 0.536
+            }
+          }
+        },
+        "added_repeat": {
+          "trades": 11,
+          "flat_sessions": 212,
+          "win_pct": 72.727,
+          "mean_net_bps_per_trade": 9.649,
+          "total_net_bps": 106.14,
+          "net_total_at_5bps_round_trip": 73.14,
+          "by_symbol": {
+            "SPY": {
+              "trades": 8,
+              "net_bps": 49.411,
+              "mean_net_bps": 6.176
+            },
+            "QQQ": {
+              "trades": 3,
+              "net_bps": 56.729,
+              "mean_net_bps": 18.91
+            }
+          }
+        },
+        "added_by_entry_ET": {
+          "10:30\u201310:45": {
+            "trades": 19,
+            "flat_sessions": 204,
+            "win_pct": 47.368,
+            "mean_net_bps_per_trade": 2.482,
+            "total_net_bps": 47.154,
+            "net_total_at_5bps_round_trip": -9.846,
+            "by_symbol": {
+              "SPY": {
+                "trades": 9,
+                "net_bps": 64.286,
+                "mean_net_bps": 7.143
+              },
+              "QQQ": {
+                "trades": 10,
+                "net_bps": -17.132,
+                "mean_net_bps": -1.713
+              }
+            }
+          },
+          "10:45\u201311:00": {
+            "trades": 19,
+            "flat_sessions": 204,
+            "win_pct": 52.632,
+            "mean_net_bps_per_trade": 3.854,
+            "total_net_bps": 73.232,
+            "net_total_at_5bps_round_trip": 16.232,
+            "by_symbol": {
+              "SPY": {
+                "trades": 9,
+                "net_bps": 30.832,
+                "mean_net_bps": 3.426
+              },
+              "QQQ": {
+                "trades": 10,
+                "net_bps": 42.4,
+                "mean_net_bps": 4.24
+              }
+            }
+          },
+          "11:00\u201311:15": {
+            "trades": 12,
+            "flat_sessions": 211,
+            "win_pct": 66.667,
+            "mean_net_bps_per_trade": 6.021,
+            "total_net_bps": 72.255,
+            "net_total_at_5bps_round_trip": 36.255,
+            "by_symbol": {
+              "SPY": {
+                "trades": 10,
+                "net_bps": 30.601,
+                "mean_net_bps": 3.06
+              },
+              "QQQ": {
+                "trades": 2,
+                "net_bps": 41.654,
+                "mean_net_bps": 20.827
+              }
+            }
+          }
+        },
+        "paired_extended_minus_control": {
+          "cost_2bps": {
+            "mean_bps_per_session": 0.864,
+            "paired_95pct_block5_bps": [
+              -0.42,
+              2.317
+            ]
+          },
+          "cost_5bps": {
+            "mean_bps_per_session": 0.191,
+            "paired_95pct_block5_bps": [
+              -1.108,
+              1.569
+            ]
+          }
+        }
+      },
+      "rvol": {
+        "control": {
+          "sessions": 223,
+          "trades": 36,
+          "flat_sessions": 187,
+          "repeat_entry_sessions": 0,
+          "maximum_entries_one_session": 1,
+          "green_sessions": 17,
+          "red_sessions": 19,
+          "win_pct": 47.222,
+          "mean_net_bps_per_trade": 8.926,
+          "mean_net_bps_per_session": 1.441,
+          "total_net_bps": 321.331,
+          "max_drawdown_daily_additive_bps": 128.94,
+          "net_total_at_5bps_round_trip": 213.331,
+          "by_symbol": {
+            "SPY": {
+              "trades": 21,
+              "net_bps": 222.012,
+              "mean_net_bps": 10.572
+            },
+            "QQQ": {
+              "trades": 15,
+              "net_bps": 99.319,
+              "mean_net_bps": 6.621
+            }
+          },
+          "exit_counts": {
+            "STOP": 8,
+            "TARGET": 14,
+            "EMA9": 12,
+            "TIME": 2
+          }
+        },
+        "extended": {
+          "sessions": 223,
+          "trades": 65,
+          "flat_sessions": 161,
+          "repeat_entry_sessions": 3,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 33,
+          "red_sessions": 29,
+          "win_pct": 53.846,
+          "mean_net_bps_per_trade": 7.679,
+          "mean_net_bps_per_session": 2.238,
+          "total_net_bps": 499.128,
+          "max_drawdown_daily_additive_bps": 136.358,
+          "net_total_at_5bps_round_trip": 304.128,
+          "by_symbol": {
+            "SPY": {
+              "trades": 36,
+              "net_bps": 283.857,
+              "mean_net_bps": 7.885
+            },
+            "QQQ": {
+              "trades": 29,
+              "net_bps": 215.271,
+              "mean_net_bps": 7.423
+            }
+          },
+          "exit_counts": {
+            "STOP": 15,
+            "TIME": 10,
+            "TARGET": 22,
+            "EMA9": 18
+          }
+        },
+        "added": {
+          "sessions": 223,
+          "trades": 29,
+          "flat_sessions": 195,
+          "repeat_entry_sessions": 1,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 17,
+          "red_sessions": 11,
+          "win_pct": 62.069,
+          "mean_net_bps_per_trade": 6.131,
+          "mean_net_bps_per_session": 0.797,
+          "total_net_bps": 177.797,
+          "max_drawdown_daily_additive_bps": 147.71,
+          "net_total_at_5bps_round_trip": 90.797,
+          "by_symbol": {
+            "SPY": {
+              "trades": 15,
+              "net_bps": 61.845,
+              "mean_net_bps": 4.123
+            },
+            "QQQ": {
+              "trades": 14,
+              "net_bps": 115.952,
+              "mean_net_bps": 8.282
+            }
+          },
+          "exit_counts": {
+            "TIME": 8,
+            "EMA9": 6,
+            "STOP": 7,
+            "TARGET": 8
+          }
+        },
+        "newly_active_sessions": 26,
+        "added_first": {
+          "trades": 26,
+          "flat_sessions": 197,
+          "win_pct": 57.692,
+          "mean_net_bps_per_trade": 5.318,
+          "total_net_bps": 138.265,
+          "net_total_at_5bps_round_trip": 60.265,
+          "by_symbol": {
+            "SPY": {
+              "trades": 13,
+              "net_bps": 31.57,
+              "mean_net_bps": 2.428
+            },
+            "QQQ": {
+              "trades": 13,
+              "net_bps": 106.694,
+              "mean_net_bps": 8.207
+            }
+          }
+        },
+        "added_repeat": {
+          "trades": 3,
+          "flat_sessions": 220,
+          "win_pct": 100.0,
+          "mean_net_bps_per_trade": 13.178,
+          "total_net_bps": 39.533,
+          "net_total_at_5bps_round_trip": 30.533,
+          "by_symbol": {
+            "SPY": {
+              "trades": 2,
+              "net_bps": 30.275,
+              "mean_net_bps": 15.137
+            },
+            "QQQ": {
+              "trades": 1,
+              "net_bps": 9.258,
+              "mean_net_bps": 9.258
+            }
+          }
+        },
+        "added_by_entry_ET": {
+          "10:30\u201310:45": {
+            "trades": 10,
+            "flat_sessions": 213,
+            "win_pct": 50.0,
+            "mean_net_bps_per_trade": 2.832,
+            "total_net_bps": 28.317,
+            "net_total_at_5bps_round_trip": -1.683,
+            "by_symbol": {
+              "SPY": {
+                "trades": 6,
+                "net_bps": 15.357,
+                "mean_net_bps": 2.56
+              },
+              "QQQ": {
+                "trades": 4,
+                "net_bps": 12.96,
+                "mean_net_bps": 3.24
+              }
+            }
+          },
+          "10:45\u201311:00": {
+            "trades": 13,
+            "flat_sessions": 210,
+            "win_pct": 61.538,
+            "mean_net_bps_per_trade": 8.079,
+            "total_net_bps": 105.031,
+            "net_total_at_5bps_round_trip": 66.031,
+            "by_symbol": {
+              "SPY": {
+                "trades": 4,
+                "net_bps": 33.991,
+                "mean_net_bps": 8.498
+              },
+              "QQQ": {
+                "trades": 9,
+                "net_bps": 71.04,
+                "mean_net_bps": 7.893
+              }
+            }
+          },
+          "11:00\u201311:15": {
+            "trades": 6,
+            "flat_sessions": 217,
+            "win_pct": 83.333,
+            "mean_net_bps_per_trade": 7.408,
+            "total_net_bps": 44.449,
+            "net_total_at_5bps_round_trip": 26.449,
+            "by_symbol": {
+              "SPY": {
+                "trades": 5,
+                "net_bps": 12.497,
+                "mean_net_bps": 2.499
+              },
+              "QQQ": {
+                "trades": 1,
+                "net_bps": 31.952,
+                "mean_net_bps": 31.952
+              }
+            }
+          }
+        },
+        "paired_extended_minus_control": {
+          "cost_2bps": {
+            "mean_bps_per_session": 0.797,
+            "paired_95pct_block5_bps": [
+              -0.331,
+              2.061
+            ]
+          },
+          "cost_5bps": {
+            "mean_bps_per_session": 0.407,
+            "paired_95pct_block5_bps": [
+              -0.722,
+              1.615
+            ]
+          }
+        }
+      },
+      "vix": {
+        "control": {
+          "sessions": 223,
+          "trades": 74,
+          "flat_sessions": 153,
+          "repeat_entry_sessions": 4,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 26,
+          "red_sessions": 44,
+          "win_pct": 35.135,
+          "mean_net_bps_per_trade": 0.741,
+          "mean_net_bps_per_session": 0.246,
+          "total_net_bps": 54.819,
+          "max_drawdown_daily_additive_bps": 423.769,
+          "net_total_at_5bps_round_trip": -167.181,
+          "by_symbol": {
+            "SPY": {
+              "trades": 41,
+              "net_bps": 232.81,
+              "mean_net_bps": 5.678
+            },
+            "QQQ": {
+              "trades": 33,
+              "net_bps": -177.991,
+              "mean_net_bps": -5.394
+            }
+          },
+          "exit_counts": {
+            "STOP": 22,
+            "TARGET": 21,
+            "EMA9": 28,
+            "TIME": 3
+          }
+        },
+        "extended": {
+          "sessions": 223,
+          "trades": 124,
+          "flat_sessions": 114,
+          "repeat_entry_sessions": 15,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 49,
+          "red_sessions": 60,
+          "win_pct": 42.742,
+          "mean_net_bps_per_trade": 1.996,
+          "mean_net_bps_per_session": 1.11,
+          "total_net_bps": 247.461,
+          "max_drawdown_daily_additive_bps": 302.485,
+          "net_total_at_5bps_round_trip": -124.539,
+          "by_symbol": {
+            "SPY": {
+              "trades": 69,
+              "net_bps": 358.529,
+              "mean_net_bps": 5.196
+            },
+            "QQQ": {
+              "trades": 55,
+              "net_bps": -111.068,
+              "mean_net_bps": -2.019
+            }
+          },
+          "exit_counts": {
+            "STOP": 35,
+            "TIME": 18,
+            "TARGET": 31,
+            "EMA9": 40
+          }
+        },
+        "added": {
+          "sessions": 223,
+          "trades": 50,
+          "flat_sessions": 175,
+          "repeat_entry_sessions": 2,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 26,
+          "red_sessions": 22,
+          "win_pct": 54.0,
+          "mean_net_bps_per_trade": 3.853,
+          "mean_net_bps_per_session": 0.864,
+          "total_net_bps": 192.642,
+          "max_drawdown_daily_additive_bps": 106.939,
+          "net_total_at_5bps_round_trip": 42.642,
+          "by_symbol": {
+            "SPY": {
+              "trades": 28,
+              "net_bps": 125.719,
+              "mean_net_bps": 4.49
+            },
+            "QQQ": {
+              "trades": 22,
+              "net_bps": 66.923,
+              "mean_net_bps": 3.042
+            }
+          },
+          "exit_counts": {
+            "STOP": 13,
+            "TIME": 15,
+            "EMA9": 12,
+            "TARGET": 10
+          }
+        },
+        "newly_active_sessions": 39,
+        "added_first": {
+          "trades": 39,
+          "flat_sessions": 184,
+          "win_pct": 48.718,
+          "mean_net_bps_per_trade": 2.218,
+          "total_net_bps": 86.501,
+          "net_total_at_5bps_round_trip": -30.499,
+          "by_symbol": {
+            "SPY": {
+              "trades": 20,
+              "net_bps": 76.308,
+              "mean_net_bps": 3.815
+            },
+            "QQQ": {
+              "trades": 19,
+              "net_bps": 10.193,
+              "mean_net_bps": 0.536
+            }
+          }
+        },
+        "added_repeat": {
+          "trades": 11,
+          "flat_sessions": 212,
+          "win_pct": 72.727,
+          "mean_net_bps_per_trade": 9.649,
+          "total_net_bps": 106.14,
+          "net_total_at_5bps_round_trip": 73.14,
+          "by_symbol": {
+            "SPY": {
+              "trades": 8,
+              "net_bps": 49.411,
+              "mean_net_bps": 6.176
+            },
+            "QQQ": {
+              "trades": 3,
+              "net_bps": 56.729,
+              "mean_net_bps": 18.91
+            }
+          }
+        },
+        "added_by_entry_ET": {
+          "10:30\u201310:45": {
+            "trades": 19,
+            "flat_sessions": 204,
+            "win_pct": 47.368,
+            "mean_net_bps_per_trade": 2.482,
+            "total_net_bps": 47.154,
+            "net_total_at_5bps_round_trip": -9.846,
+            "by_symbol": {
+              "SPY": {
+                "trades": 9,
+                "net_bps": 64.286,
+                "mean_net_bps": 7.143
+              },
+              "QQQ": {
+                "trades": 10,
+                "net_bps": -17.132,
+                "mean_net_bps": -1.713
+              }
+            }
+          },
+          "10:45\u201311:00": {
+            "trades": 19,
+            "flat_sessions": 204,
+            "win_pct": 52.632,
+            "mean_net_bps_per_trade": 3.854,
+            "total_net_bps": 73.232,
+            "net_total_at_5bps_round_trip": 16.232,
+            "by_symbol": {
+              "SPY": {
+                "trades": 9,
+                "net_bps": 30.832,
+                "mean_net_bps": 3.426
+              },
+              "QQQ": {
+                "trades": 10,
+                "net_bps": 42.4,
+                "mean_net_bps": 4.24
+              }
+            }
+          },
+          "11:00\u201311:15": {
+            "trades": 12,
+            "flat_sessions": 211,
+            "win_pct": 66.667,
+            "mean_net_bps_per_trade": 6.021,
+            "total_net_bps": 72.255,
+            "net_total_at_5bps_round_trip": 36.255,
+            "by_symbol": {
+              "SPY": {
+                "trades": 10,
+                "net_bps": 30.601,
+                "mean_net_bps": 3.06
+              },
+              "QQQ": {
+                "trades": 2,
+                "net_bps": 41.654,
+                "mean_net_bps": 20.827
+              }
+            }
+          }
+        },
+        "paired_extended_minus_control": {
+          "cost_2bps": {
+            "mean_bps_per_session": 0.864,
+            "paired_95pct_block5_bps": [
+              -0.42,
+              2.317
+            ]
+          },
+          "cost_5bps": {
+            "mean_bps_per_session": 0.191,
+            "paired_95pct_block5_bps": [
+              -1.108,
+              1.569
+            ]
+          }
+        }
+      },
+      "combined": {
+        "control": {
+          "sessions": 223,
+          "trades": 35,
+          "flat_sessions": 188,
+          "repeat_entry_sessions": 0,
+          "maximum_entries_one_session": 1,
+          "green_sessions": 17,
+          "red_sessions": 18,
+          "win_pct": 48.571,
+          "mean_net_bps_per_trade": 9.706,
+          "mean_net_bps_per_session": 1.523,
+          "total_net_bps": 339.693,
+          "max_drawdown_daily_additive_bps": 110.578,
+          "net_total_at_5bps_round_trip": 234.693,
+          "by_symbol": {
+            "SPY": {
+              "trades": 21,
+              "net_bps": 222.012,
+              "mean_net_bps": 10.572
+            },
+            "QQQ": {
+              "trades": 14,
+              "net_bps": 117.681,
+              "mean_net_bps": 8.406
+            }
+          },
+          "exit_counts": {
+            "STOP": 7,
+            "TARGET": 14,
+            "EMA9": 12,
+            "TIME": 2
+          }
+        },
+        "extended": {
+          "sessions": 223,
+          "trades": 64,
+          "flat_sessions": 162,
+          "repeat_entry_sessions": 3,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 33,
+          "red_sessions": 28,
+          "win_pct": 54.688,
+          "mean_net_bps_per_trade": 8.086,
+          "mean_net_bps_per_session": 2.321,
+          "total_net_bps": 517.49,
+          "max_drawdown_daily_additive_bps": 117.996,
+          "net_total_at_5bps_round_trip": 325.49,
+          "by_symbol": {
+            "SPY": {
+              "trades": 36,
+              "net_bps": 283.857,
+              "mean_net_bps": 7.885
+            },
+            "QQQ": {
+              "trades": 28,
+              "net_bps": 233.633,
+              "mean_net_bps": 8.344
+            }
+          },
+          "exit_counts": {
+            "STOP": 14,
+            "TIME": 10,
+            "TARGET": 22,
+            "EMA9": 18
+          }
+        },
+        "added": {
+          "sessions": 223,
+          "trades": 29,
+          "flat_sessions": 195,
+          "repeat_entry_sessions": 1,
+          "maximum_entries_one_session": 2,
+          "green_sessions": 17,
+          "red_sessions": 11,
+          "win_pct": 62.069,
+          "mean_net_bps_per_trade": 6.131,
+          "mean_net_bps_per_session": 0.797,
+          "total_net_bps": 177.797,
+          "max_drawdown_daily_additive_bps": 147.71,
+          "net_total_at_5bps_round_trip": 90.797,
+          "by_symbol": {
+            "SPY": {
+              "trades": 15,
+              "net_bps": 61.845,
+              "mean_net_bps": 4.123
+            },
+            "QQQ": {
+              "trades": 14,
+              "net_bps": 115.952,
+              "mean_net_bps": 8.282
+            }
+          },
+          "exit_counts": {
+            "TIME": 8,
+            "EMA9": 6,
+            "STOP": 7,
+            "TARGET": 8
+          }
+        },
+        "newly_active_sessions": 26,
+        "added_first": {
+          "trades": 26,
+          "flat_sessions": 197,
+          "win_pct": 57.692,
+          "mean_net_bps_per_trade": 5.318,
+          "total_net_bps": 138.265,
+          "net_total_at_5bps_round_trip": 60.265,
+          "by_symbol": {
+            "SPY": {
+              "trades": 13,
+              "net_bps": 31.57,
+              "mean_net_bps": 2.428
+            },
+            "QQQ": {
+              "trades": 13,
+              "net_bps": 106.694,
+              "mean_net_bps": 8.207
+            }
+          }
+        },
+        "added_repeat": {
+          "trades": 3,
+          "flat_sessions": 220,
+          "win_pct": 100.0,
+          "mean_net_bps_per_trade": 13.178,
+          "total_net_bps": 39.533,
+          "net_total_at_5bps_round_trip": 30.533,
+          "by_symbol": {
+            "SPY": {
+              "trades": 2,
+              "net_bps": 30.275,
+              "mean_net_bps": 15.137
+            },
+            "QQQ": {
+              "trades": 1,
+              "net_bps": 9.258,
+              "mean_net_bps": 9.258
+            }
+          }
+        },
+        "added_by_entry_ET": {
+          "10:30\u201310:45": {
+            "trades": 10,
+            "flat_sessions": 213,
+            "win_pct": 50.0,
+            "mean_net_bps_per_trade": 2.832,
+            "total_net_bps": 28.317,
+            "net_total_at_5bps_round_trip": -1.683,
+            "by_symbol": {
+              "SPY": {
+                "trades": 6,
+                "net_bps": 15.357,
+                "mean_net_bps": 2.56
+              },
+              "QQQ": {
+                "trades": 4,
+                "net_bps": 12.96,
+                "mean_net_bps": 3.24
+              }
+            }
+          },
+          "10:45\u201311:00": {
+            "trades": 13,
+            "flat_sessions": 210,
+            "win_pct": 61.538,
+            "mean_net_bps_per_trade": 8.079,
+            "total_net_bps": 105.031,
+            "net_total_at_5bps_round_trip": 66.031,
+            "by_symbol": {
+              "SPY": {
+                "trades": 4,
+                "net_bps": 33.991,
+                "mean_net_bps": 8.498
+              },
+              "QQQ": {
+                "trades": 9,
+                "net_bps": 71.04,
+                "mean_net_bps": 7.893
+              }
+            }
+          },
+          "11:00\u201311:15": {
+            "trades": 6,
+            "flat_sessions": 217,
+            "win_pct": 83.333,
+            "mean_net_bps_per_trade": 7.408,
+            "total_net_bps": 44.449,
+            "net_total_at_5bps_round_trip": 26.449,
+            "by_symbol": {
+              "SPY": {
+                "trades": 5,
+                "net_bps": 12.497,
+                "mean_net_bps": 2.499
+              },
+              "QQQ": {
+                "trades": 1,
+                "net_bps": 31.952,
+                "mean_net_bps": 31.952
+              }
+            }
+          }
+        },
+        "paired_extended_minus_control": {
+          "cost_2bps": {
+            "mean_bps_per_session": 0.797,
+            "paired_95pct_block5_bps": [
+              -0.331,
+              2.061
+            ]
+          },
+          "cost_5bps": {
+            "mean_bps_per_session": 0.407,
+            "paired_95pct_block5_bps": [
+              -0.722,
+              1.615
+            ]
+          }
+        }
+      }
+    }
+  }
+}

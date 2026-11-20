@@ -174,7 +174,7 @@ def paired_interval(a, b):
     return {"mean_bps_per_session": round(fmean(diffs), 3), "paired_95pct_block5_bps": [round(estimates[49], 3), round(estimates[1949], 3)]}
 
 
-def sniper_paths(inputs, factors, *, evaluator=None):
+def sniper_paths(inputs, factors, *, evaluator=None, entry_indices=range(5, 12)):
     """Independent causal path per arm. Use the runner's actual V2 rearm rule."""
     if evaluator is None:
         from paper_trading.strategy import evaluate_sniper as evaluator
@@ -197,7 +197,7 @@ def sniper_paths(inputs, factors, *, evaluator=None):
     for variant in VARIANTS:
         trades = []
         last_exit = None
-        for i in range(5, 12):
+        for i in entry_indices:
             for symbol in SYMBOLS:
                 if last_exit is not None and inputs[symbol][1][i]["started_at"] <= last_exit:
                     continue
@@ -212,18 +212,18 @@ def sniper_paths(inputs, factors, *, evaluator=None):
     return arms
 
 
-def run(cache, left, right, start, split, *, sniper=False):
-    if not left < start < split <= right:
-        raise ValueError("Need warmup, development and held-later dates in order")
+def study_inputs(cache, left, right):
     paths = {sym: cache/f"{sym}_{left}_{right}.csv" for sym in SYMBOLS}
     vix_file = cache/"VIX_History.csv"
     raw = {sym: read_opend(path) for sym, path in paths.items()}
     vix = read_vix(vix_file)
     cal = xcals.get_calendar("XNYS")
     days = [d.date() for d in cal.sessions if left <= d.date() <= right]
-    book = {}
-    excluded = []
-    factor_counts = defaultdict(Counter)
+    return raw, vix, days, [*paths.values(), vix_file]
+
+
+def iter_mornings(raw, vix, days, start, excluded, factor_counts):
+    """Identical, strictly trailing feature and coverage inputs for the frozen replays."""
     for idx, day in enumerate(days):
         if day < start:
             continue
@@ -232,7 +232,6 @@ def run(cache, left, right, start, split, *, sniper=False):
         if idx < 3 or any([b["started_at"] for b in raw[s].get(day, [])[:25]] != expected for s in SYMBOLS):
             excluded.append(day.isoformat())
             continue
-        candidates = []
         factors, inputs = {}, {}
         for symbol in SYMBOLS:
             history = raw[symbol]
@@ -247,8 +246,20 @@ def run(cache, left, right, start, split, *, sniper=False):
             for key in ["rvol", "vix", "gex"]:
                 factor_counts[key][context[key]["status"]] += 1
             factors[symbol] = dict(rvol=context["rvol"]["status"], vix=context["vix"]["status"], combined=context["combined"])
-            if not sniper:
-                trade = replay_symbol(symbol, warm, bars)
+        yield day, inputs, factors
+
+
+def run(cache, left, right, start, split, *, sniper=False):
+    if not left < start < split <= right:
+        raise ValueError("Need warmup, development and held-later dates in order")
+    raw, vix, days, paths = study_inputs(cache, left, right)
+    book, excluded = {}, []
+    factor_counts = defaultdict(Counter)
+    for day, inputs, factors in iter_mornings(raw, vix, days, start, excluded, factor_counts):
+        candidates = []
+        if not sniper:
+            for symbol in SYMBOLS:
+                trade = replay_symbol(symbol, *inputs[symbol])
                 if trade:
                     candidates.append({**trade, **factors[symbol]})
         book[day] = sniper_paths(inputs, factors) if sniper else {name: portfolio(candidates, name) for name in VARIANTS}
@@ -268,7 +279,7 @@ def run(cache, left, right, start, split, *, sniper=False):
     return {"rule_version": RULE_VERSION, "evidence": "UNDERLYING_ONLY", "live_eligible": False,
             "setup_model": "V2_REPEATING_SNIPER" if sniper else "V1_FIRST_SETUP",
             "study_start": start.isoformat(), "held_later_start": split.isoformat(), "end": right.isoformat(),
-            "input_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in [*paths.values(), vix_file]},
+            "input_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in paths},
             "input_bars": {s: sum(map(len, raw[s].values())) for s in SYMBOLS},
             "usable_sessions": len(book), "missing_mornings_excluded": excluded,
             "factor_symbol_session_counts": {k: dict(v) for k,v in factor_counts.items()},

@@ -28,7 +28,7 @@ This study covers SPY and QQQ, not the SPX index or SPX options.
 The 10:30 entry cutoff is separate from the trade counter. The earliest initial
 trigger is 09:55. With positive-duration trades and the required rebuild, the
 current morning window typically has room for at most two entries. A later
-cutoff changes the strategy and requires its own replay and forward comparison.
+cutoff changes the strategy; the November 20 comparison below tests one such change.
 The paper ledger additionally requires a liquid, affordable, timestamped 0DTE
 option and reserves both fees against risk and settled cash. These conditions
 are not present in the ETF replay. See the [session runbook](37-paper-session-journal.md).
@@ -84,6 +84,53 @@ technical-only re-entered on four days; the combined arm did not re-enter on any
   [OpenD option snapshot fields](https://openapi.moomoo.com/moomoo-api-doc/en/quote/get-market-snapshot.html);
   [Cboe's analysis of dealer positioning](https://www.cboe.com/insights/posts/0-dt-es-decoded-positioning-trends-and-market-impact/).
 
+## November 20 experiment: does another 45 minutes help?
+
+The question is whether the **added entries** earn their keep, not whether two
+overlapping morning portfolios look profitable in aggregate. Compare the same
+753 SPY/QQQ sessions with one change: the first arm stops taking entries at
+10:30 ET; the second at 11:15 ET. Both cutoffs are exclusive. The extra trigger
+bars start at 10:30, 10:35, …, 11:10. Positions opened under either clock keep
+the original exits, including the 11:30 flatten. The wider clock starts no new
+position when an earlier one is still open, and never resets a position at 10:30.
+
+The decision measure is the **change in net ETF basis points per scheduled
+session**, pairing each day with itself and counting days with no additional
+trades. The technical-only setup is primary because that is what the paper
+agent trades. Opening-volume and prior-VIX filters are secondary comparisons;
+do not switch the primary test to whichever filter wins. Check the late entries
+separately in development and the later sample, after both 2 and 5 bps of
+round-trip costs. More trades is not by itself a reason to widen the paper
+window. Neither window has executable historical option prices in this study.
+
+| Technical rules, extra 45 minutes only | Earlier 530 sessions | Later 223 sessions |
+| --- | ---: | ---: |
+| Total trades: 10:30 → 11:15 cutoff | 193 → 308 | 75 → 125 |
+| Additional trades: first of day / repeat | 115: 82 / 33 | 50: 39 / 11 |
+| Winning additional trades | 36/115 (31.3%) | 27/50 (54.0%) |
+| Mean ETF return per additional trade, net of 2 bps | −2.94 bps | +3.85 bps |
+| Change per scheduled session, net of 2 bps (95% block interval) | −0.64 bps [−1.36, +0.07] | +0.86 bps [−0.42, +2.32] |
+| Total incremental ETF return, net of 5 bps, fixed unit notional | −683.52 bps | +42.64 bps |
+
+**Keep the 10:30 cutoff for the paper agent.** Across all 753 sessions the 165
+additional technical trades averaged **−0.88 bps per trade** after 2 bps of
+costs. The extension created a first trade on 121 previously inactive days and
+44 repeat entries. Neither period recorded three technical entries on a single
+day, even with the extension. The later period improved, but its interval is
+also consistent with no benefit.
+
+Volume and VIX did not resolve that split. With both filters, the added trades
+averaged −2.89 bps in the earlier sample (59 trades) and +6.13 in the later
+sample (29 trades). The later added trades and returns with opening volume alone
+were identical to those with both filters. These are observations on a previously
+examined sample, not independent proof. The [paired results](evidence/orb-sniper-window-1115-2026-11-20.json)
+include all four rule sets, both ETFs, first versus repeat entries and 15-minute
+subgroups. The subgroups describe where trades occurred; they were not used to
+select another cutoff. Before reconsidering 11:15, a separate forward observer
+would need to capture the late triggers and the timestamped bid/ask of options
+that meet the paper account's limits; the current 10:30 baseline cannot supply
+those missing fills.
+
 ## Reproduce and monitor
 
 With an authenticated, entitled read-only OpenD connection and available historical
@@ -93,6 +140,7 @@ do not commit or redistribute the raw data. With the cache in place, replay is o
 ```sh
 .venv/bin/python scripts/fetch_orb_study.py --start 2023-10-19 --end 2026-11-19
 .venv/bin/python scripts/orb_regime_study.py --sniper --output /tmp/orb-sniper-v2.json
+.venv/bin/python scripts/orb_cutoff_study.py --output /tmp/orb-sniper-window-1115.json
 .venv/bin/python scripts/paper_regime_shadow.py report --session-date 2026-11-20 --data-dir /Users/dhanvin/Documents/IntelliDhan/data/paper-journal-2026-11-20
 ```
 

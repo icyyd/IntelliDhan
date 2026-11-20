@@ -1,8 +1,14 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-11-19 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-11-20 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** the SPY/QQQ opening-range paper sniper has no daily
+**Last system pass:** tested an 11:15 ET entry cutoff against 10:30 across
+753 SPY/QQQ sessions, with the same 11:30 exit. Extra trades improved the later
+period but lost money in the earlier one; across both they averaged −0.88 bps
+per added trade after modeled ETF costs. The paper cutoff stays at 10:30 ET.
+See the [cutoff comparison](docs/38-sniper-study-and-release.md#november-20-experiment-does-another-45-minutes-help).
+
+The SPY/QQQ opening-range paper sniper has no daily
 trade-count cap. After an exit, it can take another independent breakout and
 retest before 10:30 ET; it cannot re-buy the same setup or reuse unsettled
 proceeds. OpenD five-minute candles are normalized from end labels. A separate
@@ -217,7 +223,7 @@ requires the same-commit README update.
 | 35 | [ORR Five-Year Fine-Tuning Model](docs/33-orr-five-year-fine-tuning-model.md) | SPY/SPX point-in-time data contract, interpretable meta-labeler, purged walk-forward tuning, robustness score, and promotion gates |
 | 36 | [UX Signals-First Simplicity](docs/32-ux-signals-first-simplicity.md) | Signals-first Today hierarchy, density reduction, progressive disclosure; logo/colors unchanged |
 | 37 | [Paper Session Journal](docs/37-paper-session-journal.md) | Isolated $1,000 virtual account, $500 risk ceilings, deterministic ORB pilot, OpenD readiness gates, and local ledger operations |
-| 38 | [Sniper research and release gates](docs/38-sniper-study-and-release.md) | Repeating paper entries, three-year SPY/QQQ ablation, forward comparisons and prerequisites for named seats |
+| 38 | [Sniper research and release gates](docs/38-sniper-study-and-release.md) | Repeating entries, three-year SPY/QQQ replay, paired 10:30 vs 11:15 cutoff comparison and release gates |
 
 ## Core Product Tenets
 

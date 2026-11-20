@@ -1,5 +1,16 @@
 # IntelliDhan Agent Context
 
+## 2026-11-20 — 11:15 ET cutoff tested, not activated
+
+The offline SPY/QQQ comparison retained the 11:30 ET flatten, matched all
+753 session mornings against the frozen 10:30 control, and used unchanged
+volume/VIX thresholds. The wider window added 115 technical trades averaging
+−2.94 net ETF bps in development and 50 averaging +3.85 later. Of those 165,
+121 were first entries on previously quiet days; 44 were repeats. The later
+paired interval crosses zero. Keep the operating cutoff at 10:30 ET. No option
+P/L, policy migration, restart, deployment or live order is part of this test.
+See [comparison and reproduction](docs/38-sniper-study-and-release.md#november-20-experiment-does-another-45-minutes-help).
+
 ## 2026-11-19 — November 20 V2 paper pilot: current contract
 
 - `ORB_RETEST_SNIPER_V2` removes the fixed two-entry quota. `null` in
