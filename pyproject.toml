@@ -22,7 +22,9 @@ dependencies = [
 
 [project.optional-dependencies]
 # Keep CI reproducible while the existing codebase is migrated to newer Ruff rules.
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff==0.4.10"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff==0.4.10", "exchange-calendars==4.11.2"]
+# Isolated local paper runner; not installed into cloud gateway deployments.
+paper = ["moomoo-api==10.8.6808", "exchange-calendars==4.11.2"]
 
 [tool.setuptools.package-dir]
 intellidhan_schemas = "shared-schemas/intellidhan_schemas"

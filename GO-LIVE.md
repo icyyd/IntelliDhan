@@ -1,6 +1,45 @@
 # Go-Live Checklist
 
-## One-time setup (you, ~10 minutes)
+## November 20, 2026: paper only
+
+The SPY/QQQ pilot uses `ORB_RETEST_SNIPER_V2`, a local simulation with a
+read-only ChatGPT journal. It cannot send an order. The application deployment,
+paper runner, and Robinhood execution switch are separate. Leave execution
+`OFF`; no strategy is currently live-eligible.
+
+Before the opening range forms:
+
+1. Follow the [paper runbook](docs/37-paper-session-journal.md) with the existing
+   private runtime directory. Check the owned process, November 20 session date,
+   V2 policy and $1,000 starting account. Never initialize a fresh ledger to
+   bypass a policy mismatch. Ordinary restart does not upgrade a V1 account.
+2. Verify the Mac is awake, OpenD quote login is active and the journal heartbeat
+   is current. A healthy socket is not a tradable option quote. Record a skip
+   if either side of the book lacks a fresh timestamp or no contract qualifies.
+3. Check the separate research observer before 9:55 ET. A missed measurement is
+   unknown, not a later backfill. Loss of the observer or hosted mirror must not
+   interrupt the local runner or an outstanding exit.
+
+The numeric trade quota is gone, not the risk controls. Re-entry requires a new
+post-exit range reset and a fresh breakout/retest/trigger before 10:30 ET. One
+position, settled cash only, the $500 premium ceiling and $500 full-risk daily
+budget remain binding. A flat session is a valid result.
+
+After the session, reconcile each entry and exit to the recorded quotes,
+timestamps, reason, spread, modeled slippage, fees and cash balance. An
+unresolved exit or stale valuation is not realized P/L. Compare the
+observational volume/VIX filters against the same observed baseline receipts;
+do not infer option returns from historical underlying basis points. See the
+[study and release gates](docs/38-sniper-study-and-release.md) before considering
+any promotion. One paper session, regardless of its P/L, does not qualify V2.
+
+Paid seats are not enabled by the owner-private mirror or its service credential.
+Before giving a second user access, verify named-seat authentication, account
+isolation, seat revocation and auditability, and obtain the necessary review of
+market-data display/redistribution rights and the intended service. Do not
+share the owner credential, paper journal or brokerage account as a substitute.
+
+## Main terminal one-time setup (separate from the paper journal)
 
 1. **Telegram** (skip → alerts print to the server console instead):
    - Message **@BotFather** on Telegram → `/newbot` → name it (e.g. `IntelliDhanBot`) → copy the token.
@@ -43,7 +82,7 @@ currently live-eligible.
 The authoritative execution loop and rollback rules are in
 [docs/27-codex-robinhood-execution.md](docs/27-codex-robinhood-execution.md).
 
-## Every trading morning (one command, before 8:25 AM ET)
+## Main terminal morning startup (not the V2 runner)
 
 ```bash
 cd ~/Documents/IntelliDhan && ./scripts/start_live.sh
@@ -54,10 +93,9 @@ cd ~/Documents/IntelliDhan && ./scripts/start_live.sh
 - Dashboard: http://localhost:8321 (trend matrix, alerts, suppression tape, paper P&L).
 - Laptop lid must stay open (caffeinate keeps it awake, not un-slept).
 
-## What to expect — read this part
+## Historical July terminal qualification review (not the V2 results)
 
-- **Zero strategies are currently live-eligible. Expect NO trade alerts
-  tomorrow, by design.** A 2026-07-12 pre-launch review (see
+- **Zero strategies were live-eligible at this checkpoint.** A 2026-07-12 pre-launch review (see
   [docs/18-enhancement-review.md](docs/18-enhancement-review.md) for the full
   audit) found that `PULLBACK_CONTINUATION` — the one strategy that had
   cleared the 75% research bar — had two real bugs in how the *production*
@@ -83,9 +121,9 @@ cd ~/Documents/IntelliDhan && ./scripts/start_live.sh
      backtest showing zero alerts) — it still runs in the background,
      harvesting forward-paper evidence, but it cannot reach you as a trade
      suggestion until it's re-qualified.
-- **This means: run the platform tomorrow to watch it work — trend matrix,
-  briefing, suppression tape, calibration — but do not expect or wait for a
-  trade alert.** The "why we're quiet" tape will show `disabled` as the gate
+- **Run the main terminal to observe its trend matrix, briefing, suppression
+  tape and calibration; these are not live trade instructions.**
+  The "why we're quiet" tape will show `disabled` as the gate
   reason for any PULLBACK_CONTINUATION setups the engine still evaluates.
   This is the system being honest rather than shipping a number it can't
   yet stand behind.

@@ -1,5 +1,91 @@
 # IntelliDhan Agent Context
 
+## 2026-11-20 — options are the pilot's trade vehicle
+
+SPY/QQQ price action establishes direction and levels. Only a verified
+same-day call or put supplies a modeled premium or P/L. No ETF-to-option
+conversion, SPX substitution, 1DTE fallback or synthetic exit. The primary
+account's 10:30 ET cutoff, cash limits, hosted mirror and paper-only mode are
+unchanged. The approved November 20 late-window recorder is a **separate local
+observation journal**; this approval does not recur. The recorder started at
+09:17 ET with a fresh heartbeat and no active polls or modeled trades. That
+startup check is not evidence of options quote coverage or profitability. Consult the
+[runbook](docs/39-late-option-observations.md) before interpreting any result.
+
+## 2026-11-20 — 11:15 ET cutoff tested, not activated
+
+The offline SPY/QQQ comparison retained the 11:30 ET flatten, matched all
+753 session mornings against the frozen 10:30 control, and used unchanged
+volume/VIX thresholds. The wider window added 115 technical trades averaging
+−2.94 net ETF bps in development and 50 averaging +3.85 later. Of those 165,
+121 were first entries on previously quiet days; 44 were repeats. The later
+paired interval crosses zero. Keep the operating cutoff at 10:30 ET. No option
+P/L, policy migration, restart, deployment or live order is part of this test.
+See [comparison and reproduction](docs/38-sniper-study-and-release.md#november-20-experiment-does-another-45-minutes-help).
+
+## 2026-11-19 — November 20 V2 paper pilot: current contract
+
+- `ORB_RETEST_SNIPER_V2` removes the fixed two-entry quota. `null` in
+  `max_entries_per_day` means no numeric cap, **not** unlimited buying power.
+  Keep one SPY/QQQ 0DTE contract at a time, $1,000 starting cash, $500 premium
+  ceiling, $500 daily full-risk budget including fees, no recycling of unsettled
+  proceeds, 10:30 ET last-entry cutoff and 11:30 ET flatten. No SPX substitute
+  or option fill inferred from ETF returns.
+- The initial opening range, completed EMA9/VWAP-aligned retest and next-bar
+  trigger remain. After any portfolio exit, a new candidate symbol must have a
+  full five-minute bar start at/after the exit and close inside its range,
+  followed by a separate breakout/retest/trigger. Stops and reached targets
+  observed pre-entry consume the setup ID, including at the final quote recheck.
+- Persisted V1 policy is not rewritten on normal startup. Only the explicit
+  pre-open, exclusive-lock migration may change the exact, untraded original
+  $1,000 policy. It appends `PAPER_POLICY_MIGRATION`; it does not erase receipts
+  or change capital. Never reset the account or replace that journal.
+- Historical inputs: three years of OpenD SPY/QQQ underlying five-minute bars
+  and Cboe daily VIX. Normalize OpenD's close-labeled bars to start times
+  before testing completion. The shared RVOL/prior-VIX rules are observational.
+  No usable historical chain-GEX or executable options replay; no live promotion.
+  On 223 held-later sessions V2 recorded 26/75 positive baseline outcomes and
+  17/35 combined-filter outcomes after modeled underlying costs. The combined
+  filter had negative mean net basis points per trade in development. This is
+  not an estimate of profitable days or 0DTE profitability.
+- Separate comparison sidecar observes only actual baseline paper receipts.
+  Freeze factors before 9:55 ET; late/missing inputs stay unknown. Do not
+  backfill, infer dealer positioning from unsigned OI, use the sidecar to block
+  exits, or synthesize opportunities skipped by the baseline.
+- Source of truth: [paper operations](docs/37-paper-session-journal.md),
+  [V2 evidence, limitations and release gates](docs/38-sniper-study-and-release.md),
+  [go-live checklist](GO-LIVE.md). The private Site is an observation surface,
+  not a licensed paid-seat launch; broker execution remains `OFF`.
+
+## 2026-11-19 — Private ChatGPT paper journal (initial V1 checkpoint)
+
+- The user requested that the local paper portal become a ChatGPT website.
+  A separate owner-private Sites source checkout lives at
+  `data/sites/intellidhan-paper-journal`; it is not the IntelliDhan/Koyeb deployment.
+- Local branch remains `codex/paper-trading-journal` / draft PR 27. Preserve the
+  dirty main checkout and unrelated PR 26. No live orders or strategy promotion.
+- `site_sync.py` sends read-only snapshots in a daemon thread to one fixed HTTPS
+  Site origin. The credential is configured through a hidden terminal prompt
+  into the existing private runtime directory; it is never committed.
+- Hosted D1 persists the current session and immutable events. The browser
+  auto-polls; stale local heartbeat/capture/receive times suppress current P/L.
+- The Mac and OpenD still must stay running. The hosted website cannot reach
+  local OpenD, change the strategy, place orders, or operate the local process.
+- At this V1 checkpoint the session was 2026-11-20, virtual capital $1,000,
+  max premium $500, one position, max two entries, and $500 daily full-risk
+  ceiling including fees. Only the strategy version and numeric quota change
+  in the V2 policy above.
+- Site publication succeeded at
+  `https://intellidhan-paper-journal.dhanvinnraval.chatgpt.site`, source
+  `2280ebe047922d7189251aace4fd0223eb5ce56c`. Actual-ledger service sync/readback
+  passed; unauthenticated requests are rejected. No seeded/demo trades.
+- The existing observer was not interrupted. A separate read-only sidecar
+  supports initial sync without a restart and retires when observer identity
+  changes. Future starts use the integrated sync worker.
+- Validation: 512 Python tests passed (6 deselected), 16 hosted tests passed,
+  TypeScript/build and Ruff passed. Hosted stale masking and browser-write
+  rejection were exercised against production. Visual browser QA was unavailable.
+
 ## 2026-07-24 — Responsive overlap guard
 
 - Follow-up branch `codex/overlap-fix` is based on merged `main` commit
@@ -672,3 +758,62 @@ For each coherent work unit:
   approved the refresh, authentication, automation, mobile-nav, and live-region
   corrections. PR `#16` remains draft, mergeable, and awaiting user approval;
   no merge or deployment is authorized for this branch yet.
+
+## 2026-11-19 — isolated forward-paper session and journal (historical V1)
+
+- Original request: prepare a paper-only agent and web ledger for November 20,
+  2026, starting with $1,000. User selected a $500 premium ceiling in the
+  follow-up; one contract/position, at most two daily entries, $500 daily
+  worst-case risk budget, no averaging down or recovery sizing. Daily green P/L
+  is a goal, not guaranteed or demonstrated.
+- Branch `codex/paper-trading-journal` is based on refreshed `origin/main`
+  `26dd83f` in `data/worktrees/paper-journal` under the primary checkout.
+  Primary dirty changes and the other agent's draft PR #26 remain untouched.
+  This narrow standalone pilot does not require or compete with the broader
+  signal-desk PR. No merge or cloud deployment is authorized.
+- Local portal: `http://127.0.0.1:8330/`. Runtime data lives at
+  `/Users/dhanvin/Documents/IntelliDhan/data/paper-journal-2026-11-20`.
+  Commands in doc37 must include that `--data-dir` for this prepared instance.
+  Never reset/reinitialize the account to hide losses or resolve pending exits.
+- The local runner is deterministic, date-fenced and paper-only. It uses
+  OpenD quote context only; no trading context, Robinhood order path, real
+  account data, API keys or LLM discretionary execution. Existing auth,
+  account and broker-intent modules are untouched. Read docs 27/28 and doc 37.
+- OpenD is signed in at 127.0.0.1:11111. SDK 10.8.6808. Actual read-only probes
+  confirmed chains and 987 completed five-minute bars for each ticker. General
+  quota: 100; option quota: 20. The adapter discloses its nearest-30-strike
+  metadata scope, at most eight feasible books per scan and 20 owned option
+  slots, without unsubscribing others.
+- Readiness is conditional: after-hours SPY option book lacked authoritative
+  bid/ask timestamps; fills stay blocked when absent. Latest bounded preflight
+  found no currently affordable eligible calls. Do not imply today's 1DTE quote
+  cost proves tomorrow's 0DTE affordability or that socket connectivity is enough.
+- Strategy: first 15-minute range, first completed five-minute breakout, retest
+  within three candles, EMA9/session-VWAP alignment, next-bar trigger,
+  ATR-buffered invalidation, underlying 2R target, 60-minute/time/data exits,
+  entries 9:45–10:30 ET, flatten by 11:30 ET.
+  It is experimental with no positive-expectancy claim or Live promotion.
+- Ledger uses integer cents, immutable events, idempotent signals, T+1 cash,
+  ask plus one cent / bid minus one cent fill assumptions and 65-cent fees per
+  side. Missing marks are unknown, not zero; exit decisions persist and require
+  genuine quote evidence.
+- Independent agents reviewed actual patches. Corrected quote timing after
+  network calls, stale-underlying exit blocking, duplicate signal state,
+  range completion timestamp, durable pre-entry invalidation, process identity,
+  logged-out health handling and symlink-safe runtime writes. Final test counts,
+  commit/PR/CI and review state are recorded at handoff.
+- Browser computer-use and native scheduled-task connectors were unavailable.
+  No visual browser verification or Codex scheduled task is claimed. The local
+  process itself waits for its explicit session and requires an awake Mac with
+  OpenD running; do not stop it as a disposable preview.
+- Final local regression: 456 passed, six integration tests deselected. The
+  shared primary-checkout virtualenv was unsuitable because its editable
+  imports pointed at another checkout; the passing run used this worktree's
+  isolated environment. Ruff, JS syntax and local HTTP/session/account/asset
+  checks passed. The running account was $1,000 with zero trades; no broker
+  orders were sent. Independent cross-review covered each agent's non-owned
+  implementation; review is not an assertion of strategy profitability.
+- Checkpoint `a6f41f8`, draft PR #27. Initial CI test collection exposed a
+  `pytest` console entry-point import-path difference in two new test files;
+  fixed explicit standalone package resolution and reran the console command.
+  Runtime behavior is unchanged. PostgreSQL CI passed on the first checkpoint.

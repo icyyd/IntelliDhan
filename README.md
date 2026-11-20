@@ -1,8 +1,43 @@
 # IntelliDhan — Trading Signal Platform Specification
 
-**Version:** 0.2 alpha · **Date:** 2026-07-25 · **Status:** Working personal-terminal foundation
+**Version:** 0.2 alpha · **Date:** 2026-11-20 · **Status:** Working personal-terminal foundation
 
-**Last system pass:** five-pane, signals-first Today workspace with strategy-plane
+**Last system pass:** the sniper uses SPY/QQQ to identify a setup, but the
+instrument being evaluated is the **option**, not ETF shares. A separate,
+single-session [option quote recorder](docs/39-late-option-observations.md)
+can follow 10:30–11:15 ET setups and record the selected 0DTE call or put,
+its quoted costs, and the reason for entry and exit. The primary paper ledger
+still stops taking entries at 10:30; the recorder cannot write to it.
+
+We tested an 11:15 ET entry cutoff against 10:30 across
+753 SPY/QQQ sessions, with the same 11:30 exit. Extra trades improved the later
+period but lost money in the earlier one; across both they averaged −0.88 bps
+per added trade after modeled ETF costs. The paper cutoff stays at 10:30 ET.
+See the [cutoff comparison](docs/38-sniper-study-and-release.md#november-20-experiment-does-another-45-minutes-help).
+
+The SPY/QQQ opening-range paper sniper has no daily
+trade-count cap. After an exit, it can take another independent breakout and
+retest before 10:30 ET; it cannot re-buy the same setup or reuse unsettled
+proceeds. OpenD five-minute candles are normalized from end labels. A separate
+observer records opening volume and the previous VIX close for comparison
+without changing fills. Gross gamma is optional context, not a directional signal.
+See the [three-year replay, limitations and release gates](docs/38-sniper-study-and-release.md).
+
+The [private ChatGPT journal](https://intellidhan-paper-journal.dhanvinnraval.chatgpt.site)
+mirrors the local observer over one-way HTTPS. History persists and live values
+expire after 30 seconds without fresh data. No broker or subscriber execution
+runs in the website. See [Paper session journal](docs/37-paper-session-journal.md).
+
+The isolated local forward-paper agent and trade journal use a
+$1,000 virtual account, user-selected $500 premium ceiling, immutable entry/exit
+reasoning, conservative costs, read-only OpenD data, and a date-fenced session.
+This experiment cannot submit broker orders or promote a strategy to Live.
+Fresh option bid/ask timestamps remain a readiness gate; a connected OpenD
+session alone is not trading readiness. See [Paper session journal](docs/37-paper-session-journal.md).
+The paper tests resolve their standalone script package explicitly, so both the
+`pytest` console command used in CI and `python -m pytest` exercise the same code.
+
+The existing five-pane, signals-first Today workspace retains strategy-plane
 evidence objects, net-expectancy gating, responsive overlap guards, simplified
 navigation, and a visible two-minute single-flight refresh cycle for market data
 and analysis. Real-time state and the faster automation safety poll remain
@@ -194,6 +229,9 @@ requires the same-commit README update.
 | 34 | [Opening Range Reversal Backtest](docs/32-opening-range-reversal-backtest.md) | Deterministic 15m opening-range reversal rules, ATR manipulation gate, prior-day level experiment, slippage-aware walk-forward diagnostics |
 | 35 | [ORR Five-Year Fine-Tuning Model](docs/33-orr-five-year-fine-tuning-model.md) | SPY/SPX point-in-time data contract, interpretable meta-labeler, purged walk-forward tuning, robustness score, and promotion gates |
 | 36 | [UX Signals-First Simplicity](docs/32-ux-signals-first-simplicity.md) | Signals-first Today hierarchy, density reduction, progressive disclosure; logo/colors unchanged |
+| 37 | [Paper Session Journal](docs/37-paper-session-journal.md) | Isolated $1,000 virtual account, $500 risk ceilings, deterministic ORB pilot, OpenD readiness gates, and local ledger operations |
+| 38 | [Sniper research and release gates](docs/38-sniper-study-and-release.md) | Repeating entries, three-year SPY/QQQ replay, paired 10:30 vs 11:15 cutoff comparison and release gates |
+| 39 | [Late-window option observations](docs/39-late-option-observations.md) | Local one-session research recorder; actual quote requirements, simulated costs, and how to read results |
 
 ## Core Product Tenets
 
